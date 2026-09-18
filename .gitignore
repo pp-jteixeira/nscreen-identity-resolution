@@ -1,0 +1,57 @@
+# Local Python environments
+.venv/
+venv/
+env/
+
+# Python bytecode, packaging, and tooling caches
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Notebook and interactive-session state (keep notebooks themselves)
+.ipynb_checkpoints/
+__marimo__/
+
+# Local credentials and environment overrides
+.env
+.env.*
+.venv/
+!.env.example
+!.env.template
+.streamlit/secrets.toml
+
+# Local Spark execution artifacts
+spark-warehouse/
+metastore_db/
+derby.log
+hs_err_pid*.log
+
+# Graphify caches and machine-specific state; keep shared graph/report exports
+graphify-out/cache/
+graphify-out/.graphify_*
+!graphify-out/.graphify_labels.json
+graphify-out/.needs_update
+graphify-out/.vocab.txt
+graphify-out/manifest.json
+graphify-out/cost.json
+
+# Generated export bundle
+/nscreen-graph-exploration/nscreen-graph-export-final.zip
+
+# OS, editor, and temporary files
+.DS_Store
+._*
+.idea/
+*.swp
+*.swo
+*~
+*.log
