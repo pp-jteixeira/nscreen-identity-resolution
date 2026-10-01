@@ -1,0 +1,9 @@
+{
+  "name": "vendor_activity_coverage_20260916_line_filter_v1_5pct",
+  "day": "2026-09-16",
+  "inputs": {
+    "experian_source": "iceberg.jteixeira_ipa.nscreen_membership_sample_experian_20260916_line_filter_v1_5pct",
+    "liveramp_source": "iceberg.jteixeira_ipa.nscreen_membership_sample_liveramp_20260916_line_filter_v1_5pct",
+    "throtle_source": "iceberg.jteixeira_ipa.nscreen_membership_sample_throtle_20260916_line_filter_v1_5pct"
+  }
+}
