@@ -13,7 +13,7 @@ Examples:
 - `v6` carries Throtle matchids `T3`, `T4`, and `T5`.
 - `v13` carries LiveRamp matchids `L2` and `L3`.
 
-Collocation-based reconciliation between already-assigned matchid groups is separate. See [`matchid-collocation-reconciliation-plan.md`](matchid-collocation-reconciliation-plan.md).
+Collocation-based reconciliation between already-assigned matchid groups is separate.
 
 ## Hard requirements
 

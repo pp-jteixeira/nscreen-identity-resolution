@@ -745,7 +745,7 @@ The toy case makes this visible. `v9` already carries LiveRamp matchid `L1`; `v2
 
 The expected result is provider-neutral. Strong IP-collocation or first-party evidence, supported by compatible device signals, should be able to reconcile already-assigned matchids from any provider. This includes LiveRamp-to-Throtle, Throtle-to-Throtle, LiveRamp-to-LiveRamp, and other combinations. In the toy case, sufficiently strong evidence should place `v9`, `v24`, `v25`, and `v26` under one canonical matchid; that matchid need not retain a particular vendor's identifier.
 
-The final identity relation should be many-to-one: every published UID maps to exactly one matchid, while one matchid can contain many UIDs. Two designs cover separate gaps: [`provider-source-multi-assignment-plan.md`](../plans/provider-source-multi-assignment-plan.md) selects one vendor claim without dropping UIDs, while [`matchid-collocation-reconciliation-plan.md`](../plans/matchid-collocation-reconciliation-plan.md) reconciles already-assigned groups using relationship evidence.
+The final identity relation should be many-to-one: every published UID maps to exactly one matchid, while one matchid can contain many UIDs. [`provider-source-multi-assignment-plan.md`](../plans/provider-source-multi-assignment-plan.md) selects one vendor claim without dropping UIDs. Reconciliation of already-assigned groups using relationship evidence remains a separate design problem.
 
 ### Run two propagation rounds
 

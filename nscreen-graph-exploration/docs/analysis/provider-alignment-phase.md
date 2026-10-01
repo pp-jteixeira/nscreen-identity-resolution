@@ -412,7 +412,7 @@ Expected behavior is not tied to LiveRamp precedence. Strong IP-collocation or f
 
 The same expectation applies inside one vendor namespace. A UID such as `v6`, claimed by `T3`, `T4`, and `T5`, or `v13`, claimed by `L2` and `L3`, should not reach the published graph with several matchids. Every published UID should map to exactly one canonical matchid, while each canonical matchid may contain many UIDs.
 
-This expected behavior is not implemented. Source-level ambiguity is covered by [`provider-source-multi-assignment-plan.md`](../plans/provider-source-multi-assignment-plan.md). Reconciliation between already-assigned groups using graph evidence is covered by [`matchid-collocation-reconciliation-plan.md`](../plans/matchid-collocation-reconciliation-plan.md).
+This expected behavior is not implemented. Source-level ambiguity is covered by [`provider-source-multi-assignment-plan.md`](../plans/provider-source-multi-assignment-plan.md). Reconciliation between already-assigned groups using graph evidence remains separate.
 
 ### Phase 6 — remainder and Louvain
 

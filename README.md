@@ -4,7 +4,7 @@ Analysis and prototypes to improve NScreen identities using vendor mappings, IP-
 
 **Goal: each UID maps to one matchid; each matchid can contain many UIDs.** Reconciliation covers both different vendors and multiple IDs from the same vendor.
 
-This repository contains research, examples, and a [prepared-source replay pipeline](nscreen-replay/README.md). Production code lives at `~/forge/nscreen-graph/`; the new reconciliation step is still a proposal.
+This repository contains research, examples, and a [prepared-source replay pipeline](nscreen-replay/README.md). Production code lives at `~/forge/nscreen-graph/`.
 
 ## Outline
 
@@ -28,25 +28,12 @@ Two separate changes address these gaps. Source normalization selects one provid
 2. [Provider alignment](nscreen-graph-exploration/docs/analysis/provider-alignment-phase.md) and [toy notebook](nscreen-graph-exploration/provider-alignment-toy.ipynb) — concrete examples and observed results.
 3. [Known defects](nscreen-graph-exploration/docs/analysis/provider-alignment-defects.md) and [reduction options](nscreen-graph-exploration/docs/analysis/matchid-reduction-options.md) — limitations and tradeoffs.
 4. [Provider multi-assignment plan](nscreen-graph-exploration/docs/plans/provider-source-multi-assignment-plan.md) — retain every UID while selecting one vendor claim.
-5. [Collocation reconciliation plan](nscreen-graph-exploration/docs/plans/matchid-collocation-reconciliation-plan.md) — merge supported matchid groups using relationship evidence.
 
 Further references: [first-party evidence](nscreen-graph-exploration/docs/nscreen-1p-collocation-daily-recap.md), [lookback windows](nscreen-graph-exploration/docs/lookback-windows.md), and [Screen7 clustering](nscreen-graph-exploration/docs/udaf-calc-screen7-ids-evaluator.md).
 
 For production-parity experiments, see the [NScreen replay runner](nscreen-replay/README.md). It reuses Forge SQL from prepared vendor, collocation, and geographic inputs, executes relational stages in Trino, and runs the original Java clustering locally. Outputs use `iceberg.jteixeira_ipa.nscreen2_*`; each run records its own validation results.
 
 Documentation is organized under `nscreen-graph-exploration/docs/` into `guides/`, `analysis/`, and `plans/`. Production `src/...` references in these documents resolve against the separate Forge checkout.
-
-## High-level workload
-
-| Phase | Outcome |
-| --- | --- |
-| Baseline | Measure fragmentation, ambiguous UIDs, coverage, and identity quality. |
-| Evidence rules | Define supported merges, conflict handling, and unresolved-case policy. |
-| Prototype | Resolve provider multi-assignment and collocation reconciliation as separate changes. |
-| Validate | Compare against current output, review examples, and measure stability and cost. |
-| Roll out | Integrate with production, preserve lineage, and monitor quality. |
-
-Success means fewer unnecessary identities **without false merges or hidden coverage loss**. Track UID uniqueness, matchid counts, coverage, assignment stability, and runtime separately. These phases describe proposed work, not completed delivery.
 
 ## Set up the shared environment
 
