@@ -38,6 +38,7 @@ hs_err_pid*.log
 /outputs/
 /tmp/
 /nscreen-graph-exploration/outputs/
+*.parquet
 
 # Graphify caches and machine-specific state; keep shared graph/report exports
 graphify-out/cache/
