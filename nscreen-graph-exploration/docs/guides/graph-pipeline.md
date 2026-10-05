@@ -339,7 +339,7 @@ flowchart TD
 
 Task: `NScreenRawHourly`
 
-SQL: [`NScreenRawHourly.sql`](../../src/nscreen_graph/spark/sparksql/NScreenRawHourly.sql)
+SQL: [`NScreenRawHourly.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenRawHourly.sql)
 
 Input:
 
@@ -373,7 +373,7 @@ The limits are part of the intelligence:
 
 Task: `NScreenUaHourly`
 
-SQL: [`NScreenUaHourly.sql`](../../src/nscreen_graph/spark/sparksql/NScreenUaHourly.sql)
+SQL: [`NScreenUaHourly.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenUaHourly.sql)
 
 Input:
 
@@ -401,7 +401,7 @@ Quick UDF examples:
 
 Task: `NScreenIpColocationHourlyUa`
 
-SQL: [`NScreenIpColocationHourlyUa.sql`](../../src/nscreen_graph/spark/sparksql/NScreenIpColocationHourlyUa.sql)
+SQL: [`NScreenIpColocationHourlyUa.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenIpColocationHourlyUa.sql)
 
 Inputs:
 
@@ -434,7 +434,7 @@ The hourly table stores these flags as strings. The daily SQL casts them to Bool
 
 Task: `NScreenGeoHourly`
 
-SQL: [`NScreenGeoHourly.sql`](../../src/nscreen_graph/spark/sparksql/NScreenGeoHourly.sql)
+SQL: [`NScreenGeoHourly.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenGeoHourly.sql)
 
 Input:
 
@@ -450,7 +450,7 @@ This query keeps distinct UID, country, and postal-code observations. Rows with 
 
 Task: `NScreenFirstPartyCollocationHourly`
 
-SQL: [`NScreenFirstPartyCollocationHourly.sql`](../../src/nscreen_graph/spark/sparksql/NScreenFirstPartyCollocationHourly.sql)
+SQL: [`NScreenFirstPartyCollocationHourly.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenFirstPartyCollocationHourly.sql)
 
 Input:
 
@@ -491,7 +491,7 @@ flowchart TD
 
 Task: `NScreenIpColocationDailyUa`
 
-SQL: [`NScreenIpColocationDailyUa.sql`](../../src/nscreen_graph/spark/sparksql/NScreenIpColocationDailyUa.sql)
+SQL: [`NScreenIpColocationDailyUa.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenIpColocationDailyUa.sql)
 
 The query groups all hourly observations for each UID pair and:
 
@@ -505,7 +505,7 @@ This is intentionally asymmetric. One convincing same-device observation is usef
 
 Task: `NScreenIpColocationDailyAllUa`
 
-SQL: [`NScreenIpColocationDailyAllUa.sql`](../../src/nscreen_graph/spark/sparksql/NScreenIpColocationDailyAllUa.sql)
+SQL: [`NScreenIpColocationDailyAllUa.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenIpColocationDailyAllUa.sql)
 
 The query reads from `day - 14` through `day`, inclusive. This means it reads 15 calendar dates, despite the `_LOOKBACK_DAYS = 14` constant.
 
@@ -521,7 +521,7 @@ The three-date rule removes one-off coincidences. Repeated collocation is treate
 
 Task: `NScreenFirstPartyCollocationDaily`
 
-SQL: [`NScreenFirstPartyCollocationDaily.sql`](../../src/nscreen_graph/spark/sparksql/NScreenFirstPartyCollocationDaily.sql)
+SQL: [`NScreenFirstPartyCollocationDaily.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenFirstPartyCollocationDaily.sql)
 
 This query reads from `day - 30` through `day`, inclusive, so it covers 31 calendar dates. It counts how often each first-party pair appeared and uses that count as the edge weight.
 
@@ -531,7 +531,7 @@ The longer window gives trusted first-party links more historical support.
 
 Task: `NScreenIpCollocationDailyClean`
 
-SQL: [`NScreenIpCollocationDailyClean.sql`](../../src/nscreen_graph/spark/sparksql/NScreenIpCollocationDailyClean.sql)
+SQL: [`NScreenIpCollocationDailyClean.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenIpCollocationDailyClean.sql)
 
 This query combines historical IP edges and historical first-party edges.
 
@@ -555,7 +555,7 @@ The output is `nscreen_ipcollocation_daily_clean`, the main relationship graph u
 
 Task: `NScreenGeoDaily`
 
-SQL: [`NScreenGeoDaily.sql`](../../src/nscreen_graph/spark/sparksql/NScreenGeoDaily.sql)
+SQL: [`NScreenGeoDaily.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenGeoDaily.sql)
 
 This query uses the same 14-day offset, meaning 15 inclusive dates.
 
@@ -602,8 +602,8 @@ Tasks:
 
 SQL:
 
-- [`NScreenThrotleRaw.sql`](../../src/nscreen_graph/spark/sparksql/NScreenThrotleRaw.sql)
-- [`NScreenThrotleSource.sql`](../../src/nscreen_graph/spark/sparksql/NScreenThrotleSource.sql)
+- [`NScreenThrotleRaw.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenThrotleRaw.sql)
+- [`NScreenThrotleSource.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenThrotleSource.sql)
 
 `NScreenThrotleRaw` reads the latest available rows from:
 
@@ -623,7 +623,7 @@ The spelling `throtle` looks unusual, but it is part of existing task and table 
 
 Task: `NScreenLiverampSource`
 
-SQL: [`NScreenLiverampSource.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLiverampSource.sql)
+SQL: [`NScreenLiverampSource.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLiverampSource.sql)
 
 Input:
 
@@ -637,7 +637,7 @@ Ramp IDs beginning with `XY` receive `stable = true`. In this logic, stable iden
 
 Task: `NScreenExperianSource`
 
-SQL: [`NScreenExperianSource.sql`](../../src/nscreen_graph/spark/sparksql/NScreenExperianSource.sql)
+SQL: [`NScreenExperianSource.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenExperianSource.sql)
 
 Input:
 
@@ -680,7 +680,7 @@ flowchart TD
 
 Task: `NScreenLiverampThrotleOnlyStage`
 
-SQL: [`NScreenLiverampThrotleOnlyStage.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleOnlyStage.sql)
+SQL: [`NScreenLiverampThrotleOnlyStage.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleOnlyStage.sql)
 
 The query:
 
@@ -704,7 +704,7 @@ Accepted rows use reason codes:
 
 Task: `NScreenLiverampThrotleExInitialStage`
 
-SQL: [`NScreenLiverampThrotleExInitialStage.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExInitialStage.sql)
+SQL: [`NScreenLiverampThrotleExInitialStage.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExInitialStage.sql)
 
 This query repeats the same mutual-best mapping rule between Experian and the combined LiveRamp/Throtle identities.
 
@@ -733,7 +733,7 @@ flowchart TD
 
 Task: `NScreenLiverampThrotleExConnectedNsStage`
 
-SQL: [`NScreenLiverampThrotleExConnectedNsStage.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExConnectedNsStage.sql)
+SQL: [`NScreenLiverampThrotleExConnectedNsStage.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExConnectedNsStage.sql)
 
 This query keeps only initial UIDs that occur somewhere in the clean NScreen graph. These connected known UIDs become starting points for propagation.
 
@@ -751,7 +751,7 @@ The final identity relation should be many-to-one: every published UID maps to e
 
 Task: `NScreenLiverampThrotleExNStage`
 
-SQL: [`NScreenLiverampThrotleExNStage.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExNStage.sql)
+SQL: [`NScreenLiverampThrotleExNStage.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLiverampThrotleExNStage.sql)
 
 The task runs twice, producing `stage1` and `stage2`.
 
@@ -792,7 +792,7 @@ flowchart TD
 
 Task: `NScreenIpCollocationDailyExRemainder`
 
-SQL: [`NScreenIpCollocationDailyExRemainder.sql`](../../src/nscreen_graph/spark/sparksql/NScreenIpCollocationDailyExRemainder.sql)
+SQL: [`NScreenIpCollocationDailyExRemainder.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenIpCollocationDailyExRemainder.sql)
 
 The query:
 
@@ -806,7 +806,7 @@ This geographic restriction avoids clustering unrelated nodes across distant are
 
 Task: `NScreenExRemainderLouvainStage`
 
-SQL: [`NScreenExRemainderLouvainStage.sql`](../../src/nscreen_graph/spark/sparksql/NScreenExRemainderLouvainStage.sql)
+SQL: [`NScreenExRemainderLouvainStage.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenExRemainderLouvainStage.sql)
 
 For each `geo`, the query sends all remaining edges into `hudf_calc_screen7_ids_udaf`.
 
@@ -840,7 +840,7 @@ These assignments receive:
 
 Task: `NScreenLrThrotleExReasonResult`
 
-SQL: [`NScreenLrThrotleExReasonResult.sql`](../../src/nscreen_graph/spark/sparksql/NScreenLrThrotleExReasonResult.sql)
+SQL: [`NScreenLrThrotleExReasonResult.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenLrThrotleExReasonResult.sql)
 
 Destination:
 
@@ -959,7 +959,7 @@ The identity intelligence can be summarized as these rules:
 
 For a first code walkthrough:
 
-1. Read [`NScreenRawHourly.sql`](../../src/nscreen_graph/spark/sparksql/NScreenRawHourly.sql).
+1. Read [`NScreenRawHourly.sql`](https://github.com/pulsepointinc/forge/tree/b38ea8548ddbc957a674591372f1a0d1fd7e631f/nscreen-graph/src/nscreen_graph/spark/sparksql/NScreenRawHourly.sql).
 2. Follow the remaining hourly SQL files.
 3. Read daily edge aggregation and cleaning SQL.
 4. Read the three provider-source SQL files.
