@@ -65,3 +65,8 @@ graphify-out/reflections/
 *.swo
 *~
 *.log
+
+
+
+forge/*
+aggr3/*
