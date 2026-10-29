@@ -1,16 +1,15 @@
 -- Read-only statistics for 10_has_conflict_linkage.
--- Denominators remain within each source; no email-NPI deduplication.
--- Exact executed SQL exported from local email_linkage_measurements.json; result rows are excluded. Original source relations are retained.
-
+-- Denominators remain within each source. no email-NPI deduplication.
+-- Current published-table statistics. Historical metric-page counts describe dated populations and may differ.
 -- Reassignment and conflict outcomes
--- Conflict varies by record's observed days; reassignment describes vendor/email history.
+-- Conflict varies by record's observed days. reassignment describes vendor/email history.
 WITH emails AS (
     SELECT source, email, count(*) AS metric_rows,
            bool_or(has_been_reassigned) AS reassigned,
            count(DISTINCT coalesce(cast(has_been_reassigned AS varchar), 'unknown')) AS reassignment_outcomes,
            count_if(has_conflict_linkage) AS conflict_rows,
            count_if(has_conflict_linkage IS NULL) AS conflict_unknown_rows
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii__evidence)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
     GROUP BY source, email
 )
 SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,
@@ -32,4 +31,4 @@ SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,
        100e0 * count_if(conflict_rows = 0 AND conflict_unknown_rows > 0) / count(*) AS conflict_unknown_email_pct,
        count_if(reassigned AND conflict_rows > 0) AS both_flags_emails,
        count_if(reassignment_outcomes > 1) AS mismatched_emails
-FROM emails GROUP BY source ORDER BY source;
+FROM emails GROUP BY source ORDER BY source

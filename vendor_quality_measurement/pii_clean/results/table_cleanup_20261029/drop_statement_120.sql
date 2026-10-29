@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_pii_source__quantummedica_bak20261020

@@ -10,7 +10,6 @@ FROM {{ source('bq_bi__analytics_prod', 'npi_facility_association') }}
 WHERE nullif(trim(provider_npi), '') IS NOT NULL
 GROUP BY trim(provider_npi)
 {%- endmacro %}
-
 {% macro facility_enriched_records(input_relation) -%}
 WITH facility_reference AS ({{ facility_npi_lookup() }})
 SELECT m.*, coalesce(f.facility_npi_values, CAST(ARRAY[] AS array(varchar))) AS facility_npi_values,
@@ -18,7 +17,6 @@ SELECT m.*, coalesce(f.facility_npi_values, CAST(ARRAY[] AS array(varchar))) AS 
        CAST('all_ranked_facility_npis_v1' AS varchar) AS facility_definition_version
 FROM {{ input_relation }} m LEFT JOIN facility_reference f ON m.npi = f.npi
 {%- endmacro %}
-
 {% macro facility_conflict_contexts() -%}
 array_sort(array_distinct(filter(array_agg(
         CASE WHEN has_conflict_linkage THEN
@@ -26,7 +24,6 @@ array_sort(array_distinct(filter(array_agg(
                  AS ROW(npi varchar, days array(date), facilities array(varchar))) END
         ) OVER (PARTITION BY source, email), x -> x IS NOT NULL)))
 {%- endmacro %}
-
 {% macro facility_peer_comparisons() -%}
 transform(filter(facility_conflict_records, peer ->
                has_conflict_linkage AND peer.npi <> npi
@@ -38,8 +35,7 @@ transform(filter(facility_conflict_records, peer ->
                    AS ROW(npi varchar, conflict_days array(date), facility_npis array(varchar),
                           shared_facility_npis array(varchar), shares_facility boolean)))
 {%- endmacro %}
-
-{# Read-only enrichment of saved metrics; existing name-history results stay unchanged. #}
+{# Read-only enrichment of saved metrics. existing name-history results stay unchanged. #}
 {% macro facility_consistency_metrics(input_relation) -%}
 WITH facility_records AS ({{ facility_enriched_records(input_relation) }}),
 facility_contexts AS (

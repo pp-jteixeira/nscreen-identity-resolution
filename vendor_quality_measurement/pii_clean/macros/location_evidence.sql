@@ -3,7 +3,6 @@
 {% if var('location_evidence_day', '') %}DATE '{{ var('location_evidence_day') }}'
 {% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %}
 {%- endmacro %}
-
 {% macro facility_state_lookup() -%}
 WITH normalized AS (
     SELECT trim(cast(npi_facility_provider_npi AS varchar)) AS npi,
@@ -29,7 +28,6 @@ SELECT npi, facility_rank1_rows, facility_rank1_state_count,
             ELSE 'usable' END AS facility_reference_status
 FROM grouped
 {%- endmacro %}
-
 {% macro vendor_facility_comparison() -%}
 CASE WHEN facility_reference_status <> 'usable' THEN 'unknown_facility'
      WHEN cardinality(source_state_values) = 0 THEN 'unknown_vendor_state'
@@ -37,7 +35,6 @@ CASE WHEN facility_reference_status <> 'usable' THEN 'unknown_facility'
           THEN CASE WHEN cardinality(source_state_values) = 1 THEN 'corroborated' ELSE 'mixed_vendor_states' END
      ELSE 'not_corroborated' END
 {%- endmacro %}
-
 {% macro vendor_facility_records(input_relation) -%}
 WITH facility_reference AS ({{ facility_state_lookup() }}), enriched AS (
     SELECT m.*, r.facility_primary_state,

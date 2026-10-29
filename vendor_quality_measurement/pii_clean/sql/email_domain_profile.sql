@@ -1,4 +1,4 @@
--- Exact, mutually exclusive classes; denominators are source metric_rows and source emails.
+-- Exact, mutually exclusive classes. denominators are source metric_rows and source emails.
 WITH evaluated AS (
 /* EVALUATED_SQL */
 ), counts AS (

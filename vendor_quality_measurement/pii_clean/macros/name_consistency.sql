@@ -2,16 +2,13 @@
 {% macro source_name_array_type() -%}
 array(row(first_name varchar, last_name varchar, first_variants array(varchar)))
 {%- endmacro %}
-
 {% macro consistency_base_columns(alias='') -%}
 {% for field in ['source', 'email', 'npi', 'first_seen_day', 'last_seen_day', 'observed_day_count', 'observation_count', 'undated_observation_count', 'invalid_day_observation_count', 'source_tables', 'source_feeds', 'computed_at', 'definition_version', 'email_format_valid', 'email_role_account', 'email_domain_class', 'email_matches_source_name', 'email_matches_registry_name', 'vendor_name_matches_registry_name', 'source_name_usable', 'registry_name_usable', 'registry_npi_present', 'record_id', 'metric_row_id', 'email_ordinal', 'email_origin', 'record_payload', 'email_npi_count', 'email_has_multiple_npis', 'has_been_reassigned', 'has_conflict_linkage', 'observed_days', 'conflict_days', 'source_name_values', 'source_state_values'] %}{{ alias ~ '.' if alias else '' }}{{ field }}{% if not loop.last %}, {% endif %}{% endfor %}
 {%- endmacro %}
-
 {% macro names_disagree(a, b) -%}
 ({{ last_kind(a ~ '.last_name', b ~ '.last_name') }} = 'none'
  OR {{ first_kind(a ~ '.first_variants', a ~ '.first_name', b ~ '.first_variants', b ~ '.first_name') }} = 'none')
 {%- endmacro %}
-
 {% macro name_consistency_metrics(input_relation, facility=false, specialty=false) -%}
 WITH name_sets AS (
     SELECT {{ consistency_base_columns() }},
@@ -21,7 +18,7 @@ WITH name_sets AS (
            {{ specialty_conflict_contexts() }} AS specialty_conflict_records,{% endif %}
            array_distinct(flatten(array_agg(source_name_values) OVER (PARTITION BY source, email))) AS email_names,
            array_distinct(flatten(array_agg(source_name_values) OVER (PARTITION BY source, email, npi))) AS pair_names,
-           -- Collect only conflicting records; keep their dates and names paired.
+           -- Collect only conflicting records. keep their dates and names paired.
            array_sort(array_distinct(filter(
                array_agg(CASE WHEN has_conflict_linkage THEN
                    CAST(ROW(npi, conflict_days, source_name_values) AS

@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii__debug_quantummedica__name_matching_20261028_records

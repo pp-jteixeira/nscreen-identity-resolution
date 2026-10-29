@@ -3,7 +3,6 @@ WITH npi_versions AS (
 -- Exact raw source content, excluding only delivery day.
 {{ record_versions('stg_haymarket__npi') }}
 ),
-
 email_candidates AS (
 SELECT CAST('haymarket' AS varchar) AS source, v.email_clean AS email, v.npi_clean AS npi,
        v.record_id, v.record_payload, CAST(1 AS bigint) AS email_ordinal,
@@ -16,12 +15,10 @@ SELECT CAST('haymarket' AS varchar) AS source, v.email_clean AS email, v.npi_cle
 FROM npi_versions v
 WHERE v.email_clean IS NOT NULL AND v.email_clean <> '' AND v.npi_clean IS NOT NULL AND v.npi_clean <> ''
 ),
-
 metric_records AS (
 SELECT *, to_hex(sha256(to_utf8(record_id || chr(0) || cast(email_ordinal AS varchar)))) AS metric_row_id
 FROM email_candidates
 ),
-
 email_npi_counts AS (
 -- Count reported NPIs within this vendor, across all retained records.
 SELECT source, email, count(DISTINCT npi) AS email_npi_count,
@@ -29,7 +26,6 @@ SELECT source, email, count(DISTINCT npi) AS email_npi_count,
 FROM metric_records
 GROUP BY source, email
 ),
-
 email_day_counts AS (
 -- Actual source days only: never expand first/last date ranges.
 SELECT m.source, m.email, d.observed_day, count(DISTINCT m.npi) AS daily_npi_count,
@@ -38,7 +34,6 @@ FROM metric_records m
 CROSS JOIN UNNEST(m.observed_days) AS d(observed_day)
 GROUP BY m.source, m.email, d.observed_day
 ),
-
 email_conflicts AS (
 SELECT source, email,
        coalesce(array_sort(array_agg(observed_day) FILTER (WHERE daily_npi_count > 1)), CAST(ARRAY[] AS array(date))) AS conflict_days,
@@ -46,7 +41,6 @@ SELECT source, email,
 FROM email_day_counts
 GROUP BY source, email
 ),
-
 email_linkage AS (
 SELECT e.source, e.email, e.email_npi_count,
        coalesce(c.conflict_days, CAST(ARRAY[] AS array(date))) AS conflict_days,
@@ -57,19 +51,16 @@ SELECT e.source, e.email, e.email_npi_count,
 FROM email_npi_counts e
 LEFT JOIN email_conflicts c ON e.source = c.source AND e.email = c.email
 ),
-
 name_inputs AS (
 -- Preserve each source record and email position before name comparisons.
 SELECT metric_row_id, email, npi, first_name, last_name
 FROM metric_records
 ),
-
 name_metrics AS (
 {{ link_name_metrics(none, record_grain=true, input_relation='name_inputs', include_source_names=true) }}
 ),
-
 metric_base AS (
--- One output per exact source record and email position; link deduplication is deferred.
+-- One output per exact source record and email position. link deduplication is deferred.
 SELECT m.source, m.email, m.npi,
        m.first_seen_day, m.last_seen_day, m.observed_day_count,
        m.observation_count, m.undated_observation_count, m.invalid_day_observation_count,

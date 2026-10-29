@@ -1,4 +1,4 @@
--- Independently recompute distinct NPIs; never pool sources or expose failing emails.
+-- Independently recompute distinct NPIs. never pool sources or expose failing emails.
 WITH emails AS (
     SELECT source, email, count(DISTINCT npi) AS expected_count,
            min(email_npi_count) AS minimum_count, max(email_npi_count) AS maximum_count,

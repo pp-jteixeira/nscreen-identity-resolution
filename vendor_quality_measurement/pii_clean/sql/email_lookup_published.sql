@@ -8,8 +8,8 @@ SELECT
     t.email,
     t.source,
     t.npi,
-    array_join(transform(t.source_name_values, n -> trim(concat_ws(' ', n.first_name, n.last_name))), '; ') AS name,
-    array_join(t.source_state_values, '; ') AS state,
+    array_join(transform(t.source_name_values, n -> trim(concat_ws(' ', n.first_name, n.last_name))), concat(chr(59), ' ')) AS name,
+    array_join(t.source_state_values, concat(chr(59), ' ')) AS state,
     t.first_seen_day,
     t.last_seen_day,
     -- ----------------------------------
@@ -57,4 +57,4 @@ SELECT
 FROM iceberg.jteixeira_ipa.pii_clean t
 CROSS JOIN params p
 WHERE lower(trim(t.email)) = p.input_email
-ORDER BY t.source, t.npi, t.last_seen_day DESC NULLS LAST, t.metric_row_id;
+ORDER BY t.source, t.npi, t.last_seen_day DESC NULLS LAST, t.metric_row_id

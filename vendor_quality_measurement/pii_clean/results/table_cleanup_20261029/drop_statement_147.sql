@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_stg_medscape__meta

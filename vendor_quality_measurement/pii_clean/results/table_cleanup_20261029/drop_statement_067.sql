@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_email_cookie_state_support

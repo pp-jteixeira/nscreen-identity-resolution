@@ -1,4 +1,4 @@
--- Exact email, email-NPI-link and metric-row denominators; no cross-vendor pooling.
+-- Exact email, email-NPI-link and metric-row denominators. no cross-vendor pooling.
 WITH pairs AS (
     SELECT source, email, npi, count(*) AS metric_rows,
            min(email_name_count) AS minimum_name_count, max(email_name_count) AS name_count,

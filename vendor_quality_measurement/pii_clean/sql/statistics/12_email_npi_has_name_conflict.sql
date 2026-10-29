@@ -1,15 +1,14 @@
 -- Read-only statistics for 12_email_npi_has_name_conflict.
--- Denominators remain within each source; no email-NPI deduplication.
--- Exact executed SQL exported from local name_consistency_measurements.json; result rows are excluded. Original source relations are retained.
-
+-- Denominators remain within each source. no email-NPI deduplication.
+-- Current published-table statistics. Historical metric-page counts describe dated populations and may differ.
 -- Name counts and same-link name conflicts
--- Exact email, email-NPI-link and metric-row denominators; no cross-vendor pooling.
+-- Exact email, email-NPI-link and metric-row denominators. no cross-vendor pooling.
 WITH pairs AS (
     SELECT source, email, npi, count(*) AS metric_rows,
            min(email_name_count) AS minimum_name_count, max(email_name_count) AS name_count,
            bool_or(email_npi_has_name_conflict) AS conflict,
            count(DISTINCT coalesce(cast(email_npi_has_name_conflict AS varchar), 'unknown')) AS conflict_outcomes
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii__evidence)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
     GROUP BY source, email, npi
 ), emails AS (
     SELECT source, email, max(name_count) AS name_count, sum(metric_rows) AS metric_rows,
@@ -44,4 +43,4 @@ SELECT source, count(*) AS distinct_emails, sum(links) AS distinct_links,
        sum(unknown_metric_rows) AS unknown_metric_rows,
        100e0 * sum(unknown_metric_rows) / sum(metric_rows) AS unknown_metric_row_pct,
        count_if(inconsistent) AS mismatched_emails
-FROM emails GROUP BY source ORDER BY source;
+FROM emails GROUP BY source ORDER BY source

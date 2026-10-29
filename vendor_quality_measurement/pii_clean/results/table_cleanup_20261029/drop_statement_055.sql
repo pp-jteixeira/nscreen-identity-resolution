@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_email_attribution_summary_v1

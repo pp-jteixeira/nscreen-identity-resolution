@@ -1,28 +1,22 @@
-{# Name normalization and fuzzy comparisons; no weights or scores. #}
+{# Name normalization and fuzzy comparisons. no weights or scores. #}
 {% macro nt(expr) -%}
     case when lower(trim({{ expr }})) in ('', 'null', 'nan', chr(92) || 'n') then null else {{ expr }} end
 {%- endmacro %}
-
 {% macro squash_ws(expr) -%}
     trim(regexp_replace(translate({{ expr }}, chr(9) || chr(10) || chr(13) || chr(160), '    '), ' +', ' '))
 {%- endmacro %}
-
 {% macro strip_accents(expr) -%}
     translate({{ expr }}, 'ÁÀÂÄÃÅĀÇĆČÉÈÊËĒĖĘÍÌÎÏĪÑŃÓÒÔÖÕØŌŚŠÚÙÛÜŪÝŸŽŹŻ', 'AAAAAAACCCEEEEEEEIIIIINNOOOOOOOSSUUUUUYYZZZ')
 {%- endmacro %}
-
 {% macro norm_name(expr) -%}
     nullif({{ squash_ws("regexp_replace(" ~ strip_accents("upper(" ~ squash_ws(nt(expr)) ~ ")") ~ ", '[^A-Z' || chr(39) || ' -]', '')") }}, '')
 {%- endmacro %}
-
 {% macro pos(haystack, needle) -%}
     {%- if var('dialect', 'trino') == 'trino' -%}strpos({{ haystack }}, {{ needle }}){%- else -%}instr({{ haystack }}, {{ needle }}){%- endif -%}
 {%- endmacro %}
-
 {% macro starts(a, b) -%}
     {%- if var('dialect', 'trino') == 'trino' -%}starts_with({{ a }}, {{ b }}){%- else -%}startswith({{ a }}, {{ b }}){%- endif -%}
 {%- endmacro %}
-
 {% macro name_email_match(local, f, l) -%}
     case
         when coalesce({{ f }}, '') = '' or length(coalesce({{ l }}, '')) < 2 then null
@@ -35,33 +29,27 @@
         else false
     end
 {%- endmacro %}
-
 {% macro lev(a, b) -%}
     {%- if var('dialect', 'trino') == 'trino' -%}levenshtein_distance({{ a }}, {{ b }}){%- else -%}levenshtein({{ a }}, {{ b }}){%- endif -%}
 {%- endmacro %}
-
 {% macro any_in(arr, lambda_var, cond) -%}
     {%- if var('dialect', 'trino') == 'trino' -%}any_match({{ arr }}, {{ lambda_var }} -> {{ cond }}){%- else -%}exists({{ arr }}, {{ lambda_var }} -> {{ cond }}){%- endif -%}
 {%- endmacro %}
-
 {% macro letters(expr) -%}
     regexp_replace({{ expr }}, '[^A-Z]', '')
 {%- endmacro %}
-
 {% macro edit_close(a, b) -%}
     (
         (least(length({{ a }}), length({{ b }})) >= 5 and {{ lev(a, b) }} <= 1)
         or (least(length({{ a }}), length({{ b }})) >= 8 and {{ lev(a, b) }} <= 2)
     )
 {%- endmacro %}
-
 {% macro prefix_close(a, b) -%}
     (
         least(length({{ a }}), length({{ b }})) >= 3
         and (substr({{ a }}, 1, length({{ b }})) = {{ b }} or substr({{ b }}, 1, length({{ a }})) = {{ a }})
     )
 {%- endmacro %}
-
 {% macro last_similar(la, lb) -%}
     (
         {{ letters(la) }} = {{ letters(lb) }}
@@ -69,7 +57,6 @@
         or {{ edit_close(letters(la), letters(lb)) }}
     )
 {%- endmacro %}
-
 {% macro first_similar(fa_set, fa, fb_set, fb) -%}
     (
         arrays_overlap({{ fa_set }}, {{ fb_set }})
@@ -77,7 +64,6 @@
         or {{ edit_close(letters("split_part(" ~ fa ~ ", ' ', 1)"), letters("split_part(" ~ fb ~ ", ' ', 1)")) }}
     )
 {%- endmacro %}
-
 {% macro last_kind(la, lb) -%}
     case
         when {{ letters(la) }} = {{ letters(lb) }} then 'exact'
@@ -86,7 +72,6 @@
         else 'none'
     end
 {%- endmacro %}
-
 {% macro first_kind(fa_set, fa, fb_set, fb) -%}
     case
         when {{ fa }} = {{ fb }} then 'exact'
@@ -98,7 +83,6 @@
         else 'none'
     end
 {%- endmacro %}
-
 {% macro name_match_class(fa_set, fa, la, fb_set, fb, lb) -%}
     case
         when {{ fa }} is null or {{ la }} is null or {{ fb }} is null or {{ lb }} is null then null
@@ -113,7 +97,6 @@
             end
     end
 {%- endmacro %}
-
 {% macro name_email_match_fuzzy(local, f_set, l) -%}
     case
         when cardinality({{ f_set }}) = 0 or length({{ letters("coalesce(" ~ l ~ ", '')") }}) < 2
@@ -127,11 +110,9 @@
         else false
     end
 {%- endmacro %}
-
 {% macro usable_name(first, last) -%}
 coalesce(length({{ letters(first) }}) >= 1 AND length({{ letters(last) }}) >= 2, false)
 {%- endmacro %}
-
 {% macro link_name_metrics(input_model, detail=false, record_grain=false, input_relation=none, include_source_names=false) -%}
 WITH expanded AS (
     SELECT s.*,
@@ -197,7 +178,6 @@ FROM evaluated
 GROUP BY {% if record_grain %}metric_row_id, {% endif %}email, npi
 {% endif %}
 {%- endmacro %}
-
 {% macro debug_name_rows(metric_relation, comparison_relation) -%}
 SELECT m.*,
        c.source_first_name, c.source_last_name,

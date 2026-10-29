@@ -1,4 +1,4 @@
--- Status has one reference outcome per NPI; link groups are mutually exclusive.
+-- Status has one reference outcome per NPI. link groups are mutually exclusive.
 WITH measured AS (/* EVALUATED_SQL */)
 SELECT source, npi_registry_status, npi_registry_status_reason,
        count(*) AS metric_rows, count(DISTINCT metric_row_id) AS unique_metric_rows,

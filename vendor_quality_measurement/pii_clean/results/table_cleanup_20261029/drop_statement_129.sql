@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_pii_clean_v2_bak20261026_pre_location

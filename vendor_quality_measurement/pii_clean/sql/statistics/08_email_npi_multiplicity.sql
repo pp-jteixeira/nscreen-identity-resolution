@@ -1,7 +1,6 @@
 -- Read-only statistics for 08_email_npi_multiplicity.
--- Denominators remain within each source; no email-NPI deduplication.
--- Exact executed SQL exported from local email_linkage_measurements.json; result rows are excluded. Original source relations are retained.
-
+-- Denominators remain within each source. no email-NPI deduplication.
+-- Current published-table statistics. Historical metric-page counts describe dated populations and may differ.
 -- Email multiplicity and exact vendor denominators
 -- One summary per vendor. Email and metric-row denominators are separate.
 WITH emails AS (
@@ -10,7 +9,7 @@ WITH emails AS (
            count_if(undated_observation_count > 0) AS undated_metric_rows,
            min(email_npi_count) AS minimum_stored_count, max(email_npi_count) AS maximum_stored_count,
            count_if(email_npi_count IS NULL OR email_has_multiple_npis IS DISTINCT FROM (email_npi_count > 1)) AS invalid_rows
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii__evidence)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
     GROUP BY source, email
 )
 SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,
@@ -29,4 +28,4 @@ SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,
        count_if(invalid_rows > 0 OR minimum_stored_count <> npi_count OR maximum_stored_count <> npi_count) AS mismatched_emails
 FROM emails
 GROUP BY source
-ORDER BY source;
+ORDER BY source

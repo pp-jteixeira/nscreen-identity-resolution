@@ -1,7 +1,6 @@
 -- Read-only statistics for 06_email_matches_registry_name.
--- Denominators remain within each source; no email-NPI deduplication.
+-- Denominators remain within each source. no email-NPI deduplication.
 -- Equivalent direct aggregation of the saved October 29 row-population statistics, not a new warehouse execution.
-
 SELECT source,
        count(*) AS metric_rows,
        count_if(email_matches_registry_name) AS match_rows,
@@ -11,4 +10,4 @@ SELECT source,
        count_if(email_matches_registry_name IS NULL) AS unknown_rows,
        100e0 * count_if(email_matches_registry_name IS NULL) / count(*) AS unknown_row_pct
 FROM iceberg.jteixeira_ipa.pii_clean
-GROUP BY source ORDER BY source;
+GROUP BY source ORDER BY source

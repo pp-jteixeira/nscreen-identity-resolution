@@ -1,4 +1,4 @@
-{# Recognized US states, DC and five territories; no fuzzy geography matching. #}
+{# Recognized US states, DC and five territories. no fuzzy geography matching. #}
 {% macro normalized_state(value) -%}
 CASE upper(regexp_replace(trim(cast({{ value }} AS varchar)), '\s+', ' '))
     WHEN 'AL' THEN 'AL' WHEN 'ALABAMA' THEN 'AL'
@@ -60,7 +60,6 @@ CASE upper(regexp_replace(trim(cast({{ value }} AS varchar)), '\s+', ' '))
     WHEN 'U.S. VIRGIN ISLANDS' THEN 'VI' WHEN 'VIRGIN ISLANDS' THEN 'VI'
 END
 {%- endmacro %}
-
 {% macro state_values_from_payload(vendor, payload) -%}
 {%- set field = 'address_state' if vendor == 'endato' else ('region' if vendor == 'rocketreach' else 'state') -%}
 {%- set raw = "json_extract_scalar(" ~ payload ~ ", '$." ~ field ~ "')" -%}

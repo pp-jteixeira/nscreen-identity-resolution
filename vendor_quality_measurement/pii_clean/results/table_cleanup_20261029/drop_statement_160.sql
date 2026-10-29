@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_vendor_email_metrics_v1

@@ -1,4 +1,4 @@
--- Post-publication summary inspection; these are counts/states, not raw UID mappings.
+-- Post-publication summary inspection. these are counts/states, not raw UID mappings.
 SELECT source, metric_row_id, npi, cookie_location_status, cookie_count,
        cookie_mapped_uid_days, cookie_observed_uid_days, cookie_located_uid_days,
        cookie_eligible_uid_days, cookie_state_values, cookie_uid_types,

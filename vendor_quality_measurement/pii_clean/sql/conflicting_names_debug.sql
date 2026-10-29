@@ -1,4 +1,4 @@
--- Full manual-check rows from the published table; no sample or email-NPI deduplication.
+-- Full manual-check rows from the published table. no sample or email-NPI deduplication.
 -- Names remain paired with the conflicting peer's actual overlapping days.
 SELECT source, metric_row_id, email, npi, source_name_values,
        observed_days, conflict_days, conflicting_npis_share_name,

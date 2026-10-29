@@ -1,0 +1,1 @@
+DROP VIEW iceberg.jteixeira_ipa.pii__int_rocketreach__name_inputs

@@ -1,5 +1,5 @@
 -- All readable registry names, deduplicated by NPI and normalized name pair.
--- No latest/as-of selection; historical vendor links use this current reference.
+-- No latest/as-of selection. historical vendor links use this current reference.
 WITH names AS (
     SELECT DISTINCT npi_clean AS npi,
            {{ norm_name('cast(first_name AS varchar)') }} AS first_name,

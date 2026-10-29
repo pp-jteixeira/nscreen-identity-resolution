@@ -1,4 +1,4 @@
--- Row-preserving staging: raw columns plus cleaned helpers; no filters or unnesting.
+-- Row-preserving staging: raw columns plus cleaned helpers. no filters or unnesting.
 SELECT s.*,
        {{ clean_text('s.npi') }} AS npi_clean,
        CAST(NULL AS date) AS vendor_day,

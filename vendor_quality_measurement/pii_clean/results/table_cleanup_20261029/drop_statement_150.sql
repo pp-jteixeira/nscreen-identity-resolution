@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_stg_medscape__optout_bak20261027_pre_d20261026_g7

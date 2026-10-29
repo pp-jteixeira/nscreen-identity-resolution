@@ -2,7 +2,6 @@
 {% macro cookie_window_start() -%}cast(date_add('day', -7, {{ location_evaluation_day() }}) AS date){%- endmacro %}
 {% macro cookie_window_end() -%}cast(date_add('day', -1, {{ location_evaluation_day() }}) AS date){%- endmacro %}
 {% macro cookie_hash(email) -%}lower(to_hex(sha256(to_utf8(lower(trim({{ email }})))))){%- endmacro %}
-
 {% macro cookie_available_days(relation) -%}
 {% if var('location_metadata_from_rows', false) %}
 SELECT DISTINCT try_cast(day AS date) AS day FROM {{ relation }}
@@ -13,7 +12,6 @@ SELECT DISTINCT try_cast(partition.day AS date) AS day FROM {{ parts[0] }}.{{ pa
 WHERE record_count > 0 AND partition.day BETWEEN cast({{ cookie_window_start() }} AS varchar) AND cast({{ cookie_window_end() }} AS varchar)
 {% endif %}
 {%- endmacro %}
-
 {% macro cookie_source_coverage() -%}
 WITH mapping_days AS ({{ cookie_available_days(source('iceberg__thirdparty', 'liveintent_idsync')) }}),
 geo_days AS ({{ cookie_available_days(source('iceberg__crossscreen', 'nscreen_geo_daily_ua')) }}),
@@ -30,7 +28,6 @@ SELECT cast(7 AS bigint) AS cookie_location_window_days,
        CASE WHEN cardinality(md) = 7 AND cardinality(gd) = 7 THEN 'all_source_days_present' ELSE 'missing_source_days' END AS cookie_location_window_status
 FROM available
 {%- endmacro %}
-
 {% macro cookie_location_email_evidence(input_relation) -%}
 WITH population AS (
     SELECT DISTINCT {{ cookie_hash('email') }} AS email_hash FROM {{ input_relation }}
@@ -98,7 +95,6 @@ SELECT email_hash, count(DISTINCT uid) AS cookie_count,
        array_sort(array_distinct(filter(array_agg(IF(located AND NOT tied, state, NULL)), s -> s IS NOT NULL))) AS cookie_state_values
 FROM uid_days GROUP BY email_hash
 {%- endmacro %}
-
 {% macro cookie_state_comparison(states) -%}
 CASE WHEN cookie_location_status <> 'observed' THEN 'unknown_cookie_location'
      WHEN cardinality({{ states }}) = 0 THEN 'unknown_reference_state'
@@ -106,7 +102,6 @@ CASE WHEN cookie_location_status <> 'observed' THEN 'unknown_cookie_location'
      WHEN cardinality({{ states }}) = 1 AND cardinality(cookie_state_values) = 1 THEN 'corroborated'
      ELSE 'mixed_state_evidence' END
 {%- endmacro %}
-
 {% macro cookie_location_records(input_relation) -%}
 WITH email_evidence AS ({{ cookie_location_email_evidence(input_relation) }}),
 coverage AS ({{ cookie_source_coverage() }}), joined AS (

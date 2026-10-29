@@ -1,4 +1,4 @@
-{# Exact recognized NPPES taxonomy-code overlap across all fifteen slots; no label matching. #}
+{# Exact recognized NPPES taxonomy-code overlap across all fifteen slots. no label matching. #}
 {% macro specialty_npi_lookup() -%}
 WITH dictionary AS (
     SELECT DISTINCT upper(trim(code)) AS code
@@ -16,7 +16,6 @@ SELECT p.npi, array_sort(array_agg(DISTINCT p.code)) AS specialty_code_values
 FROM provider_codes p JOIN dictionary d ON p.code = d.code
 GROUP BY p.npi
 {%- endmacro %}
-
 {% macro specialty_enriched_records(input_relation) -%}
 WITH specialty_reference AS ({{ specialty_npi_lookup() }})
 SELECT m.*, coalesce(f.specialty_code_values, CAST(ARRAY[] AS array(varchar))) AS specialty_code_values,
@@ -24,7 +23,6 @@ SELECT m.*, coalesce(f.specialty_code_values, CAST(ARRAY[] AS array(varchar))) A
        CAST('recognized_exact_taxonomy_all_slots_v1' AS varchar) AS specialty_definition_version
 FROM {{ input_relation }} m LEFT JOIN specialty_reference f ON m.npi = f.npi
 {%- endmacro %}
-
 {% macro specialty_conflict_contexts() -%}
 array_sort(array_distinct(filter(array_agg(
         CASE WHEN has_conflict_linkage THEN
@@ -32,7 +30,6 @@ array_sort(array_distinct(filter(array_agg(
                  AS ROW(npi varchar, days array(date), specialties array(varchar))) END
         ) OVER (PARTITION BY source, email), x -> x IS NOT NULL)))
 {%- endmacro %}
-
 {% macro specialty_peer_comparisons() -%}
 transform(filter(specialty_conflict_records, peer ->
                has_conflict_linkage AND peer.npi <> npi
@@ -44,8 +41,7 @@ transform(filter(specialty_conflict_records, peer ->
                    AS ROW(npi varchar, conflict_days array(date), specialty_codes array(varchar),
                           shared_specialty_codes array(varchar), shares_specialty boolean)))
 {%- endmacro %}
-
-{# Read-only enrichment of saved metrics; existing name-history results stay unchanged. #}
+{# Read-only enrichment of saved metrics. existing name-history results stay unchanged. #}
 {% macro specialty_consistency_metrics(input_relation) -%}
 WITH specialty_records AS ({{ specialty_enriched_records(input_relation) }}),
 specialty_contexts AS (

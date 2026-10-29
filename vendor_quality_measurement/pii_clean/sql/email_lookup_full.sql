@@ -1,5 +1,5 @@
 -- Complete read-only lookup. Edit the email in params once.
--- Stored metrics come from pii_clean; unpublished evidence is computed below.
+-- Stored metrics come from pii_clean. unpublished evidence is computed below.
 WITH params AS (
     SELECT lower(trim('person@example.com')) AS input_email
 ), saved_records AS (
@@ -59,7 +59,7 @@ FROM facilities m LEFT JOIN specialty_reference f ON m.npi = f.npi
         ) OVER (PARTITION BY source, email), x -> x IS NOT NULL))) AS specialty_conflict_records,
            array_distinct(flatten(array_agg(source_name_values) OVER (PARTITION BY source, email))) AS email_names,
            array_distinct(flatten(array_agg(source_name_values) OVER (PARTITION BY source, email, npi))) AS pair_names,
-           -- Collect only conflicting records; keep their dates and names paired.
+           -- Collect only conflicting records. keep their dates and names paired.
            array_sort(array_distinct(filter(
                array_agg(CASE WHEN has_conflict_linkage THEN
                    CAST(ROW(npi, conflict_days, source_name_values) AS
@@ -595,12 +595,10 @@ SELECT email_hash, count(DISTINCT uid) AS cookie_count,
        array_sort(array_distinct(filter(array_agg(IF(located AND NOT tied, state, NULL)), s -> s IS NOT NULL))) AS cookie_state_values
 FROM uid_days GROUP BY email_hash),
 coverage AS (WITH mapping_days AS (
-
 SELECT DISTINCT try_cast(partition.day AS date) AS day FROM iceberg.thirdparty."liveintent_idsync$partitions"
 WHERE record_count > 0 AND partition.day BETWEEN cast(cast(date_add('day', -7, cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date)) AS date) AS varchar) AND cast(cast(date_add('day', -1, cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date)) AS date) AS varchar)
 ),
 geo_days AS (
-
 SELECT DISTINCT try_cast(partition.day AS date) AS day FROM iceberg.crossscreen."nscreen_geo_daily_ua$partitions"
 WHERE record_count > 0 AND partition.day BETWEEN cast(cast(date_add('day', -7, cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date)) AS date) AS varchar) AND cast(cast(date_add('day', -1, cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date)) AS date) AS varchar)
 ),
@@ -617,7 +615,6 @@ SELECT cast(7 AS bigint) AS cookie_location_window_days,
        CASE WHEN cardinality(md) = 7 AND cardinality(gd) = 7 THEN 'all_source_days_present' ELSE 'missing_source_days' END AS cookie_location_window_status
 FROM available), joined AS (
     SELECT m.*,
-
        coalesce(e.cookie_count, cast(0 AS bigint)) AS cookie_count,
        coalesce(e.cookie_mapping_days, cast(0 AS bigint)) AS cookie_mapping_days,
        coalesce(e.cookie_mapped_uid_days, cast(0 AS bigint)) AS cookie_mapped_uid_days,
@@ -665,8 +662,8 @@ SELECT
     r.email,
     r.source,
     r.npi,
-    array_join(transform(r.source_name_values, n -> trim(concat_ws(' ', n.first_name, n.last_name))), '; ') AS name,
-    array_join(r.source_state_values, '; ') AS state,
+    array_join(transform(r.source_name_values, n -> trim(concat_ws(' ', n.first_name, n.last_name))), concat(chr(59), ' ')) AS name,
+    array_join(r.source_state_values, concat(chr(59), ' ')) AS state,
     r.first_seen_day,
     r.last_seen_day,
     r.observed_day_count,
@@ -772,4 +769,4 @@ SELECT
     cardinality(filter(r.conflicting_npi_name_comparisons, x -> x.shares_name = true)) AS shared_name_count,
     cardinality(filter(r.conflicting_npi_name_comparisons, x -> x.shares_name IS NULL)) AS unknown_name_match_count
 FROM enriched r
-ORDER BY r.source, r.npi, r.last_seen_day DESC NULLS LAST, r.metric_row_id;
+ORDER BY r.source, r.npi, r.last_seen_day DESC NULLS LAST, r.metric_row_id

@@ -1,13 +1,11 @@
-{# Current readable NPPES lifecycle evidence; never reconstruct historical ownership. #}
+{# Current readable NPPES lifecycle evidence. never reconstruct historical ownership. #}
 {% macro registry_status_day() -%}
 {% if var('registry_status_as_of_day', '') %}DATE '{{ var('registry_status_as_of_day') }}'
 {% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %}
 {%- endmacro %}
-
 {% macro registry_lifecycle_type() -%}
 array(row(deactivation_date varchar, reactivation_date varchar, replacement_npi varchar, deactivation_reason varchar))
 {%- endmacro %}
-
 {% macro registry_status_lookup() -%}
 WITH lifecycle_rows AS (
     SELECT trim(cast(npi AS varchar)) AS npi,
@@ -71,7 +69,6 @@ SELECT npi,
        evidence AS npi_registry_lifecycle_evidence
 FROM classified
 {%- endmacro %}
-
 {% macro registry_status_records(input_relation) -%}
 WITH lifecycle_reference AS ({{ registry_status_lookup() }})
 SELECT m.*,

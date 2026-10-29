@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_pii_pairs__healthlink_bak20261020

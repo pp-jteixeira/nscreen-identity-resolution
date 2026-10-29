@@ -1,4 +1,4 @@
--- Independently compare consecutive observed daily NPI sets; no inferred missing days.
+-- Independently compare consecutive observed daily NPI sets. no inferred missing days.
 WITH daily AS (
     SELECT source, email, observed_day, array_sort(array_agg(DISTINCT npi)) AS npis
     FROM {{ ref(var('metric_model')) }}

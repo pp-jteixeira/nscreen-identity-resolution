@@ -1,4 +1,4 @@
--- Conflict varies by record's observed days; reassignment describes vendor/email history.
+-- Conflict varies by record's observed days. reassignment describes vendor/email history.
 WITH emails AS (
     SELECT source, email, count(*) AS metric_rows,
            bool_or(has_been_reassigned) AS reassigned,

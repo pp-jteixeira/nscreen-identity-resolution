@@ -3,7 +3,6 @@ WITH lookup_versions AS (
 -- Exact raw source content, excluding only delivery day.
 {{ record_versions('stg_rocketreach__lookup') }}
 ),
-
 email_candidates AS (
 SELECT CAST('rocketreach' AS varchar) AS source, u.email AS email, v.npi_clean AS npi,
        v.record_id, v.record_payload, u.email_ordinal AS email_ordinal,
@@ -17,19 +16,16 @@ FROM lookup_versions v
 LEFT JOIN UNNEST({{ email_candidates('rocketreach', 'v') }}) WITH ORDINALITY AS u(email, email_ordinal) ON true
 WHERE u.email IS NOT NULL AND u.email <> '' AND v.npi_clean IS NOT NULL AND v.npi_clean <> ''
 ),
-
 metric_records AS (
 SELECT *, to_hex(sha256(to_utf8(record_id || chr(0) || cast(email_ordinal AS varchar)))) AS metric_row_id
 FROM email_candidates
 ),
-
 email_npi_counts AS (
 -- Count reported NPIs within this vendor, across all retained records.
 SELECT source, email, count(DISTINCT npi) AS email_npi_count
 FROM metric_records
 GROUP BY source, email
 ),
-
 email_linkage AS (
 -- This source has no delivery days. Multiple NPIs cannot establish reassignment.
 SELECT source, email, email_npi_count,
@@ -38,19 +34,16 @@ SELECT source, email, email_npi_count,
             ELSE CAST(NULL AS boolean) END AS has_been_reassigned
 FROM email_npi_counts
 ),
-
 name_inputs AS (
 -- Preserve each source record and email position before name comparisons.
 SELECT metric_row_id, email, npi, first_name, last_name
 FROM metric_records
 ),
-
 name_metrics AS (
 {{ link_name_metrics(none, record_grain=true, input_relation='name_inputs', include_source_names=true) }}
 ),
-
 metric_base AS (
--- One output per exact source record and email position; link deduplication is deferred.
+-- One output per exact source record and email position. link deduplication is deferred.
 SELECT m.source, m.email, m.npi,
        m.first_seen_day, m.last_seen_day, m.observed_day_count,
        m.observation_count, m.undated_observation_count, m.invalid_day_observation_count,

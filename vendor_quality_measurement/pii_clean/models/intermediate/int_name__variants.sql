@@ -1,4 +1,4 @@
--- Bidirectional, one-hop nickname expansion; exactly one row per lookup name.
+-- Bidirectional, one-hop nickname expansion. exactly one row per lookup name.
 WITH forward AS (
     SELECT nickname, canonical
     FROM {{ ref('nicknames') }}

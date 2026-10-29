@@ -21,7 +21,6 @@ WITH grouped AS (
 SELECT *, to_hex(sha256(to_utf8('{{ schema.table }}' || chr(0) || record_payload))) AS record_id
 FROM serialized
 {%- endmacro %}
-
 {% macro email_candidates(vendor, alias) -%}
 {% if vendor == 'quantummedica' %}
 transform(split({{ alias }}.email_list_clean, '|'), e -> lower(trim(e)))
@@ -31,7 +30,6 @@ ARRAY[{{ alias }}.email_1_clean, {{ alias }}.email_2_clean, {{ alias }}.email_3_
 concat(coalesce(transform({{ alias }}.emails, e -> lower(trim(e.email))), CAST(ARRAY[] AS array(varchar))), ARRAY[{{ alias }}.recommended_email_clean, {{ alias }}.recommended_personal_email_clean, {{ alias }}.recommended_professional_email_clean, {{ alias }}.current_work_email_clean, {{ alias }}.current_personal_email_clean])
 {% endif %}
 {%- endmacro %}
-
 {% macro email_candidate_origin(vendor, alias, ordinal) -%}
 {% if vendor == 'quantummedica' %}
 'email_token_' || cast({{ ordinal }} AS varchar)
@@ -43,7 +41,6 @@ CASE WHEN {{ ordinal }} <= coalesce(cardinality({{ alias }}.emails), 0)
      ELSE element_at(ARRAY['recommended_email', 'recommended_personal_email', 'recommended_professional_email', 'current_work_email', 'current_personal_email'], {{ ordinal }} - coalesce(cardinality({{ alias }}.emails), 0)) END
 {% endif %}
 {%- endmacro %}
-
 {% macro full_name_first(value) -%}
 CASE WHEN cardinality(split({{ norm_name(value) }}, ' ')) >= 2 THEN element_at(split({{ norm_name(value) }}, ' '), 1) END
 {%- endmacro %}

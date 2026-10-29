@@ -1,0 +1,1 @@
+DROP TABLE iceberg.jteixeira_ipa.pii_email_evidence_labels_v1
