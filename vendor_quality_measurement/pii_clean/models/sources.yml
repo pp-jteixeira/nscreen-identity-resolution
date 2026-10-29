@@ -1,0 +1,45 @@
+---
+sources:
+  - name: iceberg__thirdparty
+    schema: iceberg.thirdparty
+    tables:
+      - name: healthlink_email
+      - name: healthlink_hcp
+      - name: quantummedica_hcpdata
+      - name: quantummedica_hcpmeta
+      - name: medscape_pii_global
+      - name: medscape_pii_meta_global
+      - name: medscape_npi_optout
+      - name: endato_pii
+      - name: drdb_npi
+      - name: npi_enrich_emails_hashlower
+      - name: haymarket_npi
+      - name: liveintent_idsync
+        description: Historical email-hash/UID mappings for descriptive location evidence.
+  - name: iceberg__npi
+    schema: iceberg.npi
+    tables:
+      - name: rocket_reach_npi_lookup
+      - name: npi_taxonomy
+        description: Recognized taxonomy codes; used to validate exact specialty-code comparisons.
+      - name: nppes_npidata_latest
+        description: Current readable NPPES taxonomy slots and lifecycle evidence, without historical vendor-date alignment.
+      - name: npi_reference
+        description: Current readable NPI names; staged without row filtering and joined in intermediate by trimmed NPI.
+  - name: bq_bi__analytics_prod
+    schema: bq_bi.analytics_prod
+    tables:
+      - name: npi_facility_association
+        description: Historical provider associations; all ranked facility_npis used for conflict relatedness without date alignment.
+      - name: npi_facility_locations_with_ids
+        description: Descriptive location evidence; no identity score or row filtering.
+  - name: iceberg__crossscreen
+    schema: iceberg.crossscreen
+    tables:
+      - name: nscreen_geo_daily_ua
+        description: Descriptive location evidence; no identity score or row filtering.
+  - name: iceberg__jteixeira_ipa
+    schema: iceberg.jteixeira_ipa
+    tables:
+      - name: tmp_zip3_to_state
+        description: Provider-derived ZIP3/state lookup; collapse duplicate/ambiguous keys before joining.

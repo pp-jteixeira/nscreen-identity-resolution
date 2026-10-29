@@ -1,0 +1,13 @@
+---
+name: pii_clean_v3
+version: 0.1.0
+profile: pii_clean_v3
+model-paths: [models]
+macro-paths: [macros]
+test-paths: [tests]
+clean-targets: [target]
+models:
+  pii_clean_v3:
+    +materialized: view
+    final:
+      +materialized: table

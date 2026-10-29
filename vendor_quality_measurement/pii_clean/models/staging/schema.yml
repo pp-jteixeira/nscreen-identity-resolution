@@ -1,0 +1,64 @@
+version: 2
+models:
+- name: stg_drdb__enrich
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_drdb__npi
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_endato__pii
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_haymarket__npi
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_healthlink__email
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_healthlink__hcp
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_medscape__global
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_medscape__meta
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_medscape__optout
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_quantummedica__hcpdata
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_quantummedica__hcpmeta
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_rocketreach__lookup
+  description: All input rows with raw columns and cleaned helper values; no filters.
+  columns:
+  - name: npi_clean
+    description: Trimmed NPI helper; may be null. Original vendor NPI is retained.
+- name: stg_npi__reference
+  description: Row-preserving NPI reference staging; raw columns and trimmed NPI helper.

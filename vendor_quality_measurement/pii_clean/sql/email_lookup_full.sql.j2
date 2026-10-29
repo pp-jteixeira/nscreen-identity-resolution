@@ -1,0 +1,27 @@
+-- Complete read-only lookup. Edit the email in params once.
+-- Stored metrics come from pii_clean; unpublished evidence is computed below.
+WITH params AS (
+    SELECT lower(trim({{ var('lookup_email_literal', "'person@example.com'") }})) AS input_email
+), saved_records AS (
+    SELECT {{ var('lookup_base_projection') }}
+    FROM {{ ref('pii_clean') }} t
+    WHERE lower(trim(t.email)) = (SELECT input_email FROM params)
+), facilities AS (
+    {{ facility_enriched_records('saved_records') }}
+), specialties AS (
+    {{ specialty_enriched_records('facilities') }}
+), relationships AS (
+    -- Filtering retains every source/NPI/record for this email, so all peer
+    -- contexts and within-email history remain available to the same rules.
+    {{ name_consistency_metrics('specialties', facility=true, specialty=true) }}
+), lifecycle AS (
+    {{ registry_status_records('relationships') }}
+), facility_states AS (
+    {{ vendor_facility_records('lifecycle') }}
+), enriched AS (
+    {{ cookie_location_records('facility_states') }}
+)
+SELECT
+{{ var('lookup_output_projection') }}
+FROM enriched r
+ORDER BY r.source, r.npi, r.last_seen_day DESC NULLS LAST, r.metric_row_id;

@@ -1,0 +1,3 @@
+-r requirements.txt
+DuckDB==1.5.5
+sqlglot==27.29.0

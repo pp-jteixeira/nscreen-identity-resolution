@@ -1,0 +1,5 @@
+__pycache__/
+target/
+
+# Required model dependency; override the repository-wide CSV extract ignore.
+!seeds/nicknames.csv

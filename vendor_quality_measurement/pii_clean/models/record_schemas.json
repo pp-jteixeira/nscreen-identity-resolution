@@ -1,0 +1,719 @@
+{
+  "stg_healthlink__email": {
+    "columns": [
+      {
+        "name": "bestemail",
+        "type": "varchar"
+      },
+      {
+        "name": "day",
+        "type": "varchar"
+      },
+      {
+        "name": "emailrank",
+        "type": "varchar"
+      },
+      {
+        "name": "hld_email",
+        "type": "varchar"
+      },
+      {
+        "name": "hld_emailid",
+        "type": "varchar"
+      },
+      {
+        "name": "hld_provid",
+        "type": "varchar"
+      },
+      {
+        "name": "isp",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_clean",
+      "email_rank_clean",
+      "is_best_email_clean"
+    ],
+    "table": "iceberg.thirdparty.healthlink_email"
+  },
+  "stg_quantummedica__hcpdata": {
+    "columns": [
+      {
+        "name": "address1",
+        "type": "varchar"
+      },
+      {
+        "name": "address2",
+        "type": "varchar"
+      },
+      {
+        "name": "city",
+        "type": "varchar"
+      },
+      {
+        "name": "day",
+        "type": "varchar"
+      },
+      {
+        "name": "email",
+        "type": "varchar"
+      },
+      {
+        "name": "first_name",
+        "type": "varchar"
+      },
+      {
+        "name": "last_name",
+        "type": "varchar"
+      },
+      {
+        "name": "maids",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "phone",
+        "type": "varchar"
+      },
+      {
+        "name": "state",
+        "type": "varchar"
+      },
+      {
+        "name": "zip",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_list_clean",
+      "first_name_clean",
+      "last_name_clean",
+      "state_clean"
+    ],
+    "table": "iceberg.thirdparty.quantummedica_hcpdata"
+  },
+  "stg_medscape__global": {
+    "columns": [
+      {
+        "name": "city",
+        "type": "varchar"
+      },
+      {
+        "name": "country",
+        "type": "varchar"
+      },
+      {
+        "name": "day",
+        "type": "varchar"
+      },
+      {
+        "name": "email_address",
+        "type": "varchar"
+      },
+      {
+        "name": "first_name",
+        "type": "varchar"
+      },
+      {
+        "name": "guid",
+        "type": "varchar"
+      },
+      {
+        "name": "huid",
+        "type": "varchar"
+      },
+      {
+        "name": "ip",
+        "type": "varchar"
+      },
+      {
+        "name": "last_name",
+        "type": "varchar"
+      },
+      {
+        "name": "maids",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "payer_status",
+        "type": "varchar"
+      },
+      {
+        "name": "phone",
+        "type": "varchar"
+      },
+      {
+        "name": "practice_setting",
+        "type": "varchar"
+      },
+      {
+        "name": "source",
+        "type": "varchar"
+      },
+      {
+        "name": "state",
+        "type": "varchar"
+      },
+      {
+        "name": "street_address_1",
+        "type": "varchar"
+      },
+      {
+        "name": "street_address_2",
+        "type": "varchar"
+      },
+      {
+        "name": "validated",
+        "type": "varchar"
+      },
+      {
+        "name": "zip",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_clean",
+      "guid_clean",
+      "first_name_clean",
+      "last_name_clean",
+      "state_clean"
+    ],
+    "table": "iceberg.thirdparty.medscape_pii_global"
+  },
+  "stg_endato__pii": {
+    "columns": [
+      {
+        "name": "address_city",
+        "type": "varchar"
+      },
+      {
+        "name": "address_state",
+        "type": "varchar"
+      },
+      {
+        "name": "address_street",
+        "type": "varchar"
+      },
+      {
+        "name": "address_zip",
+        "type": "bigint"
+      },
+      {
+        "name": "address_zip4",
+        "type": "bigint"
+      },
+      {
+        "name": "age",
+        "type": "bigint"
+      },
+      {
+        "name": "deceased",
+        "type": "boolean"
+      },
+      {
+        "name": "email",
+        "type": "varchar"
+      },
+      {
+        "name": "email_1_address",
+        "type": "varchar"
+      },
+      {
+        "name": "email_1_premium",
+        "type": "bigint"
+      },
+      {
+        "name": "email_2_address",
+        "type": "varchar"
+      },
+      {
+        "name": "email_2_premium",
+        "type": "bigint"
+      },
+      {
+        "name": "email_3_address",
+        "type": "varchar"
+      },
+      {
+        "name": "email_3_premium",
+        "type": "bigint"
+      },
+      {
+        "name": "email_4_address",
+        "type": "varchar"
+      },
+      {
+        "name": "email_4_premium",
+        "type": "bigint"
+      },
+      {
+        "name": "email_5_address",
+        "type": "varchar"
+      },
+      {
+        "name": "email_5_premium",
+        "type": "bigint"
+      },
+      {
+        "name": "emails",
+        "type": "varchar"
+      },
+      {
+        "name": "estimated_income",
+        "type": "varchar"
+      },
+      {
+        "name": "first_name",
+        "type": "varchar"
+      },
+      {
+        "name": "gender",
+        "type": "varchar"
+      },
+      {
+        "name": "key",
+        "type": "bigint"
+      },
+      {
+        "name": "last_name",
+        "type": "varchar"
+      },
+      {
+        "name": "marital_status",
+        "type": "varchar"
+      },
+      {
+        "name": "name_first",
+        "type": "varchar"
+      },
+      {
+        "name": "name_last",
+        "type": "varchar"
+      },
+      {
+        "name": "name_middle",
+        "type": "varchar"
+      },
+      {
+        "name": "name_suffix",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "number_of_children",
+        "type": "varchar"
+      },
+      {
+        "name": "phone_1_number",
+        "type": "bigint"
+      },
+      {
+        "name": "phone_1_type",
+        "type": "varchar"
+      },
+      {
+        "name": "phone_2_number",
+        "type": "bigint"
+      },
+      {
+        "name": "phone_2_type",
+        "type": "varchar"
+      },
+      {
+        "name": "phone_3_number",
+        "type": "bigint"
+      },
+      {
+        "name": "phone_3_type",
+        "type": "varchar"
+      },
+      {
+        "name": "phone_4_number",
+        "type": "bigint"
+      },
+      {
+        "name": "phone_4_type",
+        "type": "varchar"
+      },
+      {
+        "name": "phone_5_number",
+        "type": "bigint"
+      },
+      {
+        "name": "phone_5_type",
+        "type": "varchar"
+      },
+      {
+        "name": "priority",
+        "type": "bigint"
+      },
+      {
+        "name": "provider_business_mailing_address_city_name",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_mailing_address_country_code__if_outside_us",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_mailing_address_postal_code",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_mailing_address_state_name",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_practice_location_address_city_name",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_practice_location_address_country_code__if_outside_us",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_business_practice_location_address_postal_code",
+        "type": "bigint"
+      },
+      {
+        "name": "provider_business_practice_location_address_state_name",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_first_line_business_mailing_address",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_first_line_business_practice_location_address",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_second_line_business_mailing_address",
+        "type": "varchar"
+      },
+      {
+        "name": "provider_second_line_business_practice_location_address",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_1_clean",
+      "email_2_clean",
+      "email_3_clean",
+      "email_4_clean",
+      "email_5_clean",
+      "person_first_name_clean",
+      "person_last_name_clean",
+      "provider_email_clean"
+    ],
+    "table": "iceberg.thirdparty.endato_pii"
+  },
+  "stg_rocketreach__lookup": {
+    "columns": [
+      {
+        "name": "birth_year",
+        "type": "bigint"
+      },
+      {
+        "name": "city",
+        "type": "varchar"
+      },
+      {
+        "name": "country",
+        "type": "varchar"
+      },
+      {
+        "name": "country_code",
+        "type": "varchar"
+      },
+      {
+        "name": "created_at",
+        "type": "timestamp(6)"
+      },
+      {
+        "name": "current_employer",
+        "type": "varchar"
+      },
+      {
+        "name": "current_employer_domain",
+        "type": "varchar"
+      },
+      {
+        "name": "current_employer_id",
+        "type": "bigint"
+      },
+      {
+        "name": "current_employer_linkedin_url",
+        "type": "varchar"
+      },
+      {
+        "name": "current_employer_website",
+        "type": "varchar"
+      },
+      {
+        "name": "current_personal_email",
+        "type": "varchar"
+      },
+      {
+        "name": "current_title",
+        "type": "varchar"
+      },
+      {
+        "name": "current_work_email",
+        "type": "varchar"
+      },
+      {
+        "name": "education",
+        "type": "array(varchar)"
+      },
+      {
+        "name": "emails",
+        "type": "array(row(email varchar, smtp_valid varchar, type varchar, last_validation_check varchar, grade varchar))"
+      },
+      {
+        "name": "id",
+        "type": "bigint"
+      },
+      {
+        "name": "job_history",
+        "type": "array(varchar)"
+      },
+      {
+        "name": "linkedin_url",
+        "type": "varchar"
+      },
+      {
+        "name": "links",
+        "type": "varchar"
+      },
+      {
+        "name": "location",
+        "type": "varchar"
+      },
+      {
+        "name": "name",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "npi_data",
+        "type": "row(npi_number varchar, credentials varchar, license_number varchar, specialization varchar)"
+      },
+      {
+        "name": "phones",
+        "type": "array(row(number varchar, type varchar, validity varchar, recommended boolean, premium boolean, last_checked varchar))"
+      },
+      {
+        "name": "profile_list",
+        "type": "row(id bigint, name varchar)"
+      },
+      {
+        "name": "profile_pic",
+        "type": "varchar"
+      },
+      {
+        "name": "recommended_email",
+        "type": "varchar"
+      },
+      {
+        "name": "recommended_personal_email",
+        "type": "varchar"
+      },
+      {
+        "name": "recommended_professional_email",
+        "type": "varchar"
+      },
+      {
+        "name": "region",
+        "type": "varchar"
+      },
+      {
+        "name": "region_latitude",
+        "type": "decimal(38,9)"
+      },
+      {
+        "name": "region_longitude",
+        "type": "decimal(38,9)"
+      },
+      {
+        "name": "skills",
+        "type": "array(varchar)"
+      },
+      {
+        "name": "status",
+        "type": "varchar"
+      },
+      {
+        "name": "tags",
+        "type": "array(varchar)"
+      },
+      {
+        "name": "updated_at",
+        "type": "timestamp(6)"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "recommended_email_clean",
+      "recommended_personal_email_clean",
+      "recommended_professional_email_clean",
+      "current_work_email_clean",
+      "current_personal_email_clean",
+      "name_clean",
+      "state_clean"
+    ],
+    "table": "iceberg.npi.rocket_reach_npi_lookup"
+  },
+  "stg_drdb__npi": {
+    "columns": [
+      {
+        "name": "address",
+        "type": "varchar"
+      },
+      {
+        "name": "category",
+        "type": "varchar"
+      },
+      {
+        "name": "city",
+        "type": "varchar"
+      },
+      {
+        "name": "emailaddress",
+        "type": "varchar"
+      },
+      {
+        "name": "firstname",
+        "type": "varchar"
+      },
+      {
+        "name": "flag",
+        "type": "varchar"
+      },
+      {
+        "name": "lastname",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "rn",
+        "type": "varchar"
+      },
+      {
+        "name": "specialty",
+        "type": "varchar"
+      },
+      {
+        "name": "state",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_clean",
+      "first_name_clean",
+      "last_name_clean",
+      "state_clean"
+    ],
+    "table": "iceberg.thirdparty.drdb_npi"
+  },
+  "stg_drdb__enrich": {
+    "columns": [
+      {
+        "name": "city",
+        "type": "varchar"
+      },
+      {
+        "name": "email",
+        "type": "varchar"
+      },
+      {
+        "name": "hashedemail",
+        "type": "varchar"
+      },
+      {
+        "name": "lastname",
+        "type": "varchar"
+      },
+      {
+        "name": "name",
+        "type": "varchar"
+      },
+      {
+        "name": "npi",
+        "type": "varchar"
+      },
+      {
+        "name": "specialty",
+        "type": "varchar"
+      },
+      {
+        "name": "state",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_clean",
+      "name_clean",
+      "state_clean"
+    ],
+    "table": "iceberg.thirdparty.npi_enrich_emails_hashlower"
+  },
+  "stg_haymarket__npi": {
+    "columns": [
+      {
+        "name": "day",
+        "type": "varchar"
+      },
+      {
+        "name": "email",
+        "type": "varchar"
+      },
+      {
+        "name": "first_name",
+        "type": "varchar"
+      },
+      {
+        "name": "last_name",
+        "type": "varchar"
+      },
+      {
+        "name": "npi_number",
+        "type": "varchar"
+      }
+    ],
+    "helpers": [
+      "npi_clean",
+      "email_clean",
+      "first_name_clean",
+      "last_name_clean"
+    ],
+    "table": "iceberg.thirdparty.haymarket_npi"
+  }
+}
