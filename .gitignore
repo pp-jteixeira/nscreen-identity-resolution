@@ -79,21 +79,20 @@ graphify-out/reflections/
 *.xls
 *.xlsx
 
-# Warehouse run logs and diagnostics; retain reusable repair/audit scripts
-/nscreen_state_daily/logs/**
-!/nscreen_state_daily/logs/**/
-!/nscreen_state_daily/logs/**/*.py
+# Local warehouse execution history; maintained tools live under tools/
+/nscreen_state_daily/logs/
+
+# Runtime diagnostics; retain the compact, dated audit evidence
+/nscreen_state_daily/evidence/*
+!/nscreen_state_daily/evidence/audit_7d_*.json
+!/nscreen_state_daily/evidence/verify_7d_*.json
+!/nscreen_state_daily/evidence/seven_day_validation.json
 
 # PII measurement outputs; retain reports, queries, models, and tools
 /vendor_quality_measurement/pii_clean/results/**/*.json
 /vendor_quality_measurement/pii_clean/results/**/*.txt
-/vendor_quality_measurement/pii_clean_v2/research/**/*.json
-/vendor_quality_measurement/pii_clean_v2/research/**/*.txt
-/vendor_quality_measurement/pii_clean_v2/research/**/*.lock
 
-# SQL emitted by the debug-day rebuild tool; model SQL lives under models/
-/vendor_quality_measurement/pii_clean_v2/research/debug_day_*/*.sql
-
-# Dashboard live-validation output; retain validation scripts and SQL
-/pii_clean_v2_dashboard/validation/*_checks.json
+# Temporary PII v2 implementation and dashboard; superseded by pii_clean
+/vendor_quality_measurement/pii_clean_v2/
+/pii_clean_v2_dashboard/
 ANALYSIS_PREFERENCES.md

@@ -1,0 +1,25 @@
+{
+  "kind": "target",
+  "start": "2026-10-21",
+  "end": "2026-10-21",
+  "query_ids": [
+    "20261027_170443_56570_dhmcg"
+  ],
+  "elapsed_seconds": 45.1,
+  "columns": [
+    "day",
+    "rows",
+    "null_uid",
+    "null_state",
+    "uid_state_checksum"
+  ],
+  "rows": [
+    [
+      "2026-10-21",
+      3840312450,
+      0,
+      3198452,
+      "EA4F1A7B3E6A8BDC"
+    ]
+  ]
+}
