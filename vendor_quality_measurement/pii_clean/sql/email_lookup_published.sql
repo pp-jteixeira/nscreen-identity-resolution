@@ -1,4 +1,4 @@
--- Published-table shortcut: intentionally excludes computed unpublished groups.
+-- Published-table subset: selected stored attributes and indicators.
 WITH params AS (
     SELECT lower(trim('person@example.com')) AS input_email
 )

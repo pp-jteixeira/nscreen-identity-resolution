@@ -1,6 +1,6 @@
 # Cookie-location evidence
 
-**Status:** native fixtures and full-population read-only measurements passed on October 29, 2026. Unpublished.
+**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
 
 **Question:** what UID-linked states were observed during the seven completed days before evaluation?
 
@@ -20,7 +20,7 @@ Rank recognized states per UID by distinct observed dates **before** the email j
 
 ## Window and measurements
 
-[Statistics SQL](../../sql/statistics/19_cookie_location_evidence.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage, vendor totals and grouped outcomes; select the named grouping-set section instead of summing overlapping sections. Evaluation remains fixed to October 29, 2026.
+[Statistics SQL](../../sql/statistics/19_cookie_location_evidence.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Run coverage, vendor totals and grouped outcomes; select the named grouping-set section instead of summing overlapping sections. Coverage reports the stored window start/end and availability. Outcomes use the evaluation window captured by the pipeline, rather than recomputing a fixed-date lookup.
 
 Default evaluation uses Europe/Paris today; `location_evidence_day` fixes it. October 29 evaluation uses October 22–28, excluding evaluation day and future data. Historical vendor records remain intact; this is retrospective window evidence, not historical attendance.
 

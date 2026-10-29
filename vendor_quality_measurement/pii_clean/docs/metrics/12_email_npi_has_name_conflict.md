@@ -31,13 +31,9 @@ HealthLink uses its retained HCP names without date alignment. This metric inclu
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/12_email_npi_has_name_conflict.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+[Statistics SQL](../../sql/statistics/12_email_npi_has_name_conflict.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
 
-Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report.
-
-Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`, across all retained history. Extraction timestamp: `2026-10-29T07:42:53.767364+00:00`. Counts are exact.
-
-Link percentages use distinct vendor/email/NPI links; row percentages use that vendor's metric rows. Reporting link counts does not deduplicate metric output.
+Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:39.136145+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Link percentages use distinct vendor/email/NPI links. Row percentages use that vendor’s metric rows. Reporting link counts does not deduplicate metric output.
 
 | Vendor | Distinct email–NPI links | Conflicting links, n (%) | Unknown links, n (%) | Conflicting metric rows, n (%) |
 |---|---:|---:|---:|---:|
@@ -51,6 +47,6 @@ Link percentages use distinct vendor/email/NPI links; row percentages use that v
 
 QuantumMedica has usable vendor names for only one link; almost all its outcomes are unknown. Zero conflicts in Endato or RocketReach does not imply that each email belongs to one NPI: this metric compares names within the same email–NPI link.
 
-Measured counts and executed SQL (local-only: `../../results/name_consistency_measurements.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
 
 [Profile SQL](../../sql/name_consistency_profile.sql) · [Independent pairwise check](../../tests/name_consistency.sql) · [Rules](../../macros/name_consistency.sql) · [Name count](11_email_name_count.md)

@@ -1,6 +1,6 @@
 # Vendor state versus facility state
 
-**Status:** native fixtures and full-population read-only measurement passed on October 29, 2026. Unpublished.
+**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
 
 **Question:** does this exact vendor record’s state agree with its NPI’s preferred historical facility state?
 
@@ -34,7 +34,7 @@ This mixed-source historical facility reference has no vendor-day alignment and 
 
 ## Vendor measurements
 
-[Statistics SQL](../../sql/statistics/18_vendor_facility_state.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run vendor totals, then outcome counts; link-level outcomes can overlap across historical records.
+[Statistics SQL](../../sql/statistics/18_vendor_facility_state.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Run vendor totals, then outcome counts; link-level outcomes can overlap across historical records.
 
 Percentages use all distinct links within each vendor. Historical-state changes can put one link in multiple outcome groups.
 

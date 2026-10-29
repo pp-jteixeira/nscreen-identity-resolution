@@ -1,6 +1,6 @@
 # Vendor/facility state and cookie-location measurements
 
-**Status:** native Trino fixtures, all seven vendor plans and full-population read-only measurements passed on October 29, 2026. The location-validation checkpoint passed 55 local tests; the latest complete suite passed 58, including the complete email lookup. Metrics remain unpublished; warehouse views and tables were not changed.
+**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
 
 Both measurements retained all 75,564,265 exact-record/email-position rows and 26,730,605 distinct source/email/NPI links from the same saved `iceberg.jteixeira_ipa.pii_clean` snapshot. Each measurement rechecked that the input snapshot stayed unchanged. The saved vendor-row count is not a count of independent identity confirmations.
 
@@ -178,8 +178,8 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 - Both full-population measurements retained 75,564,265 metric rows with unique source/metric-row keys and zero invariant failures. Cookie location-status groups also partitioned all 26,730,605 distinct source/email/NPI links.
 - Both runs used the same saved input snapshot, and each verified it stayed unchanged. Source-date availability also matched before and after the cookie scan. This is read-only enrichment, not a full raw-source rebuild or before/after checksum comparison of every original attribute.
 - All seven production vendor queries planned successfully: HealthLink 117, QuantumMedica 102, Medscape 102, Endato 93, RocketReach 93, DRDB 110, Haymarket 102 fragments; each is below the 150-stage limit. Native planning does not prove performance of a full future source rebuild.
-- The [complete email lookup](../docs/email_lookup.md) passed native validation, planning with 46 fragments and three synthetic record checks across all five new groups. No real email-result rows were fetched. The latest complete local suite (local-only: `email_lookup_full_local_tests.txt`) passed 58 tests; native lookup evidence (local-only: `email_lookup_full_validation.json`) records its own validation.
-- New fields remain unpublished as stored warehouse columns. The complete lookup computes them in read-only CTEs; the published-only shortcut remains a subset. No warehouse tables or views were changed by these read-only validations. A future complete local build includes all five additions: facility relatedness, specialty relatedness, lifecycle, vendor/facility state and cookie location.
+- The earlier enrichment-based [complete email lookup](../docs/email_lookup.md) passed native validation, planning with 46 fragments and three synthetic record checks across all five new groups. No real email-result rows were fetched. The saved lookup-validation checkpoint (local-only: `email_lookup_full_local_tests.txt`) passed 58 tests; native lookup evidence (local-only: `email_lookup_full_validation.json`) records its own validation.
+- These historical validations changed no warehouse tables or views. The subsequent [full publication](publication_20261029/report.md) stored all five additions: facility relatedness, specialty relatedness, lifecycle, vendor/facility state and cookie location. The complete lookup now reads all published columns directly; the shorter shortcut remains a subset.
 
 ### Reproduce read-only checks
 

@@ -1,4 +1,4 @@
--- Post-publication inspection for one email. no query has been executed here.
+-- Inspect stored vendor/facility evidence for one email.
 SELECT source, metric_row_id, npi, source_state_values, facility_primary_state,
        facility_reference_status, facility_rank1_rows, facility_rank1_state_count,
        vendor_state_evidence, vendor_state_corroborated, location_evaluation_day

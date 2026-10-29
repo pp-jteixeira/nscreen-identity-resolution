@@ -1,4 +1,4 @@
--- Inspect exact peer contexts and retained facility identifiers after publication.
+-- Inspect stored facility identifiers and exact peer/date contexts.
 SELECT source, metric_row_id, email, npi, facility_npi_values,
        facility_reference_table, facility_definition_version,
        observed_days, conflict_days, conflicting_npis_share_facility,

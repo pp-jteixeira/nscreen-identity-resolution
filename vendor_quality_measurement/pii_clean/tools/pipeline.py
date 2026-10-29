@@ -23,7 +23,7 @@ NAME_CONSISTENCY_METRICS = ('email_name_count', 'email_npi_has_name_conflict')
 CONFLICTING_NAME_METRIC = 'conflicting_npis_share_name'
 LINKAGE_METRICS = ('email_npi_count', 'email_has_multiple_npis', 'has_been_reassigned', 'has_conflict_linkage')
 NAME_METRICS = ('email_matches_source_name', 'email_matches_registry_name', 'vendor_name_matches_registry_name')
-# Keep the seven-view union below Trino's stage limit without extra materialized models.
+# Reduce plan stages; larger unions still fall back to vendor batches.
 EVIDENCE_SESSION_PROPERTIES = {'distinct_aggregations_strategy': 'single_step'}
 SCRIPTS = Path.home() / '.codex/skills/pulsepoint-trino/scripts'
 sys.path.insert(0, str(SCRIPTS))
@@ -214,7 +214,7 @@ def explain_fragments(db, sql):
 
 
 def build_final(db, preservation=None):
-    """Atomically replace the Iceberg table; compare every vendor with live views."""
+    """Materialize vendor outputs once, validate the candidate, then publish it."""
     directory = ROOT / 'results'
     directory.mkdir(exist_ok=True)
     manifest = {'started_at_utc': datetime.now(timezone.utc).isoformat(),
@@ -225,18 +225,19 @@ def build_final(db, preservation=None):
     def save():
         path.write_text(json.dumps(manifest, indent=2) + '\n')
 
-    sql = f"CREATE OR REPLACE TABLE {relation(FINAL_MODEL)} WITH (format = 'PARQUET') AS\n{read_model(FINAL_MODEL)}"
-    manifest['create_sql'] = sql
+    # Every path validates stored rows before touching the canonical table.
+    # Retain the candidate for audit/recovery; cleanup is an explicit operation.
+    candidate = f'{SCHEMA}.pii_clean_candidate_{uuid.uuid4().hex[:16]}'
+    candidate_sql = f"CREATE TABLE {candidate} WITH (format = 'PARQUET') AS\n{read_model(FINAL_MODEL)}"
+    sql = f"CREATE OR REPLACE TABLE {relation(FINAL_MODEL)} WITH (format = 'PARQUET') AS\nSELECT * FROM {candidate}"
+    manifest.update(create_sql=sql, candidate_table=candidate, candidate_writes=[],
+                    publication_mode='union_candidate')
     save()
     # Validate the distributed union with the same settings as the write. Syntax
-    # validation alone misses the stage limit and wastes the source checksum scans.
-    # Preservation checks must run on a candidate before canonical replacement,
-    # even if a later optimizer change makes the full union fit the stage budget.
-    batched = preservation is not None
-    if batched:
-        manifest['publication_mode'] = 'vendor_batches'
+    # validation alone misses the stage limit. EXPLAIN does not execute sources.
+    batched = False
     try:
-        manifest['plan_fragments'] = explain_fragments(db, sql)
+        manifest['candidate_plan_fragments'] = explain_fragments(db, candidate_sql)
     except Exception as exc:
         if 'QUERY_HAS_TOO_MANY_STAGES' not in str(exc):
             raise
@@ -255,23 +256,12 @@ def build_final(db, preservation=None):
         columns = [c for c, _ in schema]
         if not all(re.fullmatch(r'[a-z][a-z0-9_]*', c) for c in columns):
             raise ValueError('Unexpected column identifier')
-        check_sql = evidence_snapshot_sql(table, columns)
-        rows = query(db, check_sql)
-        if len(rows) != 1 or rows[0]['source'] != source or rows[0]['duplicate_keys']:
-            raise ValueError(f'{source}: source grain check failed: {rows}')
-        manifest['sources'][source] = {'sql': check_sql, 'baseline': rows[0]}
+        manifest['sources'][source] = {'view': table}
         save()
-        print(f"Checked {source}: {rows[0]['metric_rows']:,} metric_rows", flush=True)
     manifest['schema'] = expected_schema
     save()
-    expected = sorted((e['baseline'] for e in manifest['sources'].values()), key=lambda r: r['source'])
-    validation_table = relation(FINAL_MODEL)
+    validation_table = candidate
     if batched:
-        # No canonical table changes until all candidate checks pass. Retain the
-        # candidate for audit/recovery; cleanup is a separate explicit operation.
-        candidate = f'{SCHEMA}.pii_clean_candidate_{uuid.uuid4().hex[:16]}'
-        manifest.update(candidate_table=candidate, candidate_writes=[])
-        save()
         for index, source in enumerate(SOURCES):
             select = f'SELECT * FROM {relation(f"int_{source}__metrics")}'
             statement = (f"CREATE TABLE {candidate} WITH (format = 'PARQUET') AS\n" if index == 0
@@ -284,13 +274,13 @@ def build_final(db, preservation=None):
             entry['completed'] = True
             save()
             print(f'Candidate appended {source}', flush=True)
-        validation_table = candidate
-        sql = f"CREATE OR REPLACE TABLE {relation(FINAL_MODEL)} WITH (format = 'PARQUET') AS\nSELECT * FROM {candidate}"
-        manifest.update(create_sql=sql, plan_fragments=explain_fragments(db, sql))
-        save()
     else:
-        run_write(sql, session_properties=EVIDENCE_SESSION_PROPERTIES)
-        manifest['published_at_utc'] = datetime.now(timezone.utc).isoformat()
+        entry = {'sources': list(SOURCES), 'sql': candidate_sql, 'completed': False,
+                 'plan_fragments': manifest['candidate_plan_fragments']}
+        manifest['candidate_writes'].append(entry)
+        save()
+        run_write(candidate_sql, session_properties=EVIDENCE_SESSION_PROPERTIES)
+        entry['completed'] = True
         save()
     final_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + validation_table)]
     if final_schema != expected_schema:
@@ -299,8 +289,13 @@ def build_final(db, preservation=None):
     actual = query(db, check_sql)
     manifest.update(validation_sql=check_sql, validation=actual)
     save()
-    if actual != expected:
-        raise ValueError('Evidence differs from source baselines; inspect final_build.json for source drift or missing rows')
+    if (len(actual) != len(SOURCES) or {r['source'] for r in actual} != set(SOURCES)
+            or any(r['metric_rows'] < 1 or r['duplicate_keys'] for r in actual)):
+        raise ValueError('Candidate source coverage or grain check failed; inspect final_build.json')
+    for row in actual:
+        manifest['sources'][row['source']]['materialized'] = row
+        print(f"Checked {row['source']}: {row['metric_rows']:,} metric_rows", flush=True)
+    save()
     if preservation is not None:
         old_sql = evidence_snapshot_sql(validation_table, preservation['columns'])
         old_rows = query(db, old_sql)
@@ -323,17 +318,18 @@ def build_final(db, preservation=None):
         save()
         if failures:
             raise ValueError(f'Evidence {name} failed: {failures}')
-    if batched:
-        run_write(sql, session_properties=EVIDENCE_SESSION_PROPERTIES)
-        manifest['published_at_utc'] = datetime.now(timezone.utc).isoformat()
-        save()
-        published_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + relation(FINAL_MODEL))]
-        published_sql = evidence_snapshot_sql(relation(FINAL_MODEL), columns)
-        published = query(db, published_sql)
-        manifest.update(published_validation_sql=published_sql, published_validation=published)
-        save()
-        if published_schema != expected_schema or published != expected:
-            raise ValueError('Published table differs from the validated candidate')
+    manifest['plan_fragments'] = explain_fragments(db, sql)
+    save()
+    run_write(sql, session_properties=EVIDENCE_SESSION_PROPERTIES)
+    manifest['published_at_utc'] = datetime.now(timezone.utc).isoformat()
+    save()
+    published_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + relation(FINAL_MODEL))]
+    published_sql = evidence_snapshot_sql(relation(FINAL_MODEL), columns)
+    published = query(db, published_sql)
+    manifest.update(published_validation_sql=published_sql, published_validation=published)
+    save()
+    if published_schema != expected_schema or published != actual:
+        raise ValueError('Published table differs from the validated candidate')
     manifest.update(verified=True, completed_at_utc=datetime.now(timezone.utc).isoformat())
     save()
     print(f"PASS {relation(FINAL_MODEL)}: {sum(r['metric_rows'] for r in actual):,} metric_rows", flush=True)
@@ -380,12 +376,24 @@ def test_source(db, source):
         print(f'PASS {source}: {name}', flush=True)
 
 
+def render_profile(filename, source=None):
+    """Render a profile over published rows, optionally scoped to one vendor."""
+    if source is not None and source not in SOURCES:
+        raise ValueError('Unknown source')
+    sql = (ROOT / 'sql' / filename).read_text()
+    evaluated = f'SELECT * FROM {relation(FINAL_MODEL)}'
+    if source is not None:
+        evaluated += f" WHERE source = '{source}'"
+    for marker in ('/* EVALUATED_SQL */', '/* EVIDENCE_SQL */'):
+        sql = sql.replace(marker, evaluated)
+    return render_sql(sql)
+
+
 def report(db, source):
-    table = relation(f'int_{source}__metrics')
-    sql = (ROOT / 'sql/email_format_profile.sql').read_text().replace(
-        '/* EVALUATED_SQL */', f'SELECT source, email, first_seen_day, last_seen_day, email_format_valid FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('email_format_profile.sql', source)
     rows = query(db, sql)
-    data = {'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
+    data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     name = f'{source}_intermediate_metrics'
     directory = ROOT / 'results'
     directory.mkdir(exist_ok=True)
@@ -402,7 +410,7 @@ The indicator checks `email` against `^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{{2,}}$
 |---|---:|---:|---:|
 {chr(10).join(lines)}
 
-[Metric documentation](../docs/metrics/02_email_format_valid.md) · [Query results]({name}.json)
+[Metric documentation](../docs/metrics/02_email_format_valid.md) · Query results (local-only: `{name}.json`)
 '''
     (directory / f'{name}.md').write_text(md)
     print(json.dumps(rows, indent=2))
@@ -410,27 +418,25 @@ The indicator checks `email` against `^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{{2,}}$
 
 
 def report_role(db, source):
-    table = relation(f'int_{source}__metrics')
-    sql = render_sql((ROOT / 'sql/email_role_profile.sql').read_text()).replace(
-        '/* EVALUATED_SQL */', f'SELECT source, email, email_role_account FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('email_role_profile.sql', source)
     rows = query(db, sql)
-    data = {'relation': table, 'metric': 'email_role_account',
+    data = {'relation': table, 'source': source, 'metric': 'email_role_account',
             'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_email_role_account.json'
+    path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     print(f'Saved {path}', flush=True)
 
 
 def report_domain(db, source):
-    table = relation(f'int_{source}__metrics')
-    sql = render_sql((ROOT / 'sql/email_domain_profile.sql').read_text()).replace(
-        '/* EVALUATED_SQL */',
-        f'SELECT source, email, email_format_valid, email_domain_class FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('email_domain_profile.sql', source)
     rows = query(db, sql)
     if any(r['mismatched_values'] for r in rows):
         raise ValueError(f'{source}: stored domain classes differ from the rule')
-    data = {'relation': table, 'metric': 'email_domain_class',
+    data = {'relation': table, 'source': source, 'metric': 'email_domain_class',
             'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_email_domain_class.json'
     path.parent.mkdir(exist_ok=True)
@@ -441,16 +447,15 @@ def report_domain(db, source):
 
 
 def report_names(db, source, metric=None):
-    table = relation(f'int_{source}__metrics')
-    sql = (ROOT / 'sql/name_match_profile.sql').read_text().replace(
-        '/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('name_match_profile.sql', source)
     rows = query(db, sql)
     for row in rows:
         if row['duplicate_keys'] or row['coverage_failures']:
             raise ValueError(f'{source}: name-metric uniqueness or coverage check failed')
         if row['matched_metric_rows'] + row['unmatched_metric_rows'] + row['unknown_metric_rows'] != row['metric_rows']:
             raise ValueError(f'{source}: name outcomes do not partition metric_rows')
-    data = {'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
+    data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
             'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_name_matching.json'
     path.parent.mkdir(exist_ok=True)
@@ -461,13 +466,13 @@ def report_names(db, source, metric=None):
 
 
 def report_linkage(db, source, metric='email_npi_count'):
-    table = relation(f'int_{source}__metrics')
+    table = relation(FINAL_MODEL)
     profile = 'email_linkage_profile.sql' if metric in ('has_been_reassigned', 'has_conflict_linkage') else 'email_npi_profile.sql'
-    sql = (ROOT / 'sql' / profile).read_text().replace('/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    sql = render_profile(profile, source)
     rows = query(db, sql)
     if any(r.get('mismatched_emails', 0) for r in rows):
         raise ValueError(f'{source}: stored linkage metrics differ from the rule')
-    data = {'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
+    data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_{profile.removesuffix(".sql")}.json'
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + '\n')
@@ -476,12 +481,12 @@ def report_linkage(db, source, metric='email_npi_count'):
 
 
 def report_name_consistency(db, source):
-    table = relation(f'int_{source}__metrics')
-    sql = (ROOT / 'sql/name_consistency_profile.sql').read_text().replace('/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('name_consistency_profile.sql', source)
     rows = query(db, sql)
     if any(r['mismatched_emails'] for r in rows):
         raise ValueError(f'{source}: inconsistent name-history outcomes')
-    data = {'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
+    data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_name_consistency.json'
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + '\n')
@@ -490,11 +495,11 @@ def report_name_consistency(db, source):
 
 
 def report_conflicting_names(db, source, state=False, facility=False, specialty=False):
-    table = relation(f'int_{source}__metrics')
+    table = relation(FINAL_MODEL)
     filename = 'conflicting_specialties' if specialty else ('conflicting_facilities' if facility else ('conflicting_states' if state else 'conflicting_names'))
-    sql = (ROOT / f'sql/{filename}_profile.sql').read_text().replace('/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    sql = render_profile(f'{filename}_profile.sql', source)
     rows = query(db, sql)
-    data = {'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
+    data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     path = ROOT / f'results/{source}_{filename}.json'
     path.parent.mkdir(exist_ok=True)
     path.write_text(json.dumps(data, indent=2) + '\n')
@@ -503,25 +508,25 @@ def report_conflicting_names(db, source, state=False, facility=False, specialty=
 
 
 def report_registry_status(db, source):
-    table = relation(f'int_{source}__metrics')
-    sql = (ROOT / 'sql/registry_status_profile.sql').read_text().replace('/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    table = relation(FINAL_MODEL)
+    sql = render_profile('registry_status_profile.sql', source)
     rows = query(db, sql)
     path = ROOT / f'results/{source}_registry_status.json'
     path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps({'relation': table, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
+    path.write_text(json.dumps({'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
                                'sql': sql, 'rows': rows}, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return rows
 
 
 def report_location(db, source, metric):
-    table = relation(f'int_{source}__metrics')
+    table = relation(FINAL_MODEL)
     profile = 'vendor_facility_state_profile.sql' if metric == 'vendor_state_evidence' else 'cookie_location_profile.sql'
-    sql = (ROOT / 'sql' / profile).read_text().replace('/* EVALUATED_SQL */', f'SELECT * FROM {table}')
+    sql = render_profile(profile, source)
     rows = query(db, sql)
     path = ROOT / f'results/{source}_{metric}.json'
     path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps({'relation': table, 'sql': sql, 'rows': rows}, indent=2) + '\n')
+    path.write_text(json.dumps({'relation': table, 'source': source, 'sql': sql, 'rows': rows}, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return rows
 
@@ -559,6 +564,7 @@ def main():
         return
     if args.command == 'test':
         subprocess.run([sys.executable, str(ROOT / 'tools/test_pipeline.py')], check=True)
+        subprocess.run([sys.executable, str(ROOT / 'tools/test_reports.py')], check=True)
         command = [sys.executable, str(ROOT / 'tools/test_models.py')]
         if args.source != 'all':
             command += ['--source', args.source]

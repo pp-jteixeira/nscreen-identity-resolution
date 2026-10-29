@@ -1,6 +1,6 @@
 # NPI lifecycle-status measurement
 
-**Status:** implemented locally and evaluated read-only on October 29, 2026. Warehouse views and the final table remain unchanged.
+**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
 
 Input: all 75,564,265 saved source-record/email-position rows and 26,730,605 distinct source/email/NPI links in `iceberg.jteixeira_ipa.pii_clean`. Executed queries and results (local-only: `registry_status_measure.json`) identify the Iceberg input snapshot and confirm it stayed unchanged during measurement. Current NPPES is not pinned and does not reconstruct historical vendor-day activity. Evaluation uses Europe/Paris current date.
 
@@ -34,7 +34,7 @@ There are 1,249 unknown source/email/NPI links (0.00467% of all links). All come
 
 ## Output columns
 
-These eleven locally implemented columns are appended to every vendor model and the final UNION ALL output. They remain unpublished.
+These eleven columns are appended to every vendor model and the final UNION ALL output. They were published on October 29, 2026, with all native integrity checks passing.
 
 | Column | Meaning |
 |---|---|
@@ -70,6 +70,6 @@ Deterministic truncated sample: up to two metric-row IDs per vendor/status, orde
 - Native Trino: 20 synthetic metric rows passed expected statuses and reasons; native invariants returned no failures.
 - Population measurement retained all 75,564,265 metric rows with unique source/metric-row keys. Outcome groups also partitioned all 26,730,605 distinct source/email/NPI links. Invariant checks returned no failures. This is not a full source rebuild or before/after original-attribute checksum comparison.
 - At the lifecycle-validation checkpoint, all seven vendor query plans (local-only: `registry_status_plans.json`) passed. Read-only EXPLAIN validation also checked the then-current published-column email lookup without fetching email results. The complete lookup has separate validation linked below.
-- Lifecycle evidence is appended after relationship metrics and does not alter their calculations. No warehouse publication was attempted. All five new groups remain unpublished: facility, specialty, lifecycle, vendor/facility state and cookie location. A complete future local build includes all five. The [complete email lookup](../docs/email_lookup.md) computes them read-only and passed the latest 58-test local suite plus native synthetic validation.
+- Lifecycle evidence is appended after relationship metrics and does not alter their calculations. These historical measurements were read-only. The subsequent [full publication](publication_20261029/report.md) published all five groups: facility, specialty, lifecycle, vendor/facility state and cookie location. Original published values were preserved, excluding query-time `computed_at`. The [complete email lookup](../docs/email_lookup.md) now reads published evidence directly. The earlier enrichment-based lookup passed the saved 58-test checkpoint plus native synthetic validation.
 
 [Definition](../docs/metrics/17_npi_registry_status.md) · [Calculation SQL](../macros/registry_status.sql) · Native fixtures (local-only: `registry_status_native.json`) · Local test output (local-only: `registry_status_local_tests.txt`)

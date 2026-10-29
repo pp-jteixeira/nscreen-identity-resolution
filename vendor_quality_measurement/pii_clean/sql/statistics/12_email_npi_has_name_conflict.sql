@@ -1,6 +1,6 @@
 -- Read-only statistics for 12_email_npi_has_name_conflict.
 -- Denominators remain within each source. no email-NPI deduplication.
--- Current published-table statistics. Historical metric-page counts describe dated populations and may differ.
+-- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
 -- Name counts and same-link name conflicts
 -- Exact email, email-NPI-link and metric-row denominators. no cross-vendor pooling.
 WITH pairs AS (

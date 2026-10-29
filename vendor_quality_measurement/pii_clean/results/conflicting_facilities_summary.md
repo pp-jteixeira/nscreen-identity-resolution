@@ -1,6 +1,6 @@
 # Facility-overlap measurement
 
-**Status:** read-only evaluation; publication pending. No warehouse objects were changed.
+**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
 
 Measured October 29, 2026 using the saved `iceberg.jteixeira_ipa.pii_clean` snapshot recorded in executed queries and results (local-only: `conflicting_facilities_measure.json`). Reference: `bq_bi.analytics_prod.npi_facility_association`, all ranks, trimmed `provider_npi` and distinct ten-digit nonzero `facility_npis`. Source snapshots are not pinned; the reference has no activity dates.
 
@@ -52,8 +52,8 @@ These examples use undated vendor conflict contexts; shared IDs do not establish
 
 - Facility-validation checkpoint: 43 local tests passed, including duplicate-reference handling, missing evidence, exact-day gaps, undated DRDB feeds, all-vendor schemas and publication failure cases.
 - Native Trino: 26 synthetic record outcomes checked; the independent relational check returned no failures.
-- Full read-only conflict evaluation: all 313,775 conflict rows retained unique metric-row keys. Independent peer/null/intersection checks returned no failures. Published records were inputs only; no full rebuild or before/after attribute checksum comparison has executed.
-- The saved facility-era combined query plan exceeded Trino’s 150-stage limit at 170 stages. This is a historical plan, not a stage count for the current models. The local runner has a candidate-batch fallback with tests for write, integrity, preservation and unrelated-planning failures. Warehouse execution of that fallback remains unverified.
-- The current publication runner refreshes all managed dependencies for `build`, or uses existing vendor views for `final`. It validates schema, counts and substantive-column checksums; when batching is required, it validates a uniquely named candidate before replacement and retains it for audit. None of the five new metric groups has been published. The [complete email lookup](../docs/email_lookup.md) computes them read-only; the latest complete local suite (local-only: `email_lookup_full_local_tests.txt`) passed 58 tests.
+- Full read-only conflict evaluation: all 313,775 conflict rows retained unique metric-row keys. Independent peer/null/intersection checks returned no failures. Published records were inputs only during that measurement. The subsequent full publication verified original-attribute preservation.
+- The saved facility-era combined query plan exceeded Trino’s 150-stage limit at 170 stages. This is a historical plan, not a stage count for the current models. The local runner has a candidate-batch fallback with tests for write, integrity, preservation and unrelated-planning failures. The subsequent October 29 publication verified vendor batching in the warehouse.
+- The [full publication](publication_20261029/report.md) published all five added metric groups and passed preservation and integrity checks. The current runner materializes vendor outputs once, validates the stored candidate before replacement, and compares published checksums against that candidate. Its optimized flow has local regression coverage; a full warehouse rebuild using that flow has not yet run. The [complete email lookup](../docs/email_lookup.md) reads published evidence directly. The earlier enrichment-based lookup validation checkpoint (local-only: `email_lookup_full_local_tests.txt`) passed 58 tests.
 
 Native evidence (local-only: `conflicting_facilities_native.json`) · Local test output (local-only: `conflicting_facilities_local_tests.txt`) · Per-vendor planning (local-only: `conflicting_facilities_candidate_plan.json`) · [Publication implementation](../tools/pipeline.py)

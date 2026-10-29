@@ -42,17 +42,15 @@ Set additions, removals and replacements qualify; this is evidence of changing a
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/09_has_been_reassigned.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+[Statistics SQL](../../sql/statistics/09_has_been_reassigned.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
 
-Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report. Medscape counts precede the October 29 population in the project README.
-
-Measured **October 28, 2026**, on `iceberg.jteixeira_ipa.pii__evidence` across all retained source history. Exact counts; email percentages use each vendor's distinct emails, and row percentages use its metric rows. Extraction timestamp: `2026-10-28T21:27:21.738506+00:00`.
+Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:30.647913+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Email percentages use each vendor's distinct emails. Row percentages use its metric rows.
 
 | Vendor | Reassigned emails, n (%) | Unknown emails, n (%) | Reassigned metric rows, n (%) |
 |---|---:|---:|---:|
 | HealthLink | 120 (0.00156%) | 0 (0.00000%) | 271 (0.00243%) |
 | QuantumMedica | 1 (0.00006%) | 0 (0.00000%) | 2 (0.00012%) |
-| Medscape | 109,146 (3.07495%) | 0 (0.00000%) | 2,351,014 (5.00414%) |
+| Medscape | 109,243 (3.07722%) | 0 (0.00000%) | 2,355,717 (5.00447%) |
 | Endato | 0 (0.00000%) | 91,841 (1.72493%) | 0 (0.00000%) |
 | RocketReach | 0 (0.00000%) | 29,990 (0.94795%) | 0 (0.00000%) |
 | DRDB | 0 (0.00000%) | 7,400 (0.90304%) | 0 (0.00000%) |
@@ -60,6 +58,6 @@ Measured **October 28, 2026**, on `iceberg.jteixeira_ipa.pii__evidence` across a
 
 Endato, RocketReach and DRDB have no dated history. Their multi-NPI emails are unknown for reassignment; the remaining emails have one retained NPI and are false.
 
-Measured counts and executed SQL (local-only: `../../results/email_linkage_measurements.json`) · Native fixtures and preservation checks (local-only: `../../results/email_linkage_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation checks (local-only: `../../results/email_linkage_native_validation.json`)
 
 [Profile SQL](../../sql/email_linkage_profile.sql) · [Independent chronological check](../../tests/email_linkage_history.sql) · [Conflict](10_has_conflict_linkage.md) · [Source date limitations](../00_source_map.md)

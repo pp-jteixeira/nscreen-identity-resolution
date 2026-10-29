@@ -1,6 +1,6 @@
 # Conflicting NPIs share a specialty
 
-**Status:** implemented locally and measured read-only on October 29, 2026; unpublished. Existing warehouse outputs lack the new columns.
+**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
 
 **Question:** does another NPI in this record’s conflict context share an exact recognized taxonomy code?
 
@@ -27,7 +27,7 @@ Current NPPES evidence is not aligned to historical vendor dates. Disjoint codes
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/16_conflicting_npis_share_specialty.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
+[Statistics SQL](../../sql/statistics/16_conflicting_npis_share_specialty.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
 
 Exact evaluation over 75,564,265 saved rows. Outcome percentages use each vendor’s conflict rows; — means no conflicts.
 

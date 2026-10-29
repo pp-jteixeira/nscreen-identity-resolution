@@ -32,11 +32,9 @@ HealthLink’s HCP-reference names have no date alignment. Registry names never 
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/13_conflicting_npis_share_name.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+[Statistics SQL](../../sql/statistics/13_conflicting_npis_share_name.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
 
-Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report.
-
-Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`. Extraction: `2026-10-29T09:55:28.873179+00:00`. Exact counts; percentages use each vendor’s conflict rows.
+Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:40.438733+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Percentages use each vendor’s conflict rows. — means that the vendor has no conflict rows.
 
 | Vendor | Conflict rows | Shared name, n (%) | Different names, n (%) | Unknown names, n (%) |
 |---|---:|---:|---:|---:|
@@ -48,8 +46,8 @@ Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`. Extract
 | DRDB | 22,404 | 17,010 (75.92%) | 4,985 (22.25%) | 409 (1.83%) |
 | Haymarket | 0 | 0 (—) | 0 (—) | 0 (—) |
 
-Across 75,564,265 metric rows, 75,250,490 are not applicable and 0 have unknown conflict timing; both groups have a null name-sharing flag. Rows for one email–NPI link can differ. — means no conflict rows.
+Across 75,564,265 metric rows, 75,250,490 are not applicable and 0 have unknown conflict timing. Both groups have a null name-sharing flag. Rows for one email–NPI link can differ.
 
-Measured counts and SQL (local-only: `../../results/conflicting_names_measurements.json`) · Native fixtures and preservation (local-only: `../../results/conflicting_names_native_validation.json`) · Publication checks (local-only: `../../results/evidence_build.json`)
+Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation (local-only: `../../results/conflicting_names_native_validation.json`) · Published-table validation (local-only: `../../results/final_build.json`)
 
 [Calculation](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_names.sql) · [Profile SQL](../../sql/conflicting_names_profile.sql)

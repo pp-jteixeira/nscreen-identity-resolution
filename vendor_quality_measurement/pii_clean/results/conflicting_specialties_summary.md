@@ -1,6 +1,6 @@
 # Specialty-overlap measurement
 
-**Status:** read-only evaluation of saved records; publication pending. Warehouse views and final table remain unchanged.
+**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
 
 Measured October 29, 2026. Executed queries and results (local-only: `conflicting_specialties_measure.json`) record the final-table snapshot and extraction times. Inputs: `iceberg.jteixeira_ipa.pii_clean`, `iceberg.npi.nppes_npidata_latest`, and `iceberg.npi.npi_taxonomy`. Vendor history is the full saved population; the current taxonomy reference has no vendor-day alignment. Source references are not pinned.
 

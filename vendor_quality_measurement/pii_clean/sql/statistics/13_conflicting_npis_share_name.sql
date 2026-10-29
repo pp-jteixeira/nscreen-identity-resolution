@@ -1,6 +1,6 @@
 -- Read-only statistics for 13_conflicting_npis_share_name.
 -- Denominators remain within each source. no email-NPI deduplication.
--- Current published-table statistics. Historical metric-page counts describe dated populations and may differ.
+-- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
 -- Shared-name outcomes and conflict-row denominators
 -- Outcomes apply to exact record/email-position rows, not deduplicated links.
 WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)

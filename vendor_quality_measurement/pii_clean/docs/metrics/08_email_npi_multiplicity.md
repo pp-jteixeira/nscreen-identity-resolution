@@ -30,22 +30,20 @@ Multiplicity does not distinguish historical changes from same-day conflicts or 
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/08_email_npi_multiplicity.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+[Statistics SQL](../../sql/statistics/08_email_npi_multiplicity.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
 
-Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report. Medscape counts precede the October 29 population in the project README.
-
-Measured **October 28, 2026**, on `iceberg.jteixeira_ipa.pii__evidence` across all retained source history. Exact counts; email percentages use each vendor's distinct emails, and row percentages use its metric rows. Extraction timestamp: `2026-10-28T21:27:21.738506+00:00`.
+Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:30.558322+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Email percentages use each vendor's distinct emails. Row percentages use its metric rows.
 
 | Vendor | Distinct emails | Multiple NPIs: emails, n (%) | Affected metric rows, n (%) | Maximum NPIs/email |
 |---|---:|---:|---:|---:|
 | HealthLink | 7,688,331 | 120 (0.00156%) | 271 (0.00243%) | 2 |
 | QuantumMedica | 1,705,695 | 28 (0.00164%) | 56 (0.00328%) | 2 |
-| Medscape | 3,549,520 | 109,147 (3.07498%) | 2,351,016 (5.00414%) | 3 |
+| Medscape | 3,550,052 | 109,244 (3.07725%) | 2,355,719 (5.00447%) | 3 |
 | Endato | 5,324,318 | 91,841 (1.72493%) | 194,982 (3.59251%) | 2,172 |
 | RocketReach | 3,163,679 | 29,990 (0.94795%) | 96,287 (1.97953%) | 24 |
 | DRDB | 819,454 | 7,400 (0.90304%) | 22,404 (2.00858%) | 5 |
 | Haymarket | 4,223,245 | 0 (0.00000%) | 0 (0.00000%) | 1 |
 
-Measured counts and executed SQL (local-only: `../../results/email_linkage_measurements.json`) · Native fixtures and preservation checks (local-only: `../../results/email_linkage_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation checks (local-only: `../../results/email_linkage_native_validation.json`)
 
 [Profile SQL](../../sql/email_npi_profile.sql) · [Population check](../../tests/email_npi_multiplicity.sql) · [Source tables and fields](../00_source_map.md)

@@ -2,7 +2,7 @@
 
 **Question:** does another NPI in this record’s conflict context share an associated facility NPI?
 
-**Status:** implemented locally; measured read-only on October 29, 2026. Unpublished: warehouse outputs lack these columns.
+**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
 
 **Target columns:** `conflicting_npis_share_facility`, `facility_npi_values`, `conflicting_npi_facility_comparisons` in `iceberg.jteixeira_ipa.pii__int_<vendor>__metrics` and `iceberg.jteixeira_ipa.pii_clean`. Key: `source`, `metric_row_id`.
 
@@ -29,7 +29,7 @@ Associations have no activity dates. Overlap proves neither coattendance nor own
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/15_conflicting_npis_share_facility.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
+[Statistics SQL](../../sql/statistics/15_conflicting_npis_share_facility.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
 
 Exact read-only evaluation over 75,564,265 saved metric rows. Percentages below use each vendor’s conflict rows. — means no conflicts.
 
@@ -45,4 +45,4 @@ Exact read-only evaluation over 75,564,265 saved metric rows. Percentages below 
 
 [Link-level coverage and real examples](../../results/conflicting_facilities_summary.md) · Executed SQL/results (local-only: `../../results/conflicting_facilities_measure.json`) · Native checks (local-only: `../../results/conflicting_facilities_native.json`) · Local tests (local-only: `../../results/conflicting_facilities_local_tests.txt`)
 
-[Lookup/comparison SQL](../../macros/facility_consistency.sql) · [Shared windows](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_facilities.sql) · [Post-publication inspection](../../sql/conflicting_facilities_debug.sql)
+[Lookup/comparison SQL](../../macros/facility_consistency.sql) · [Shared windows](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_facilities.sql) · [Stored facility inspection](../../sql/conflicting_facilities_debug.sql)

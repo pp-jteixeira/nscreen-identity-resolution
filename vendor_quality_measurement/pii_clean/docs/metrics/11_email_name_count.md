@@ -28,13 +28,9 @@ HealthLink uses its HCP-name reference by NPI across retained HCP history, witho
 
 ## Statistics by vendor
 
-[Statistics SQL](../../sql/statistics/11_email_name_count.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+[Statistics SQL](../../sql/statistics/11_email_name_count.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
 
-Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report.
-
-Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`, across all retained history. Extraction timestamp: `2026-10-29T07:42:53.767364+00:00`. Counts are exact.
-
-Percentages use each vendor's distinct emails.
+Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:35.379565+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Percentages use each vendor's distinct emails.
 
 | Vendor | Distinct emails | No usable name, n (%) | Multiple names, n (%) | Maximum names/email |
 |---|---:|---:|---:|---:|
@@ -46,6 +42,6 @@ Percentages use each vendor's distinct emails.
 | DRDB | 819,454 | 56 (0.00683%) | 13,376 (1.63231%) | 3 |
 | Haymarket | 4,223,245 | 191,914 (4.54423%) | 0 (0.00000%) | 1 |
 
-Measured counts and executed SQL (local-only: `../../results/name_consistency_measurements.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
 
 [Profile SQL](../../sql/name_consistency_profile.sql) · [Rules](../../macros/name_consistency.sql) · [Name conflict](12_email_npi_has_name_conflict.md) · [Source fields](../00_source_map.md)
