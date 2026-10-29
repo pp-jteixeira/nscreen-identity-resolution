@@ -32,6 +32,8 @@ HealthLink’s HCP-reference names have no date alignment. Registry names never 
 
 ## Statistics by vendor
 
+[Statistics SQL](../../sql/statistics/13_conflicting_npis_share_name.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+
 Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report.
 
 Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`. Extraction: `2026-10-29T09:55:28.873179+00:00`. Exact counts; percentages use each vendor’s conflict rows.

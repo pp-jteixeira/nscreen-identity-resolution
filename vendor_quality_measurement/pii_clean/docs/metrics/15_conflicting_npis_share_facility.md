@@ -29,6 +29,8 @@ Associations have no activity dates. Overlap proves neither coattendance nor own
 
 ## Statistics by vendor
 
+[Statistics SQL](../../sql/statistics/15_conflicting_npis_share_facility.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
+
 Exact read-only evaluation over 75,564,265 saved metric rows. Percentages below use each vendor’s conflict rows. — means no conflicts.
 
 | Vendor | Conflict rows | Shared, n (%) | Disjoint, n (%) | Unknown, n (%) |

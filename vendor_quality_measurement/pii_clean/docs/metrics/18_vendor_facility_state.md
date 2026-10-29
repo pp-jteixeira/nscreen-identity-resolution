@@ -34,6 +34,8 @@ This mixed-source historical facility reference has no vendor-day alignment and 
 
 ## Vendor measurements
 
+[Statistics SQL](../../sql/statistics/18_vendor_facility_state.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run vendor totals, then outcome counts; link-level outcomes can overlap across historical records.
+
 Percentages use all distinct links within each vendor. Historical-state changes can put one link in multiple outcome groups.
 
 | Vendor | Links | Agreement, n (%) | Disagreement, n (%) | Mixed, n (%) |

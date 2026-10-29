@@ -33,6 +33,8 @@ Maintain [docs/email_lookup.md](docs/email_lookup.md) as the repository referenc
 
 Give each notion/metric a concise Markdown page, generally 150–300 words, for junior analysts, engineers and managers. Include principle, examples, per-vendor statistics, full table names, exact columns, relevant keys, dates, limitations and linked SQL. Label illustrative examples. Include a concise “How it is computed” section: plain-language transformations and grouping scope, plus short `expression AS column_name` SQL excerpts where practical. Explain helper values and null behavior; link detailed SQL instead of duplicating it.
 
+At each metric's statistics section, link a versioned standalone population query under `sql/statistics/`, separately from its metric-calculation macro or integrity test. Identify original executed SQL versus equivalent aggregations, denominators, relevant statements/output sections, and any historical relation/date needed to reproduce the table. Export SQL text without result rows; retain local-only labels for excluded outputs.
+
 Documentation must stand alone: explain rules and assumptions directly, without references or links to unpublished or unreviewed pipeline versions. Comparisons may reference the production `pii_clean` pipeline only when its behavior has been verified.
 
 Keep documentation in this structure:

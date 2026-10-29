@@ -33,6 +33,8 @@ Comparison date defaults to Europe/Paris today; `registry_status_as_of_day` fixe
 
 ## Measurements
 
+[Statistics SQL](../../sql/statistics/17_npi_registry_status.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Statements cover NPPES availability, vendor totals, lifecycle outcomes and the independent replacement check.
+
 All 82/82 replacement values (100%) point to themselves. They remain unknown.
 
 Percentages below use all distinct links within each vendor.

@@ -27,6 +27,8 @@ Current NPPES evidence is not aligned to historical vendor dates. Disjoint codes
 
 ## Statistics by vendor
 
+[Statistics SQL](../../sql/statistics/16_conflicting_npis_share_specialty.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
+
 Exact evaluation over 75,564,265 saved rows. Outcome percentages use each vendor’s conflict rows; — means no conflicts.
 
 | Vendor | Conflict rows | Shared, n (%) | Disjoint, n (%) | Unknown, n (%) |

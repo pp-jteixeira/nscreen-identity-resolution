@@ -39,6 +39,8 @@ Any qualifying pair gives true; usable comparisons without a match give false; a
 
 ## Statistics by source
 
+[Statistics SQL](../../sql/statistics/07_vendor_name_matches_registry_name.sql). This standalone read-only equivalent calculates the displayed row counts and percentages from the published table. The saved October 29 tables were derived from the linked grouped-population extraction; this equivalent has been checked locally, not executed against Trino.
+
 Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-record/email-position grain. Percentages use all metric rows within each vendor. Counts are exact and cover all retained history; email–NPI links remain undeduplicated. These are saved measurements, not live counts.
 
 | Source | Metric rows | Match, n (%) | No match, n (%) | Unknown, n (%) |

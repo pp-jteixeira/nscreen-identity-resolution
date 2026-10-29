@@ -40,6 +40,8 @@ Any true peer gives true; all known mismatches give false. Otherwise the result 
 
 ## Statistics by vendor
 
+[Statistics SQL](../../sql/statistics/14_conflicting_npis_share_state.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+
 Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii_clean`. Extraction: `2026-10-29T10:21:38.979875+00:00`. Exact counts. State availability percentages use all vendor rows; outcome percentages use that vendor’s conflict rows.
 
 | Vendor | Usable-state rows, n (%) | Conflict rows | Shared state, n (%) | Different states, n (%) | Unknown states, n (%) |

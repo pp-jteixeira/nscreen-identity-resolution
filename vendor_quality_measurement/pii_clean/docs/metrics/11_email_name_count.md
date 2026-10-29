@@ -28,6 +28,8 @@ HealthLink uses its HCP-name reference by NPI across retained HCP history, witho
 
 ## Statistics by vendor
 
+[Statistics SQL](../../sql/statistics/11_email_name_count.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results.
+
 Historical baseline: `pii__evidence` was the measurement relation at the stated extraction time; it is outside the current managed build. This table is not a live population report.
 
 Measured **October 29, 2026**, on `iceberg.jteixeira_ipa.pii__evidence`, across all retained history. Extraction timestamp: `2026-10-29T07:42:53.767364+00:00`. Counts are exact.

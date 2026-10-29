@@ -20,6 +20,8 @@ Rank recognized states per UID by distinct observed dates **before** the email j
 
 ## Window and measurements
 
+[Statistics SQL](../../sql/statistics/19_cookie_location_evidence.sql). This file preserves the executed read-only SQL behind these statistics, including the original measurement relation. Re-running it requires that relation and reference inputs; changing sources will change the results. Run coverage, vendor totals and grouped outcomes; select the named grouping-set section instead of summing overlapping sections. Evaluation remains fixed to October 29, 2026.
+
 Default evaluation uses Europe/Paris today; `location_evidence_day` fixes it. October 29 evaluation uses October 22–28, excluding evaluation day and future data. Historical vendor records remain intact; this is retrospective window evidence, not historical attendance.
 
 Metadata inspection found mapping dates on 6/7 days (85.71%), missing October 28; geo dates on 7/7 (100%). Date presence does not establish complete data. Geo snapshots can share a 15-day hourly lookback; repeated days are not independent confirmations.

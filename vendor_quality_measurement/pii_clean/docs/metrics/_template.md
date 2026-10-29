@@ -22,6 +22,8 @@ Explain helper values and zero/false/null behavior. Label simplified expressions
 
 Measured on: [date]. Source data period: [range, or source-specific ranges].
 
+**Statistics SQL:** link a versioned standalone query under `sql/statistics/` that generates the displayed counts and denominators. Distinguish original executed SQL from an equivalent query. State which statement or output section supplies each table, any aggregation/formatting after extraction, and historical relation/date requirements. Calculation macros and integrity tests do not substitute for this statistics query. Keep result rows and local execution logs excluded from Git.
+
 | Source | Eligible metric rows | Measurable rows, n (%) | Result or distribution |
 |---|---:|---:|---|
 | [Every source] | [count] | [count and % of eligible metric rows] | [value] |
