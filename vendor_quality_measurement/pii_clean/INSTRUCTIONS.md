@@ -1,8 +1,8 @@
-# PII_CLEAN_V3 project instructions
+# PII Clean project instructions
 
 ## Purpose and history
 
-Understand evidence for email–NPI attribution before choosing scores. Use a dbt-style structure while keeping V3's scope iterative and understandable.
+Understand evidence for email–NPI attribution before choosing scores. Use a dbt-style structure while keeping the project's scope iterative and understandable.
 
 Use all currently retained source history, not the latest partition. Preserve older attributions when later records report another NPI. Repeated snapshots are not independent confirmations. Unknown dates stay unknown.
 

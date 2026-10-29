@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only native validation and specialty-overlap measurements on saved V3 rows.
+"""Read-only native validation and specialty-overlap measurements on saved records.
 
 Does not recreate views or publish the final table. Outputs record the executed SQL.
 """

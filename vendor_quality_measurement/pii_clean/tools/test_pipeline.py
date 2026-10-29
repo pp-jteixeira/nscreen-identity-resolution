@@ -66,7 +66,7 @@ class LayerContractTests(unittest.TestCase):
         self.assertEqual(len({(r['source'], r['email'], r['npi']) for r in rows}), 14)
         self.assertTrue(all(r[m] is None for r in rows for m in pipeline.NAME_METRICS))
         config = yaml.safe_load((pipeline.PROJECT / 'dbt_project.yml').read_text())
-        self.assertEqual(config['models']['pii_clean_v3']['final']['+materialized'], 'table')
+        self.assertEqual(config['models']['pii_clean']['final']['+materialized'], 'table')
 
     def test_build_creates_shared_views_only_once(self):
         statements = []

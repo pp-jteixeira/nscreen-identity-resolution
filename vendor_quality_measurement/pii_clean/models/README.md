@@ -1,4 +1,4 @@
-# V3 model boundaries
+# Model boundaries
 
 The project uses Jinja SQL with `source()`, `ref()`, shared macros, source declarations and schema files.
 

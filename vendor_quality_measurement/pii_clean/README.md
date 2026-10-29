@@ -1,6 +1,6 @@
-# PII Clean V3
+# PII Clean
 
-V3 evaluates vendor records across all retained source history. Metrics and indicators precede email–NPI deduplication. Scoring remains unimplemented.
+PII Clean evaluates vendor records across all retained source history. Metrics and indicators precede email–NPI deduplication. Scoring remains unimplemented.
 
 Documentation reconciled against local code and saved validation on October 29, 2026. Warehouse state below is the last verified state, not a fresh live inspection.
 
