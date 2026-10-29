@@ -67,6 +67,33 @@ graphify-out/reflections/
 *.log
 
 
+# Separate local repository checkouts
+/forge/
+/aggr3/
 
-forge/*
-aggr3/*
+# Local launcher configuration
+/.claude/launch.json
+
+# Data extracts and spreadsheet exports
+*.csv
+*.xls
+*.xlsx
+
+# Warehouse run logs and diagnostics; retain reusable repair/audit scripts
+/nscreen_state_daily/logs/**
+!/nscreen_state_daily/logs/**/
+!/nscreen_state_daily/logs/**/*.py
+
+# PII measurement outputs; retain reports, queries, models, and tools
+/vendor_quality_measurement/pii_clean/results/**/*.json
+/vendor_quality_measurement/pii_clean/results/**/*.txt
+/vendor_quality_measurement/pii_clean_v2/research/**/*.json
+/vendor_quality_measurement/pii_clean_v2/research/**/*.txt
+/vendor_quality_measurement/pii_clean_v2/research/**/*.lock
+
+# SQL emitted by the debug-day rebuild tool; model SQL lives under models/
+/vendor_quality_measurement/pii_clean_v2/research/debug_day_*/*.sql
+
+# Dashboard live-validation output; retain validation scripts and SQL
+/pii_clean_v2_dashboard/validation/*_checks.json
+ANALYSIS_PREFERENCES.md
