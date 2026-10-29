@@ -76,6 +76,7 @@ graphify-out/reflections/
 
 # Data extracts and spreadsheet exports
 *.csv
+!seeds/nicknames.csv
 *.xls
 *.xlsx
 
