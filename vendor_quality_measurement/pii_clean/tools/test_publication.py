@@ -64,7 +64,7 @@ class PublicationTests(unittest.TestCase):
             root = Path(directory)
             (root / 'tests').mkdir()
             for test in ('source_integrity', 'email_npi_multiplicity', 'email_linkage_history',
-                         'name_consistency', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location'):
+                         'name_consistency', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location', 'link_freshness'):
                 (root / f'tests/{test}.sql').write_text('SELECT ' + test)
             with patch.object(p, 'ROOT', root), patch.object(p, 'query', query), \
                     patch.object(p, 'read_model', return_value='SELECT * FROM union_models'), \
@@ -100,7 +100,7 @@ class PublicationTests(unittest.TestCase):
                              if kind == 'write' and sql.startswith('CREATE OR REPLACE TABLE'))
         tests = [(i, sql) for i, (kind, sql) in enumerate(events)
                  if kind == 'query' and sql.startswith('SELECT ') and 'evidence_checksum' not in sql]
-        self.assertEqual(len(tests), 11)
+        self.assertEqual(len(tests), 12)
         self.assertTrue(all(i < publish_index and 'candidate_' in sql for i, sql in tests))
 
     def test_union_also_validates_candidate_before_publication(self):

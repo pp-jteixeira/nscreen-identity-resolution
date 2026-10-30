@@ -468,6 +468,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_endato__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -936,6 +953,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_haymarket__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1404,6 +1438,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_healthlink__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1872,6 +1923,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_medscape__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2340,6 +2408,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_quantummedica__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2808,6 +2893,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_rocketreach__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -3276,6 +3378,23 @@ models:
     description: Exact-record definition identifier.
     data_tests:
     - not_null
+  - name: link_freshness_as_of_day
+    description: Evaluation day for stored link freshness, Europe/Paris today unless
+      overridden.
+    data_tests:
+    - not_null
+  - name: source_latest_observed_day
+    description: Latest valid parsed observation day among retained eligible records for
+      this vendor, including future dates.
+  - name: link_last_observed_day
+    description: Latest observation day across this source/email/NPI link, propagated to
+      every retained record. Null when undated.
+  - name: source_age_days
+    description: Days from source_latest_observed_day to evaluation day. Null for
+      undated or future-dated source evidence.
+  - name: link_lag_days
+    description: Days from link_last_observed_day to source_latest_observed_day. Null
+      for undated links or future-dated source evidence. No stale threshold.
 - name: int_name__variants
   description: One nickname expansion set per normalized first name.
 - name: int_npi__names

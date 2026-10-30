@@ -103,8 +103,11 @@ registry_metrics AS (
 location_metrics AS (
 {{ vendor_facility_records('registry_metrics') }}
 ),
-metrics AS (
+cookie_metrics AS (
 {{ cookie_location_records('location_metrics') }}
+),
+metrics AS (
+{{ link_freshness_records('cookie_metrics', 'metric_records') }}
 )
 {% if var('debug', false) %}
 , comparisons AS (
