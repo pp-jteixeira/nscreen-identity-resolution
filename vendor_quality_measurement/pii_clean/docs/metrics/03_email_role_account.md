@@ -15,15 +15,41 @@ coalesce(regexp_extract(email, '^([^@]+)@', 1) IN (
 ), false) AS email_role_account
 ```
 
-| Illustrative email | Flag |
-|---|---|
-| `billing@clinic.com` | true |
-| `jane@clinic.com` | false |
-| `billing.team@clinic.com` | false |
-| `billing+work@clinic.com` | false |
-| `info@` | true (format check fails) |
-
 **Limits:** false means outside this list, not confirmed personal ownership. Missing emails return false; metric views exclude empty email/NPI keys. Format validity is separate. No filtering or scoring.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Only the mailbox before `@` is shown; domains are omitted.
+
+[Runnable example SQL](../../sql/examples/03_email_role_account.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        'AA0491CD7AC32FC75FFE7748AA65628DEF3A37C570A2B2BF2D7AF4AABD426BDE'))
+       OR (source = 'medscape' AND metric_row_id IN (
+        'AB540EC836F806841DCEAF1D2D7CA8466CC6C031BD90119941498B57FA3E5872'))
+)
+SELECT m.source,
+       split_part(m.email, '@', 1) AS mailbox,
+       m.email_role_account,
+       m.email_format_valid
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 2 rows.
+
+| source | mailbox | email_role_account | email_format_valid |
+|---|---|---|---|
+| endato | info | true | true |
+| medscape | office.oa | false | true |
+
+**What differentiates these cases:** An exact role mailbox matches. Adding punctuation or a suffix changes the mailbox text and leaves it outside the exact list. A false flag does not prove personal ownership; format validity remains separate.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -43,6 +69,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Flagged means `email_role_account = true`. Repeated records and email positions can count the same email more than once. Distinct-email counts are not reconstructed by summing grouped distinct counts, because groups can overlap.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/email_role_profile.sql) · [Rule SQL](../../macros/email_role_account.sql)

@@ -25,7 +25,46 @@ Any match gives true. False requires usable, disjoint sets for every peer. Other
 
 Associations have no activity dates. Overlap proves neither coattendance nor ownership; disjoint sets do not prove different workplaces. HealthLink contributes reference evidence.
 
-**Illustrative:** `{F1,F2}` versus `{F2}` matches; versus missing evidence remains unknown.
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Conflict examples are selected with exactly one peer comparison, so the displayed peer fully explains the aggregate outcome. Undated Endato comparisons use the available vendor snapshot.
+
+[Runnable example SQL](../../sql/examples/15_conflicting_npis_share_facility.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
+        'BA2E681A099C6DCF48E741F31F4DA9744B7A4D4FBF656281D78517944D4F72C4',
+        'CE8141B8077B2FE80852C9AF88CB99C0FF2B3C84EB6C6C4293F90E954E801367'))
+       OR (source = 'haymarket' AND metric_row_id IN (
+        '3BA64E63FD9A2721167D2B60E3B60D71164171D99D17697F44AA1A7D35751BEE'))
+)
+SELECT m.source,
+       m.npi,
+       (element_at(m.conflicting_npi_facility_comparisons, 1)).npi AS peer_npi,
+       m.facility_npi_values AS own_values,
+       (element_at(m.conflicting_npi_facility_comparisons, 1)).facility_npis AS peer_values,
+       m.has_conflict_linkage AS conflict,
+       m.conflicting_npis_share_facility AS shares_facility
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 4 rows.
+
+| source | npi | peer_npi | own_values | peer_values | conflict | shares_facility |
+|---|---|---|---|---|---|---|
+| endato | 1114929445 | 1922090380 | [] | [] | true | NULL |
+| endato | 1275994485 | 1649528381 | [1194762294, 1538324009, 1962582015] | [1447206370, 1548253917, 1710970918] | true | false |
+| endato | 1558628578 | 1255422341 | [1033475959, 1184709057, 1326033341] | [1184709057, 1326033341] | true | true |
+| haymarket | 1639195985 | NULL | [1306883228, 1457071235, 1881642239, 1932829488, 1942920616] | NULL | false | NULL |
+
+**What differentiates these cases:** A known shared value gives true; known disjoint evidence gives false. With an established conflict, missing evidence leaves NULL. Without a conflict, NULL is not applicable. Facility IDs must overlap exactly. Shared state or cluster membership is insufficient, and empty facility sets are unknown.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -43,6 +82,6 @@ Exact read-only evaluation over 75,564,265 saved metric rows. Percentages below 
 | DRDB | 22,404 | 235 (1.05%) | 2,832 (12.64%) | 19,337 (86.31%) |
 | Haymarket | 0 | 0 (—) | 0 (—) | 0 (—) |
 
-[Link-level coverage and real examples](../../results/conflicting_facilities_summary.md) · Executed SQL/results (local-only: `../../results/conflicting_facilities_measure.json`) · Native checks (local-only: `../../results/conflicting_facilities_native.json`) · Local tests (local-only: `../../results/conflicting_facilities_local_tests.txt`)
+[Link-level coverage and real examples](../../results/conflicting_facilities_summary.md) · Executed SQL/results (historical output, not retained: `../../results/conflicting_facilities_measure.json`) · Native checks (historical output, not retained: `../../results/conflicting_facilities_native.json`) · Local tests (historical output, not retained: `../../results/conflicting_facilities_local_tests.txt`)
 
 [Lookup/comparison SQL](../../macros/facility_consistency.sql) · [Shared windows](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_facilities.sql) · [Stored facility inspection](../../sql/conflicting_facilities_debug.sql)

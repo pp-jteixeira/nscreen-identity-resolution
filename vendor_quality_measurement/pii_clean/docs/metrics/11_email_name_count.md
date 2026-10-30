@@ -15,16 +15,54 @@ cast(cardinality(array_distinct(transform(email_names,
 
 Names use the existing uppercase, accent and whitespace normalization. A usable pair has at least one first-name letter and two last-name letters. Missing, partial and punctuation-only names do not contribute. Zero means no usable names were observed. Repeated records, email slots, dates and registry-name matches cannot inflate the count.
 
-**Illustrative examples:**
-
-| Names for one vendor/email | Count | Explanation |
-|---|---:|---|
-| `José Smith`, `JOSE SMITH` | 1 | Normalization produces the same pair. |
-| `ROBERT SMITH`, `BOB SMITH` | 2 | Different spellings, despite fuzzy agreement. |
-| `JOHN SMITH` on NPI A; `JANE JONES` on NPI B | 2 | Count includes all NPIs for this email. |
-| First names only, or no names | 0 | No usable complete pair. |
-
 HealthLink uses its HCP-name reference by NPI across retained HCP history, without date alignment. Other vendors use their existing record name inputs; both DRDB feeds contribute. Registry names do not fill missing vendor names. `source_name_values` retains each record's normalized pairs and first-name variants for inspection.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `email_key` is a shortened SHA-256 label. `email_names` is an inspection helper collecting distinct normalized pairs across all retained records and NPIs for that vendor/email.
+
+[Runnable example SQL](../../sql/examples/11_email_name_count.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'drdb' AND metric_row_id IN (
+        '76F42EB2F2C6093316B5CDEF2587E5A52525DDC28EA8CF1B437507091D8AF857'))
+       OR (source = 'endato' AND metric_row_id IN (
+        '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        '3DD35EF677E8852E5BADCA2E63D87755D8184021D9CBC395E23F6BBD95E7E8DE'))
+), context_names AS (
+    SELECT t.source, t.email,
+           array_sort(array_distinct(flatten(array_agg(transform(t.source_name_values, n -> concat(n.first_name, ' ', n.last_name)))))) AS names
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886 t
+    JOIN (SELECT DISTINCT source, email FROM selected) k
+      ON t.source = k.source AND t.email = k.email
+    GROUP BY t.source, t.email
+)
+SELECT m.source,
+       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email_npi_count,
+       m.email_name_count,
+       c.names AS email_names,
+       m.email_npi_has_name_conflict
+FROM selected m
+LEFT JOIN context_names c ON m.source = c.source AND m.email = c.email
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | email_key | email_npi_count | email_name_count | email_names | email_npi_has_name_conflict |
+|---|---|---|---|---|---|
+| drdb | 6B7B55A02822 | 1 | 2 | [KEITH LONG, KEITHLINTON LONG] | false |
+| endato | 87CB8A58EDB9 | 2 | 2 | [ANGRETTE MCCLOSKEY, TAHANI MCCLOSKEY] | false |
+| quantummedica | EBE10F43F336 | 1 | 0 | [] | NULL |
+
+**What differentiates these cases:** Different normalized spellings count separately even when fuzzy rules agree. An email-level name count can also span different NPIs. Zero means no usable vendor names; registry names do not fill that gap. Name count measures spellings, not people.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -42,6 +80,6 @@ Measured **October 29, 2026**, across all retained source history. Extraction co
 | DRDB | 819,454 | 56 (0.00683%) | 13,376 (1.63231%) | 3 |
 | Haymarket | 4,223,245 | 191,914 (4.54423%) | 0 (0.00000%) | 1 |
 
-Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (historical output, not retained: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (historical output, not retained: `../../results/name_consistency_native_validation.json`)
 
 [Profile SQL](../../sql/name_consistency_profile.sql) · [Rules](../../macros/name_consistency.sql) · [Name conflict](12_email_npi_has_name_conflict.md) · [Source fields](../00_source_map.md)

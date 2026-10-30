@@ -18,7 +18,46 @@ It joins these dates back to every original record without collapsing email posi
 
 Missing dates remain null. Undated records can inherit a known date from another record of the same link. Future dates remain visible, but a future vendor maximum makes both day counts null for that vendor. No negative ages, thresholds, filters or scores are introduced.
 
-**Illustrative example:** evaluated October 30, a vendor last observed October 28 has source age 2. A link last observed October 10 has lag 18; a link observed October 28 has lag 0.
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates.
+
+[Runnable example SQL](../../sql/examples/20_link_freshness.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '174DF23ED50299325123B7660ECB3AA68FEDD02FA7345B47D575396DEAF0419A'))
+       OR (source = 'haymarket' AND metric_row_id IN (
+        '774416407C42EA3A688EA08521D045D280032B7973C5D95696F91DC9BB8CE731'))
+       OR (source = 'medscape' AND metric_row_id IN (
+        '5871A1225861F4254047C0F9F0C40D5B0E9F433B8AAA9632B36BAEACE4DCD51D',
+        'ABDD5253F7AE1234C4E9B5856FF54938AD6993BA3DA4740DDF24B1DB96F480AA'))
+)
+SELECT m.source,
+       m.link_last_observed_day,
+       m.source_latest_observed_day,
+       m.source_age_days,
+       m.link_lag_days,
+       m.link_freshness_as_of_day AS evaluated_on
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 4 rows.
+
+| source | link_last_observed_day | source_latest_observed_day | source_age_days | link_lag_days | evaluated_on |
+|---|---|---|---|---|---|
+| endato | NULL | NULL | NULL | NULL | 2026-10-30 |
+| haymarket | 2021-07-06 | 2021-07-06 | 1942 | 0 | 2026-10-30 |
+| medscape | 2026-10-28 | 2026-10-28 | 2 | 0 | 2026-10-30 |
+| medscape | 2024-03-07 | 2026-10-28 | 2 | 965 | 2026-10-30 |
+
+**What differentiates these cases:** Haymarket can have zero link lag while the entire feed is old. Medscape separates a link far behind its feed from a link present on the feed's latest day. Undated Endato evidence stays NULL. Zero lag therefore means current within the retained feed, not fresh in calendar time.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics and limits
 
@@ -40,4 +79,4 @@ Evaluation day: `2026-10-30`. The query covers all 75,564,265 retained rows and 
 | quantummedica | 1,705,723 | 0 (0.00%) | 2026-10-15 | 15 | 1,692,618 / 1,705,723 (99.23%) | 0 / 0 | 396 |
 | rocketreach | 3,199,535 | 3,199,535 (100.00%) | — | — | — | — / — | — |
 
-Measured on published snapshot `1613450720463268051`. The linked standalone SQL is the executed aggregation. No future-dated links were observed. Detailed SQL and aggregate measurements are local-only: `../../results/link_freshness_published_statistics_20261030.json`.
+Measured on published snapshot `1613450720463268051`. The linked standalone SQL is the executed aggregation. No future-dated links were observed. Detailed SQL and aggregate measurements are historical output, not retained: `../../results/link_freshness_published_statistics_20261030.json`.

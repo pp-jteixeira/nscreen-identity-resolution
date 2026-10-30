@@ -511,6 +511,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_endato__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1022,6 +1065,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_haymarket__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1533,6 +1619,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_healthlink__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2044,6 +2173,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_medscape__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2555,6 +2727,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_quantummedica__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -3066,6 +3281,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_rocketreach__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -3577,6 +3835,49 @@ models:
       contains undated or invalid-day observations. Shares cover known dates only.
     data_tests:
     - not_null
+  - name: npi_format_valid
+    description: "Ten ASCII digits beginning with 1 through 4. Null for missing input."
+  - name: npi_checksum_valid
+    description: "Luhn checksum including the 80840 prefix. Null unless input has exactly ten ASCII digits."
+  - name: npi_structure_valid
+    description: "Format and checksum both pass. Does not establish registry existence or activity."
+  - name: npi_structure_reason
+    description: "missing, malformed, unsupported_prefix, checksum_failure or valid, in that priority order."
+    data_tests:
+    - not_null
+  - name: npi_entity_type
+    description: "Registry consensus: individual, organization or unknown. Independent of structure and lifecycle status."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reason
+    description: "registry_consensus, not_found, conflicting_reference_records, missing_entity_type or unrecognized_entity_type."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_evidence
+    description: "Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_reference_row_count
+    description: "Number of NPPES reference rows for the identifier. Duplicate rows never multiply metric records."
+    data_tests:
+    - not_null
+  - name: npi_entity_type_variant_count
+    description: "Number of distinct trimmed entity-code variants, counting missing as a variant."
+    data_tests:
+    - not_null
+  - name: npi_identity_as_of_day
+    description: "Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_reference_table
+    description: "Registry relation used for entity type evidence."
+    data_tests:
+    - not_null
+  - name: npi_identity_definition_version
+    description: "Version of structural validation and entity-consensus rules."
+    data_tests:
+    - not_null
+
 - name: int_name__variants
   description: One nickname expansion set per normalized first name.
 - name: int_npi__names

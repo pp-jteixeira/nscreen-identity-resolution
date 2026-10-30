@@ -17,7 +17,7 @@ from test_models import execute
 class PublishedReportTests(unittest.TestCase):
     def test_profiles_read_published_rows_and_preserve_source_scope(self):
         profiles = sorted((p.ROOT / 'sql').glob('*profile.sql'))
-        self.assertEqual(len(profiles), 17)
+        self.assertEqual(len(profiles), 18)
         for path in profiles:
             for source in (None, 'endato'):
                 with self.subTest(profile=path.name, source=source):
@@ -55,6 +55,7 @@ class PublishedReportTests(unittest.TestCase):
             (p.report_location, {'metric': 'cookie_location_status'}),
             (p.report_location, {'metric': 'link_freshness'}),
             (p.report_location, {'metric': 'link_stability'}),
+            (p.report_location, {'metric': 'npi_identity'}),
         ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -69,12 +70,8 @@ class PublishedReportTests(unittest.TestCase):
                             self.assertIn(f"FROM {p.relation(p.FINAL_MODEL)} WHERE source = '{source}'", sql)
                             self.assertNotIn('pii__int_', sql)
                 self.assertEqual(query.call_count, len(calls) * len(p.SOURCES))
-            artifacts = list((root / 'results').glob('*.json'))
-            self.assertEqual(len(artifacts), len(calls) * len(p.SOURCES))
-            for path in artifacts:
-                data = json.loads(path.read_text())
-                self.assertEqual(data['relation'], p.relation(p.FINAL_MODEL))
-                self.assertIn(data['source'], p.SOURCES)
+            self.assertFalse((root / 'results').exists())
+
 
 
 if __name__ == '__main__':

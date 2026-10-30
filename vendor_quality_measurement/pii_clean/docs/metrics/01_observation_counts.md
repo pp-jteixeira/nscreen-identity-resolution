@@ -19,16 +19,48 @@ count_if(invalid_vendor_day) AS invalid_day_observation_count
 
 `invalid_vendor_day` means a supplied day cannot be parsed. `observed_days` stores sorted unique valid dates, or an empty array. Date bounds and `observed_day_count` stay null when no valid date exists. Changes to other raw fields produce separate records.
 
-**Illustrative examples:**
-
-| Input | Metric output |
-|---|---|
-| Same record on three dates | One row per email position, three observations, three dates. |
-| Same email/NPI, changed name on second date | Separate rows; name indicators evaluated separately. |
-| Same email in two slots, identical record on three dates | Two rows, each with three observations and three dates. |
-| Same undated record twice | One row per email position, two observations, null date bounds. |
-
 Counts repeat across a record's email positions. Their sum measures email-position observations, not raw rows or independent confirmations. `record_id` identifies the source record; `metric_row_id` also includes email position. `record_payload` retains raw values except `day` for inspection.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. The stored cleaned email and NPI are shown unchanged, with exact record keys retained in the SQL.
+
+[Runnable example SQL](../../sql/examples/01_observation_counts.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '174DF23ED50299325123B7660ECB3AA68FEDD02FA7345B47D575396DEAF0419A'))
+       OR (source = 'healthlink' AND metric_row_id IN (
+        '39C2F78FA687F1D8257987C722B350B90A42B9D83BDCB5B4C32B9E8D2EC80905'))
+       OR (source = 'medscape' AND metric_row_id IN (
+        '1D343DCA154DC149F0A4E90D7B8561D297C4AECDD3C3E710080DF56062E864CE'))
+)
+SELECT m.source,
+       m.email,
+       m.npi,
+       m.observation_count,
+       m.observed_day_count,
+       m.first_seen_day,
+       m.last_seen_day,
+       m.undated_observation_count
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | email | npi | observation_count | observed_day_count | first_seen_day | last_seen_day | undated_observation_count |
+|---|---|---|---|---|---|---|---|
+| endato | arnie.hicks@gmail.com | 1124164199 | 1 | NULL | NULL | NULL | 1 |
+| healthlink | joshhagen@live.com | 1205185006 | 237 | 237 | 2026-03-02 | 2026-10-25 | 0 |
+| medscape | jonathan.weinkle@gmail.com | 1598891004 | 1 | 1 | 2025-08-07 | 2025-08-07 | 0 |
+
+**What differentiates these cases:** The repeated HealthLink record spans many distinct dates. A single dated Medscape observation has a day count of one, while a single undated Endato observation has NULL date bounds and day count. Observation count cannot substitute for date coverage, and repetition is not independent confirmation.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -48,6 +80,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Median and P95 use exact weighted nearest-rank quantiles over metric rows. Repeated means `observation_count > 1`. Observation totals repeat across email positions; they are not raw source-row totals.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/profile.sql) · [Rule SQL](../../macros/record_versions.sql)

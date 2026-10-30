@@ -16,9 +16,47 @@ bool_or(registry_match) AS email_matches_registry_name
 
 `registry_npi_present` distinguishes an absent NPI from an existing NPI with unusable names. `registry_name_usable` records whether comparison is possible. Reference presence does not establish NPI validity or active status.
 
-**Illustrative examples:** `bobsmith@example.test` matches registry ROBERT SMITH. `random@example.test` does not. An NPI absent from the registry gives unknown.
-
 **Limits:** all readable registry name variants contribute, regardless of `last_update_date` or deactivation. This is not an as-of join: a historical vendor link can match a name recorded later. The same email can match multiple NPIs sharing names or initials.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Domains are omitted. The stored flag comes from the pinned publication; displayed normalized registry names come from the current readable name view, not a historical name snapshot.
+
+[Runnable example SQL](../../sql/examples/06_email_matches_registry_name.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '3AB5531256593B67A556B04342AE72261F03C9B3416FD46E7250A59C2C6AB8C4',
+        '943C32434D8F3C31FB2CE056B12EAA4B99EC80176D39E205E3F44D254A4D8156'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        'DDC68949352F656A5940211F39FA5D49EBDFA57F7AB2B41CCF7C1E1F7278BABA'))
+)
+SELECT m.source,
+       split_part(m.email, '@', 1) AS mailbox,
+       concat(r.first_name, ' ', r.last_name) AS registry_name,
+       m.registry_npi_present,
+       m.registry_name_usable,
+       m.email_matches_source_name,
+       m.email_matches_registry_name
+FROM selected m
+LEFT JOIN iceberg.jteixeira_ipa.pii__int_npi__names r ON m.npi = r.npi
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | mailbox | registry_name | registry_npi_present | registry_name_usable | email_matches_source_name | email_matches_registry_name |
+|---|---|---|---|---|---|---|
+| endato | dawney24 | NULL | false | false | false | NULL |
+| endato | sav1999 | EMILY SANDERS | true | true | false | false |
+| quantummedica | austin | MARTIN AUSTIN | true | true | NULL | true |
+
+**What differentiates these cases:** Registry resemblance can be true even when the vendor supplied no usable name: the QuantumMedica row has a NULL source-name match but a true registry-name match. A usable registry name without mailbox agreement gives false. An absent registry NPI leaves NULL. The displayed `austin`/MARTIN AUSTIN pair also passes the one-edit fallback: `austin` differs from initial-plus-surname `maustin` by one deletion. This permissive rule can accept surname-only mailboxes. The registry flag aggregates all usable reference variants; displayed names are inspection evidence.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -38,6 +76,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Unknown is null, not false. Name outcomes can differ across records sharing the same email/NPI. These row counts do not establish distinct-email outcome counts.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/name_match_profile.sql) · [Rule SQL](../../macros/name_matching.sql)

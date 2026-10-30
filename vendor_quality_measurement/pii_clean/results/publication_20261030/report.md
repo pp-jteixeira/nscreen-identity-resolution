@@ -18,7 +18,7 @@ The new dates and day counts describe retained vendor evidence. They do not veri
 
 Existing named-column queries retain their fields and values. Consumers that assume exactly 103 columns from `SELECT *` must accept the five appended fields. The complete lookup expands from 109 to 114 outputs.
 
-See the [metric definition and vendor measurements](../../docs/metrics/20_link_freshness.md) and [standalone population SQL](../../sql/statistics/20_link_freshness.sql). Detailed executed SQL, query IDs, aggregate counts, checksums and checks are local-only: `freshness_build.json` in this directory. Synthetic Trino fixtures and vendor plans are local-only: `../link_freshness_validation_20261030.json`. No individual email or NPI values are included in this report.
+See the [metric definition and vendor measurements](../../docs/metrics/20_link_freshness.md) and [standalone population SQL](../../sql/statistics/20_link_freshness.sql). Detailed executed SQL, query IDs, aggregate counts, checksums and checks are historical output, not retained: `freshness_build.json` in this directory. Synthetic Trino fixtures and vendor plans are historical output, not retained: `../link_freshness_validation_20261030.json`. No individual email or NPI values are included in this report.
 
 ## Consumer validation
 

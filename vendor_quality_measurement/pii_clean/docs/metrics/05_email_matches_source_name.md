@@ -26,7 +26,44 @@ bool_or(source_match) AS email_matches_source_name
 
 Names stay paired within their source record. Changed source records stay separate. HealthLink alone attaches distinct HCP-reference names by NPI across retained history, without date alignment. Repeated observations add no weight.
 
-**Illustrative examples:** `bobsmith@example.test` matches ROBERT SMITH; `jsmith@example.test` can match both JOHN SMITH and JANE SMITH; no usable name means unknown. Format validation is separate. RocketReach and DRDB full-name parsing can mistake titles or suffixes for name parts.
+Format validation is separate. RocketReach and DRDB full-name parsing can mistake titles or suffixes for name parts.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Domains are omitted. `vendor_names` displays normalized names from this exact record.
+
+[Runnable example SQL](../../sql/examples/05_email_matches_source_name.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '7043AC9E562F5F136D74A9F97D058212CFA121114A1774A885886A4191415F38',
+        'FD13E1A91B10E0169EB0E2880202F0C7024D164C9230CC158C3ABC85C2A6101D'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        'D678C06341C0CDE9EE0FE677515A39A66D167424179488066216A273376FC028'))
+)
+SELECT m.source,
+       split_part(m.email, '@', 1) AS mailbox,
+       transform(m.source_name_values, n -> concat(n.first_name, ' ', n.last_name)) AS vendor_names,
+       m.source_name_usable,
+       m.email_matches_source_name
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | mailbox | vendor_names | source_name_usable | email_matches_source_name |
+|---|---|---|---|---|
+| endato | gtarbour | [GERALD ARBOUR] | true | true |
+| endato | mrsmiller1987 | [FRANCIS COTTONE] | true | false |
+| quantummedica | ehoffman | [] | false | NULL |
+
+**What differentiates these cases:** `gtarbour` starts with G and ends with ARBOUR, so the initial/surname rule accepts it for GERALD ARBOUR despite the intervening text. A usable nonmatching name gives false. An empty vendor-name array leaves the outcome NULL. Registry evidence never fills the missing vendor name, and mailbox resemblance does not prove ownership.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -46,6 +83,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Unknown is null, not false. Name outcomes can differ across records sharing the same email/NPI. These row counts do not establish distinct-email outcome counts.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/name_match_profile.sql) · [Rule SQL](../../macros/name_matching.sql)

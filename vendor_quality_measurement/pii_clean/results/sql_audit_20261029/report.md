@@ -41,7 +41,7 @@ Live schema inspection found **41 columns in `pii_clean` and each of the seven v
 | [tests/registry_status.sql](../../tests/registry_status.sql) | `npi_registry_status` | Enrich with `registry_status_records`. |
 | [tests/vendor_facility_state.sql](../../tests/vendor_facility_state.sql) | `vendor_state_evidence` | Enrich with `vendor_facility_records`. |
 
-**Candidate fixes:** all 13 read-only enrichment candidates passed live `EXPLAIN (TYPE VALIDATE)`. Their exact SQL and query IDs are in fix_candidates.json (local-only: `fix_candidates.json`). They were not applied to source files or fully executed; validation confirms syntax, relation/column resolution and types, not completion time or population correctness.
+**Candidate fixes:** all 13 read-only enrichment candidates passed live `EXPLAIN (TYPE VALIDATE)`. Their exact SQL and query IDs are in fix_candidates.json (historical output, not retained: `fix_candidates.json`). They were not applied to source files or fully executed; validation confirms syntax, relation/column resolution and types, not completion time or population correctness.
 
 **Initial impact:** these failures blocked their respective diagnostics, profiles and live tests. They do not indicate corruption of the existing 41-column table. Using read-only enrichment changes only query output and cost. Keep complete source/email peer groups and exact conflict-day rules so filtering does not remove comparison evidence. Enrichment uses current reference data and can differ from a historical materialized snapshot.
 
@@ -55,7 +55,7 @@ The pipeline already configures `distinct_aggregations_strategy=single_step`. Wi
 
 The bounded execution retry with the setting returned **passed** (1 row, 55.6s).
 
-These stage counts describe the earlier 41-column views. The later 103-column union required 721 stages even with the pipeline setting, and was published successfully using vendor batches. See stage-limit evidence (local-only: `stage_limit.json`) and retry evidence (local-only: `final_retry.json`).
+These stage counts describe the earlier 41-column views. The later 103-column union required 721 stages even with the pipeline setting, and was published successfully using vendor batches. See stage-limit evidence (historical output, not retained: `stage_limit.json`) and retry evidence (historical output, not retained: `final_retry.json`).
 
 ## Timeouts: not established SQL defects
 
@@ -209,10 +209,10 @@ The 163 scripts under `results/table_cleanup_20261029/` contain destructive hist
 
 ## Evidence
 
-- Original inventory, SQL, validation and execution records (local-only: `audit.json`)
-- Validated fix candidates and correctly rendered profile (local-only: `fix_candidates.json`)
-- Published schema inspection (local-only: `published_schema.csv`)
-- Local test output (local-only: `local_tests.txt`)
-- Execution progress log (local-only: `progress.log`)
+- Original inventory, SQL, validation and execution records (historical output, not retained: `audit.json`)
+- Validated fix candidates and correctly rendered profile (historical output, not retained: `fix_candidates.json`)
+- Published schema inspection (historical output, not retained: `published_schema.csv`)
+- Local test output (historical output, not retained: `local_tests.txt`)
+- Execution progress log (historical output, not retained: `progress.log`)
 
 The original audit record retains the first `profile.sql` placeholder error. The report and file matrix use its subsequent correctly rendered validation/execution result from `fix_candidates.json`.

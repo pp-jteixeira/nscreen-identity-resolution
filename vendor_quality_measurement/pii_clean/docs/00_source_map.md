@@ -49,7 +49,7 @@ Measured October 28, 2026, at exact-record grain. Date bounds describe readable 
 | DRDB | Unknown | 1,115,415 (100.00000%) |
 | Haymarket | 2021-07-06 / 2021-07-06 | 0 (0.00000%) |
 
-Measured history and SQL (local-only: `../results/email_linkage_measurements.json`). Endato, RocketReach and both DRDB inputs have no delivery `day`; their observation dates stay unknown. Other timestamps remain part of record identity, including RocketReach `created_at` and `updated_at`. For `has_conflict_linkage`, all currently available undated records are compared within each vendor; both DRDB feeds are combined for that comparison. This assumes comparability, not a common collection date. Multi-NPI reassignment remains unknown without dated history.
+Measured history and SQL (historical output, not retained: `../results/email_linkage_measurements.json`). Endato, RocketReach and both DRDB inputs have no delivery `day`; their observation dates stay unknown. Other timestamps remain part of record identity, including RocketReach `created_at` and `updated_at`. For `has_conflict_linkage`, all currently available undated records are compared within each vendor; both DRDB feeds are combined for that comparison. This assumes comparability, not a common collection date. Multi-NPI reassignment remains unknown without dated history.
 
 [Inventory SQL](../sql/history_inventory.sql) · [Profile SQL](../sql/profile.sql) · [Raw schema inventory](../models/record_schemas.json)
 
@@ -104,3 +104,7 @@ Evaluation uses seven completed days before Europe/Paris today, configurable wit
 ## Link stability dates
 
 [Link stability](metrics/21_link_stability.md) unions exact `observed_days` and `conflict_days`, separately within each vendor. Dates do not come from references, cookies or publication timestamps. Counts represent known distinct days, not raw records or delivery frequency. Endato, RocketReach and DRDB retain zero known-day counts and NULL shares. `link_stability_has_undated_observations` flags any undated or invalid-day evidence across the entire vendor/email history, including another NPI whose overlap timing cannot be established. Known-day shares remain usable with that qualification. Calendar gaps are not filled.
+
+## NPI structure and entity type
+
+[Metric 22](metrics/22_npi_identity.md) checks retained `npi` text and reads `entity_type_code` from `iceberg.npi.nppes_npidata_latest`. Reference rows collapse per NPI before joining. Entity codes 1 and 2 mean individual and organization, independently of identifier digits and lifecycle status. Missing or conflicting evidence remains unknown. Evaluation date records the reference evaluation, not a historical vendor observation or reference delivery date.

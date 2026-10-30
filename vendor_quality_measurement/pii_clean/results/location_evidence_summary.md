@@ -19,7 +19,7 @@ Source-date coverage was unchanged before and after the population scan:
 
 Positive partition file counts establish date presence only, not logical-row completeness or individual UID coverage. Geo snapshots can share a 15-day hourly lookback, so days are not independent confirmations. Raw source/reference snapshots are not pinned for later reproduction.
 
-Coverage, executed cookie SQL and aggregate results (local-only: `location_evidence_cookie.json`) · Earlier partition/token inspection (local-only: `location_source_inspection.json`)
+Coverage, executed cookie SQL and aggregate results (historical output, not retained: `location_evidence_cookie.json`) · Earlier partition/token inspection (historical output, not retained: `location_source_inspection.json`)
 
 ## Vendor state versus own-NPI facility state
 
@@ -39,7 +39,7 @@ Percentages use all distinct email–NPI links in each vendor. One historical li
 
 QuantumMedica and Haymarket provide no usable vendor states in this saved population. They therefore cannot produce a vendor-state agreement or disagreement, even when a facility reference exists. Missing facility evidence and missing vendor state remain separate outcomes. Disagreement alone does not establish a bad identity link.
 
-Executed facility queries and results (local-only: `location_evidence_facility.json`)
+Executed facility queries and results (historical output, not retained: `location_evidence_facility.json`)
 
 ## Cookie/UID evidence availability
 
@@ -97,7 +97,7 @@ Mixed-state evidence and explicit unknown-reference/unknown-cookie outcomes rema
 
 ## Original-state diagnostic examples
 
-Truncated, nonrandom sample: up to 500 stored records per selected vendor. These grouped examples preserve original state text without exporting email, UID or hash identifiers. Sample counts are not population prevalence estimates. Executed sample SQL and aggregate results (local-only: `location_facility_examples.json`).
+Truncated, nonrandom sample: up to 500 stored records per selected vendor. These grouped examples preserve original state text without exporting email, UID or hash identifiers. Sample counts are not population prevalence estimates. Executed sample SQL and aggregate results (historical output, not retained: `location_facility_examples.json`).
 
 | Vendor | Original state text | Normalized states | Facility state | Outcome | Sample records, n (% of 500) |
 |---|---|---|---|---|---:|
@@ -178,7 +178,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 - Both full-population measurements retained 75,564,265 metric rows with unique source/metric-row keys and zero invariant failures. Cookie location-status groups also partitioned all 26,730,605 distinct source/email/NPI links.
 - Both runs used the same saved input snapshot, and each verified it stayed unchanged. Source-date availability also matched before and after the cookie scan. This is read-only enrichment, not a full raw-source rebuild or before/after checksum comparison of every original attribute.
 - All seven production vendor queries planned successfully: HealthLink 117, QuantumMedica 102, Medscape 102, Endato 93, RocketReach 93, DRDB 110, Haymarket 102 fragments; each is below the 150-stage limit. Native planning does not prove performance of a full future source rebuild.
-- The earlier enrichment-based [complete email lookup](../docs/email_lookup.md) passed native validation, planning with 46 fragments and three synthetic record checks across all five new groups. No real email-result rows were fetched. The saved lookup-validation checkpoint (local-only: `email_lookup_full_local_tests.txt`) passed 58 tests; native lookup evidence (local-only: `email_lookup_full_validation.json`) records its own validation.
+- The earlier enrichment-based [complete email lookup](../docs/email_lookup.md) passed native validation, planning with 46 fragments and three synthetic record checks across all five new groups. No real email-result rows were fetched. The saved lookup-validation checkpoint (historical output, not retained: `email_lookup_full_local_tests.txt`) passed 58 tests; native lookup evidence (historical output, not retained: `email_lookup_full_validation.json`) records its own validation.
 - These historical validations changed no warehouse tables or views. The subsequent [full publication](publication_20261029/report.md) stored all five additions: facility relatedness, specialty relatedness, lifecycle, vendor/facility state and cookie location. The complete lookup now reads all published columns directly; the shorter shortcut remains a subset.
 
 ### Reproduce read-only checks
@@ -194,4 +194,4 @@ From the project directory; this measurement tool fixes evaluation to October 29
 
 Live measurement outputs contain aggregate counts and validation results only. Raw mapping payloads are not exported.
 
-[Vendor-state definition](../docs/metrics/18_vendor_facility_state.md) · [Cookie definition](../docs/metrics/19_cookie_location_evidence.md) · Local tests (local-only: `location_evidence_local_tests.txt`) · Native evidence (local-only: `location_evidence_native.json`) · Vendor plans (local-only: `location_evidence_plans.json`)
+[Vendor-state definition](../docs/metrics/18_vendor_facility_state.md) · [Cookie definition](../docs/metrics/19_cookie_location_evidence.md) · Local tests (historical output, not retained: `location_evidence_local_tests.txt`) · Native evidence (historical output, not retained: `location_evidence_native.json`) · Vendor plans (historical output, not retained: `location_evidence_plans.json`)

@@ -30,9 +30,9 @@ The publication verifies this full build, its stored schema, record preservation
 
 ## Evidence
 
-- Final build manifest and native validation (local-only: `final_build.json`)
-- Previous published attributes and checksums (local-only: `preservation.json`)
-- Post-publication query checks (local-only: `post_publication_checks.json`)
-- Enrichment-query compatibility checks (local-only: `query_compatibility.json`)
-- Initial HDFS commit failure (local-only: `commit_failure.json`)
-- Build log (local-only: `build.log`)
+- Final build manifest and native validation (historical output, not retained: `final_build.json`)
+- Previous published attributes and checksums (historical output, not retained: `preservation.json`)
+- Post-publication query checks (historical output, not retained: `post_publication_checks.json`)
+- Enrichment-query compatibility checks (historical output, not retained: `query_compatibility.json`)
+- Initial HDFS commit failure (historical output, not retained: `commit_failure.json`)
+- Build log (historical output, not retained: `build.log`)

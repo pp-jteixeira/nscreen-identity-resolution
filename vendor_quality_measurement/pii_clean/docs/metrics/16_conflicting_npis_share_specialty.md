@@ -21,9 +21,49 @@ END AS shares_specialty
 
 Any match gives true. False requires known disjoint retained sets for every peer. Otherwise null means missing evidence, unknown timing or inapplicable conflict. Preserve peer NPIs, dates, code sets and intersections. Lookup aggregation preserves record grain.
 
-**Illustrative:** two providers sharing `207Q00000X` match. Different codes under the same broad classification do not. Unrecognized-only codes remain unknown.
-
 Current NPPES evidence is not aligned to historical vendor dates. Disjoint codes do not prove clinically unrelated providers; shared codes do not establish email ownership.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Conflict examples are selected with exactly one peer comparison, so the displayed peer fully explains the aggregate outcome. Undated Endato comparisons use the available vendor snapshot.
+
+[Runnable example SQL](../../sql/examples/16_conflicting_npis_share_specialty.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
+        '81EEC062442BE87D989714B321418BF79E372D7467D15AC482DE2844E199216D',
+        'A3299D24002D082B3C08421FE21B7E983C55D975FD46ECF9BC388D5C60E3052F'))
+       OR (source = 'haymarket' AND metric_row_id IN (
+        '207590C83205FF116C6350B5F9ED7FD684F8341BDD55BA5CA2FF0A38755319AF'))
+)
+SELECT m.source,
+       m.email,
+       m.npi,
+       (element_at(m.conflicting_npi_specialty_comparisons, 1)).npi AS peer_npi,
+       m.specialty_code_values AS own_values,
+       (element_at(m.conflicting_npi_specialty_comparisons, 1)).specialty_codes AS peer_values,
+       m.has_conflict_linkage AS conflict,
+       m.conflicting_npis_share_specialty AS shares_specialty
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 4 rows.
+
+| source | email | npi | peer_npi | own_values | peer_values | conflict | shares_specialty |
+|---|---|---|---|---|---|---|---|
+| endato | cmizelle@att.net | 1114929445 | 1922090380 | [363L00000X, 367A00000X] | [363LP0200X] | true | false |
+| endato | mish16a@collegeclub.com | 1851550107 | 1083841183 | [225100000X] | [225100000X] | true | true |
+| endato | ramboleymah@gmail.com | 1902846181 | 1346316783 | [] | [163W00000X] | true | NULL |
+| haymarket | robinljones99@hotmail.com | 1215221387 | nan | [] | NULL | false | NULL |
+
+**What differentiates these cases:** A known shared value gives true; known disjoint evidence gives false. With an established conflict, missing evidence leaves NULL. Without a conflict, NULL is not applicable. `363L00000X` and `363LP0200X` do not match despite the shared prefix. Taxonomy codes must overlap exactly. Similar labels or broad specialty groups are insufficient, and empty code sets are unknown.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -41,6 +81,6 @@ Exact evaluation over 75,564,265 saved rows. Outcome percentages use each vendor
 | DRDB | 22,404 | 1,978 (8.83%) | 17,642 (78.74%) | 2,784 (12.43%) |
 | Haymarket | 0 | 0 (—) | 0 (—) | 0 (—) |
 
-[Coverage, link counts and examples](../../results/conflicting_specialties_summary.md) · Executed measurements (local-only: `../../results/conflicting_specialties_measure.json`) · Native validation (local-only: `../../results/conflicting_specialties_native.json`) · Local tests (local-only: `../../results/conflicting_specialties_local_tests.txt`)
+[Coverage, link counts and examples](../../results/conflicting_specialties_summary.md) · Executed measurements (historical output, not retained: `../../results/conflicting_specialties_measure.json`) · Native validation (historical output, not retained: `../../results/conflicting_specialties_native.json`) · Local tests (historical output, not retained: `../../results/conflicting_specialties_local_tests.txt`)
 
 [Lookup and comparison](../../macros/specialty_consistency.sql) · [Shared windows](../../macros/name_consistency.sql) · [Independent checks](../../tests/conflicting_specialties.sql) · [Post-publication inspection](../../sql/conflicting_specialties_debug.sql)

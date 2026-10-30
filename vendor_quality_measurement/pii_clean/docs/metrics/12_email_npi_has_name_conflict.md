@@ -16,18 +16,54 @@ END AS email_npi_has_name_conflict
 
 Both first and last names must agree under [metric 07's fuzzy rules](07_vendor_name_matches_registry_name.md): nicknames, shared tokens, permitted first-name prefixes and small spelling differences. First-name-only agreement is insufficient. Missing/partial names do not create disagreement; registry names never fill missing vendor names.
 
-**Illustrative examples:**
-
-| Names within one vendor/email/NPI | Name count | Conflict |
-|---|---:|---|
-| `ROBERT SMITH`, `BOB SMITH` | 2 | false |
-| `JOHN SMITH`, `JOHN JONES` | 2 | true |
-| `JOHN SMITH`, `JOHN SMITH-JONES`, `JOHN JONES` | 3 | true |
-| `JOHN SMITH`, missing name | 1 | false |
-
 Every pair is checked: the compound surname in the third example cannot hide disagreement between SMITH and JONES. Different names attached only to different NPIs do not create this flag. The separate `has_conflict_linkage` metric checks competing NPIs at the observation time or within current undated vendor data.
 
 HealthLink uses its retained HCP names without date alignment. This metric includes historical name changes; a true result does not establish an incorrect identity. Vendor partitions and existing metric rows remain separate.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `email_key` is a shortened SHA-256 label. `link_names` collects distinct normalized vendor pairs for this source/email/NPI, without filling from registry names.
+
+[Runnable example SQL](../../sql/examples/12_email_npi_has_name_conflict.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'drdb' AND metric_row_id IN (
+        '76F42EB2F2C6093316B5CDEF2587E5A52525DDC28EA8CF1B437507091D8AF857',
+        '79F6E827954FADE1457B94E8CB35408A2927D2280745D63CDC9CD2A33FD0696E'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        '213F802895D91A49015A7538C13C00FF8712BFA5CFE8584EE9CD7E96622024D2'))
+), context_names AS (
+    SELECT t.source, t.email, t.npi,
+           array_sort(array_distinct(flatten(array_agg(transform(t.source_name_values, n -> concat(n.first_name, ' ', n.last_name)))))) AS names
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886 t
+    JOIN (SELECT DISTINCT source, email, npi FROM selected) k
+      ON t.source = k.source AND t.email = k.email AND t.npi = k.npi
+    GROUP BY t.source, t.email, t.npi
+)
+SELECT m.source,
+       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email_npi_count,
+       c.names AS link_names,
+       m.email_npi_has_name_conflict
+FROM selected m
+LEFT JOIN context_names c ON m.source = c.source AND m.email = c.email AND m.npi = c.npi
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | email_key | email_npi_count | link_names | email_npi_has_name_conflict |
+|---|---|---|---|---|
+| drdb | 6B7B55A02822 | 1 | [KEITH LONG, KEITHLINTON LONG] | false |
+| drdb | B626A92C528B | 1 | [RICHARD JR, RICHARD SALZER] | true |
+| quantummedica | 857355DB1D7B | 1 | [] | NULL |
+
+**What differentiates these cases:** Multiple spellings can remain compatible under fuzzy matching. An incompatible pair on the same vendor/email/NPI gives true. No usable names leaves NULL, rather than false. The result belongs to the link history, not only the selected record. In the RICHARD JR/SALZER example, JR is treated as a last name; this flag compares parsed name pairs rather than proving that two people share the email.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -47,6 +83,6 @@ Measured **October 29, 2026**, across all retained source history. Extraction co
 
 QuantumMedica has usable vendor names for only one link; almost all its outcomes are unknown. Zero conflicts in Endato or RocketReach does not imply that each email belongs to one NPI: this metric compares names within the same email–NPI link.
 
-Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (local-only: `../../results/name_consistency_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (historical output, not retained: `../../results/published_metric_refresh_20261029.json`) · Native validation and field-preservation checks (historical output, not retained: `../../results/name_consistency_native_validation.json`)
 
 [Profile SQL](../../sql/name_consistency_profile.sql) · [Independent pairwise check](../../tests/name_consistency.sql) · [Rules](../../macros/name_consistency.sql) · [Name count](11_email_name_count.md)

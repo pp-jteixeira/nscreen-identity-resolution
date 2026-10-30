@@ -28,15 +28,48 @@ any_match(conflicting_npi_state_comparisons, p -> p.shares_state) AS conflicting
 
 Any true peer gives true; all known mismatches give false. Otherwise the result is null. Without an established conflict, null means not applicable (`has_conflict_linkage = false`) or unknown timing (that flag is null).
 
-**Illustrative examples** (different NPIs, same conflict context):
-
-| This record | Peer state | Result |
-|---|---|---|
-| NY | New York | true |
-| NY | CA | false |
-| NY | Missing or XX | unknown |
-
 `conflicting_npi_state_comparisons` retains peer NPIs, states, overlapping days and outcomes for [full inspection](../../sql/conflicting_states_debug.sql). A match may coexist with disagreeing peers. Existing rows remain separate.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Conflict examples are selected with exactly one peer comparison, so the displayed peer fully explains the aggregate outcome. Undated Endato comparisons use the available vendor snapshot.
+
+[Runnable example SQL](../../sql/examples/14_conflicting_npis_share_state.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '5A4F2A12631E80536E669103B3F317D42F2765161DD8DB94B5E0529DDDC5D98F',
+        '5FBC85C91EE6BCD4497632464719C42645215081E9552AEFC2644F672A8CCD9F',
+        'D13284F7A914B72A2E7C30495579F5B20C45368C0F2ACD40BBE0A10DFADB3DE1'))
+       OR (source = 'haymarket' AND metric_row_id IN (
+        '9DF2E9F9E7A4ECB5EE6C33558A69F6F91B5222D322F1CDB70BE08D0EE1FB82DC'))
+)
+SELECT m.source,
+       m.npi,
+       (element_at(m.conflicting_npi_state_comparisons, 1)).npi AS peer_npi,
+       m.source_state_values AS own_values,
+       (element_at(m.conflicting_npi_state_comparisons, 1)).states AS peer_values,
+       m.has_conflict_linkage AS conflict,
+       m.conflicting_npis_share_state AS shares_state
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 4 rows.
+
+| source | npi | peer_npi | own_values | peer_values | conflict | shares_state |
+|---|---|---|---|---|---|---|
+| endato | 1518387349 | 1790171247 | [AL] | [AL] | true | true |
+| endato | 1205912391 | 1891105805 | [PA] | [GA] | true | false |
+| endato | 1003046194 | 1275624934 | [] | [LA] | true | NULL |
+| haymarket | 1962472621 | NULL | [] | NULL | false | NULL |
+
+**What differentiates these cases:** A known shared value gives true; known disjoint evidence gives false. With an established conflict, missing evidence leaves NULL. Without a conflict, NULL is not applicable. Recognized states can agree or differ, while empty state evidence remains unknown. Geographic agreement is not identity proof.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -58,6 +91,6 @@ QuantumMedica’s raw states contain only missing/placeholder values and one `st
 
 — means no conflict rows. Missing states are unknown, not geographic disagreement. The union retains 75,564,265 metric rows; 75,250,490 have no conflict and 0 have unknown conflict timing.
 
-Counts and SQL (local-only: `../../results/conflicting_states_measurements.json`) · Native fixtures and field preservation (local-only: `../../results/conflicting_states_native_validation.json`) · Final publication checks (local-only: `../../results/final_build.json`)
+Counts and SQL (historical output, not retained: `../../results/conflicting_states_measurements.json`) · Native fixtures and field preservation (historical output, not retained: `../../results/conflicting_states_native_validation.json`) · Final publication checks (historical output, not retained: `../../results/final_build.json`)
 
 [Normalization](../../macros/state_consistency.sql) · [Comparison](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_states.sql) · [Profile SQL](../../sql/conflicting_states_profile.sql)

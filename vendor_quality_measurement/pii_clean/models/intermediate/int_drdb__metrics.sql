@@ -109,8 +109,11 @@ SELECT m.source, m.email, m.npi, m.observed_days, m.undated_observation_count,
        array_intersect(m.observed_days, e.conflict_days) AS conflict_days
 FROM metric_records m LEFT JOIN email_linkage e ON m.source = e.source AND m.email = e.email
 ),
-metrics AS (
+stability_metrics AS (
 {{ link_stability_records('freshness_metrics', 'stability_inputs') }}
+),
+metrics AS (
+{{ npi_identity_records('stability_metrics', 'metric_records') }}
 )
 {% if var('debug', false) %}
 , comparisons AS (

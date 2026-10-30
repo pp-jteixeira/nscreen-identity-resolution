@@ -23,9 +23,45 @@ END AS email_domain_class
 
 The pattern names abbreviate the [exact regular expressions](../../macros/email_domain_class.sql). Institutional checks cover `.edu`, `.gov`, `.mil`, `.edu.xx`/`.ac.xx` and keywords such as `health`, `clinic` or `univ`. Free-provider checks require a configured name, such as `gmail` or `yahoo`, followed by a dot at the domain's start.
 
-**Illustrative examples:** `alex@clinic.example` → institutional; `alex@gmail.example` → free; `alex@example.test` → custom; `alex.example.test` → unknown.
-
 **Limits:** `unhealthy.example` also matches institutional. `gmail.clinic.example` matches institutional before free. `alex@` becomes custom despite invalid format. Custom does not establish a privately owned domain. Empty email/NPI keys remain outside metric views. Format validity stays separate; no filtering or scoring.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Mailbox text is omitted; only the extracted domain is displayed.
+
+[Runnable example SQL](../../sql/examples/04_email_domain_class.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '15A7CE1D623FCBA4AE051F8C51990D1C50F1E52AFB488C415FFCF1AA87D52B5C',
+        '9982987297DF72C149474BB117CF1E80D17C1D9C0C505EE5C907B87830133454',
+        'A74664CA2BA51AE5D7B13D02524BAFA5CFEE1368279C5337D1EC275D7A0051FA'))
+       OR (source = 'medscape' AND metric_row_id IN (
+        'DBA5C659BCB71479B83AC76050B928A4EC4FAAED4C6057C6C2814DBBB52BB12C'))
+)
+SELECT m.source,
+       regexp_extract(m.email, '@(.*)$', 1) AS domain,
+       m.email_domain_class,
+       m.email_format_valid
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 4 rows.
+
+| source | domain | email_domain_class | email_format_valid |
+|---|---|---|---|
+| endato | hotmail.com | free | true |
+| endato | mindspring.com | custom | true |
+| endato | medstudent.pitt.edu | institutional | true |
+| medscape | NULL | unknown | false |
+
+**What differentiates these cases:** The domain text drives institutional, free-provider and custom categories. A missing `@` yields a NULL extracted domain and `unknown`, rather than `custom`. The custom label for `mindspring.com` reflects the configured free-provider list, not verified ownership. These categories describe text patterns, not verified affiliation.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -45,6 +81,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Every row has one category. Unknown means missing `@`, not an unmeasured row.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/email_domain_profile.sql) · [Rule SQL](../../macros/email_domain_class.sql)

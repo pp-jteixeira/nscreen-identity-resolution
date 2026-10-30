@@ -19,16 +19,42 @@ regexp_like(email, '^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{2,}$') AS email_format_v
 
 A match gives true, a non-match false, and a null input null. Metric views exclude blank/null email keys.
 
-**Illustrative examples:**
-
-| Email | Result | Why |
-|---|---|---|
-| `alex+work@example.com` | true | Matches the pattern |
-| `o'neil@example.com` | false | Apostrophe is outside the allowed characters |
-| `josé@example.com` | false | Non-ASCII character is outside the pattern |
-| `alex..smith@example.com` | true | The pattern allows repeated dots |
-
 This rule can reject legitimate formats and accept malformed-looking ones. It does not test domain or mailbox existence. Role accounts and test addresses are not excluded by this flag. This indicator does not filter rows or assign scores.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `format_shape` replaces every lowercase letter and digit with `x`, preserving punctuation and length without exposing an address.
+
+[Runnable example SQL](../../sql/examples/02_email_format_valid.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        'E2D7F6ECD9E1A822A2486BDE5556AAAC8D2BCA39374213AEE006E8C9B5AADE31'))
+       OR (source = 'medscape' AND metric_row_id IN (
+        '1DB726D2A317E497F5864411FDC282F4EA7A5D2125946A98BD145F6BDF457BF7',
+        '75941F2B89381BA06B01E0E4ADE6298599723535231BA3603A1C420DEB763599'))
+)
+SELECT m.source,
+       regexp_replace(m.email, '[a-z0-9]', 'x') AS format_shape,
+       m.email_format_valid
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | format_shape | email_format_valid |
+|---|---|---|
+| endato | xxxxx.xxxxx@xxxxx.xxx | true |
+| medscape | xxxxxx@xxx..xxx | true |
+| medscape | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx | false |
+
+**What differentiates these cases:** The missing-`@` shape fails. Repeated dots can still pass this regex, demonstrating its permissiveness. Format agreement does not establish a real domain or mailbox. Blank email keys are excluded upstream.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by source
 
@@ -48,6 +74,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 No unknown format outcomes were observed. The indicator retains all rows. Distinct-email counts are not reconstructed by summing grouped distinct counts, because groups can overlap.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/email_format_profile.sql) · [Rule SQL](../../macros/email_format_valid.sql)

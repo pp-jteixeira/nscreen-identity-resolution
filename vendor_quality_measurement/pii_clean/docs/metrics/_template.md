@@ -16,13 +16,19 @@ some_transformation AS column_name
 
 Explain helper values and zero/false/null behavior. Label simplified expressions; link the exact implementation instead of reproducing long SQL. Avoid repeating the same rule in prose, a table and code.
 
-**Examples:** show one normal case and one tricky case. Label invented examples “illustrative”; use reserved example domains. Keep real examples free of unnecessary personal details.
+## Real examples: contrasting outcomes
+
+Before statistics, show a few real cases that distinguish outcomes or expose limitations. Name the query date, full source relation, row grain and retained snapshot/evaluation date. Select exact record keys when link histories can differ. Include `source` in both SQL and displayed results. Omit unnecessary personal details and label any masking or display helpers.
+
+For an unpublished metric, query its validated candidate and explicitly state that the examples are not yet from the canonical publication. Illustrative examples may supplement real cases but do not replace this section.
+
+Include the complete executed SELECT in a SQL fence, followed immediately by its small Markdown result table and a brief explanation of the differences. Save a matching runnable SQL copy under `sql/examples/`; do not save CSV, JSON, Parquet or other result dumps. Cover true/false/unknown or category differences when real cases exist. Never invent an unavailable outcome. Distinguish missing evidence from not applicable and note any current, unpinned reference joins.
 
 ## Statistics by source
 
 Measured on: [date]. Source data period: [range, or source-specific ranges].
 
-**Statistics SQL:** link a versioned standalone query under `sql/statistics/` that generates the displayed counts and denominators. Distinguish original executed SQL from an equivalent query. State which statement or output section supplies each table, any aggregation/formatting after extraction, and historical relation/date requirements. Calculation macros and integrity tests do not substitute for this statistics query. Keep result rows and local execution logs excluded from Git.
+**Statistics SQL:** link a versioned standalone query under `sql/statistics/` that generates the displayed counts and denominators. Distinguish original executed SQL from an equivalent query. State which statement or output section supplies each table, any aggregation/formatting after extraction, and historical relation/date requirements. Calculation macros and integrity tests do not substitute for this statistics query. Keep selected results inline in Markdown. Do not save standalone result extracts or execution logs locally or in Git.
 
 | Source | Eligible metric rows | Measurable rows, n (%) | Result or distribution |
 |---|---:|---:|---|
@@ -32,4 +38,4 @@ Use “not measured,” “not applicable” or “unknown” explicitly. Never 
 
 **Interpretation:** explain what the result tells us, what it cannot establish, and which source differences matter. No weight is implied by coverage alone.
 
-Keep each page around 150–300 words. Prefer everyday language and short sentences. Explain technical terms once. Put detailed SQL and machine-readable results in linked files. The parent README lists every page.
+Keep explanatory prose around 150–300 words where practical, excluding SQL and result tables. Prefer everyday language and short sentences. Explain technical terms once. Link detailed implementation SQL; keep the selected example results inline without machine-readable result exports. The parent README lists every page.

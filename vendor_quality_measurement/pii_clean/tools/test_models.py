@@ -173,6 +173,9 @@ def inlined(name, cache=None, fixtures=None, variables=None):
             '(SELECT *, CAST(NULL AS varchar) AS npi_deactivation_date, CAST(NULL AS varchar) AS npi_reactivation_date, '
             'CAST(NULL AS bigint) AS replacement_npi, CAST(NULL AS varchar) AS npi_deactivation_reason_code FROM '
             + fixtures['nppes_taxonomy'] + ')')
+    nppes_key = ('iceberg__npi', 'nppes_npidata_latest')
+    if not (fixtures or {}).get('nppes_has_entity_type'):
+        source_overrides[nppes_key] = '(SELECT *, CAST(NULL AS varchar) AS entity_type_code FROM ' + source_overrides[nppes_key] + ')'
     source_overrides.update({
         ('bq_bi__analytics_prod', 'npi_facility_locations_with_ids'): (fixtures or {}).get('facility_locations',
             "(SELECT CAST(NULL AS varchar) AS npi_facility_provider_npi, CAST(NULL AS varchar) AS state_code, CAST(NULL AS varchar) AS location, CAST(NULL AS bigint) AS npi_facility_rank WHERE false)"),

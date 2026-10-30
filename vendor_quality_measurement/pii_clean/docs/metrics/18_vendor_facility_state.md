@@ -26,11 +26,52 @@ contains(source_state_values, facility_primary_state)
 | `unknown_vendor_state` | Usable reference without recognized vendor states; null. |
 | `unknown_facility` | No usable reference; null. |
 
-**Illustrative:** vendor NY versus facility NY agrees. Vendor NY/CA versus facility NY is mixed. Missing facility evidence never means disagreement.
-
 HealthLink states come from its retained HCP reference; other vendors use the exact email-bearing record. QuantumMedica has no usable states in existing measurements, and Haymarket has no state field. Unknowns stay unknown.
 
 This mixed-source historical facility reference has no vendor-day alignment and can share vendor lineage. Agreement proves neither current attendance nor email ownership. Evaluation day defaults to Europe/Paris today; `location_evidence_day` fixes it.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates.
+
+[Runnable example SQL](../../sql/examples/18_vendor_facility_state.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '076750B47BF9525013CF247B1F4586BD63C3441A7597799E7FAFC4E08EAA4CA6',
+        '7351D2A2087155D1835DBA4399370CD760431B0DE69D8DCC5B498F7D43C83E2F',
+        'E03D083EF1264A05321CD9135171184D07BDF075F462D30469C3DC270B61AF29'))
+       OR (source = 'healthlink' AND metric_row_id IN (
+        'A96287FCC45637781C73F3B0A4B8B7F31EE7E0B7458875252C20087B8D2B6A32'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        '1845B939777C8B052D855CC8A1B24DB40280A23F0DC7FE3AFFB7EA1020DA522A'))
+)
+SELECT m.source,
+       m.source_state_values AS vendor_states,
+       m.facility_primary_state AS facility_state,
+       m.facility_reference_status,
+       m.vendor_state_evidence,
+       m.vendor_state_corroborated
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 5 rows.
+
+| source | vendor_states | facility_state | facility_reference_status | vendor_state_evidence | vendor_state_corroborated |
+|---|---|---|---|---|---|
+| endato | [CA] | CA | usable | corroborated | true |
+| endato | [RI] | MA | usable | not_corroborated | false |
+| endato | [FL] | NULL | no_rank1_association | unknown_facility | NULL |
+| healthlink | [NE, TX] | NE | usable | mixed_vendor_states | NULL |
+| quantummedica | [] | IL | usable | unknown_vendor_state | NULL |
+
+**What differentiates these cases:** One matching vendor state gives true; known states excluding the usable facility state give false. A mixture including the facility state remains NULL. Missing vendor evidence and unusable facility evidence also remain NULL, with different status labels. None proves current attendance.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Vendor measurements
 
@@ -50,4 +91,4 @@ Percentages use all distinct links within each vendor. Historical-state changes 
 
 All 75,564,265 metric rows retained unique record keys. Integrity checks returned no failures. QuantumMedica and Haymarket supply no usable vendor states; missing reference and missing vendor evidence remain distinct. Full unknown-outcome counts are in the linked summary.
 
-[Measurements and validation](../../results/location_evidence_summary.md) · [SQL](../../macros/location_evidence.sql) · [Integrity checks](../../tests/vendor_facility_state.sql) · Local tests (local-only: `../../results/location_evidence_local_tests.txt`)
+[Measurements and validation](../../results/location_evidence_summary.md) · [SQL](../../macros/location_evidence.sql) · [Integrity checks](../../tests/vendor_facility_state.sql) · Local tests (historical output, not retained: `../../results/location_evidence_local_tests.txt`)

@@ -28,8 +28,7 @@ def main():
     data = {'mode': 'read_only', 'published': False, 'verified': False, 'started_at_utc': now(), 'variables': VARIABLES}
 
     def save():
-        path.parent.mkdir(exist_ok=True)
-        path.write_text(json.dumps(data, indent=2) + '\n')
+        print(json.dumps(data, indent=2), flush=True)
 
     def run(name, sql):
         if not sql.lstrip().lower().startswith(('select', 'with', 'explain', '--')):
@@ -126,7 +125,7 @@ count(DISTINCT ROW(email,npi)) AS distinct_links FROM {p.relation(p.FINAL_MODEL)
                 raise ValueError('Source-date coverage changed during measurement')
     data.update(verified=True, completed_at_utc=now())
     save()
-    print(f'Saved {path}', flush=True)
+    print('Results displayed on stdout', flush=True)
 
 
 if __name__ == '__main__':

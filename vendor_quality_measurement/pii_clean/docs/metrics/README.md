@@ -1,6 +1,6 @@
 # Metrics
 
-Read these pages in order. Each explains its question, calculation, examples, limitations, exact columns and source statistics. “How it is computed” gives the grouping scope and short SQL expressions. These are calculation excerpts, not standalone queries; named helper values are explained locally. Full SQL stays linked. Counts describe source-record email positions; they do not establish ownership or scoring weights.
+Read these pages in order. Each explains its question, calculation, examples, limitations, exact columns and source statistics. “How it is computed” gives the grouping scope and short SQL expressions. These are calculation excerpts, not standalone queries; named helper values are explained locally. Each page also includes a standalone real-example query, its executed result table with `source`, and a short explanation before statistics. Runnable copies live under [example SQL](../../sql/examples/). Counts describe source-record email positions; they do not establish ownership or scoring weights.
 
 | Order | Metric | Question |
 |---|---|---|
@@ -25,6 +25,9 @@ Read these pages in order. Each explains its question, calculation, examples, li
 | 19 | [Cookie-location evidence](19_cookie_location_evidence.md) | What untied primary states accompany historical email–UID mappings in the evaluation window? Published and validated October 29, 2026. |
 | 20 | [Link freshness](20_link_freshness.md) | How old is the vendor evidence, and how far does each link trail its vendor? Published and validated October 30, 2026. |
 | 21 | [Link stability](21_link_stability.md) | On what share of observed email days did this NPI appear, and how often did another NPI overlap? Published and validated October 30, 2026. |
+| 22 | [NPI validity and entity type](22_npi_identity.md) | Is the identifier structurally valid, and does NPPES identify an individual or organization? Implementation awaiting publication. |
+
+Real examples were queried October 30, 2026. Pages 01–06, 08–16 and 18–21 pin published snapshot `8096642935433856886`; pages 07 and 17 retain their separately executed examples and documented evaluation dates. Registry-name displays on pages 06 and 07 use the current readable name view, which is not pinned with the metric table. Page 22 uses validated candidate snapshot `2593466519988720108`, pending canonical publication. Samples explain contrasts, not prevalence. Only SQL source and selected Markdown results are retained; no standalone result exports are written.
 
 One metric-output row represents one exact source record and email position, keyed by `source`, `metric_row_id`. Only raw rows identical except for `day` combine. Email–NPI deduplication is deferred until after metrics and indicators. Repeated source records and distinct observed dates are different counting units. See the [pipeline overview](../../README.md) for row meaning and the [source map](../00_source_map.md) for inputs and available history.
 
@@ -32,4 +35,4 @@ Every statistics section links a standalone query under [statistics SQL](../../s
 
 Use the [page template](_template.md) for each new metric. Statistics identify their measurement date, output relation and counting unit. Pages 01–13 use October 29 published-table populations. Pages 08–13 were refreshed together and record a verified stable published snapshot. Use `pii_clean` for stored metrics and the [complete lookup](../email_lookup.md) for all implemented groups.
 
-Historical metric-specific validation logs retain their original suite sizes. The saved lookup-validation checkpoint (local-only: `../../results/email_lookup_full_local_tests.txt`) passed 58 tests. See the pipeline overview for the latest complete local-suite result. The [pipeline overview](../../README.md) distinguishes the 114 stored/model columns and 120 complete-lookup outputs. Documented measurements are dated evidence; they are not automatically refreshed. Pages 20 and 21 describe the October 30 freshness and stability publications.
+Historical metric-specific checkpoints retain their original suite sizes in the documentation; execution logs are not retained. The saved lookup-validation checkpoint (historical output, not retained: `../../results/email_lookup_full_local_tests.txt`) passed 58 tests. See the pipeline overview for the latest complete local-suite result. The [pipeline overview](../../README.md) distinguishes the current 114 published columns from the prepared metric 22 models (126 fields) and lookup (132 outputs), pending publication. Documented measurements are dated evidence; they are not automatically refreshed. Pages 20 and 21 describe the October 30 freshness and stability publications.

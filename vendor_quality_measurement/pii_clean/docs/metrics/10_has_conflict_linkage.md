@@ -27,15 +27,46 @@ END AS has_conflict_linkage
 
 Repeated copies of one NPI do not create conflict. Unknown days in dated vendors remain unknown; date ranges are never expanded.
 
-**Illustrative example:**
-
-| Day | Email | NPI | Conflict | Reassigned |
-|---|---|---|---|---|
-| 1 | email1 | A | false | true |
-| 2 | email1 | B | true | true |
-| 2 | email1 | C | true | true |
-
 Otherwise-identical records can span several days. `conflict_days` lists exactly which of that record's `observed_days` conflict; any such day makes its flag true. Undated-vendor conflicts have an empty `conflict_days` array. A conflict may reflect a shared mailbox or reporting error; it does not identify the correct NPI. Source metric rows remain intact.
+
+## Real examples: contrasting outcomes
+
+Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `email_key` is a shortened SHA-256 display label. The day count is a display helper over stored exact conflict dates.
+
+[Runnable example SQL](../../sql/examples/10_has_conflict_linkage.sql):
+
+```sql
+WITH selected AS (
+    SELECT *
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    WHERE (source = 'endato' AND metric_row_id IN (
+        '301CF08DDB677315479773A9D4F728F00F664700BC7F030088C7A8BA0AF05ECF'))
+       OR (source = 'healthlink' AND metric_row_id IN (
+        '4E8278D37C840774C11F0182CFB16FF3C1F32F292E6769A17B6E328688FE1A26'))
+       OR (source = 'quantummedica' AND metric_row_id IN (
+        'CA266C53D1E739500DDF891E13D3117AF4CB7478E74A5F6F42E31D9510149D1C'))
+)
+SELECT m.source,
+       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email_npi_count,
+       m.has_been_reassigned,
+       m.has_conflict_linkage,
+       cardinality(m.conflict_days) AS conflict_day_count
+FROM selected m
+ORDER BY m.source, m.metric_row_id
+```
+
+**Result:** 3 rows.
+
+| source | email_key | email_npi_count | has_been_reassigned | has_conflict_linkage | conflict_day_count |
+|---|---|---|---|---|---|
+| endato | B524E4C52FD2 | 2 | NULL | true | 0 |
+| healthlink | AE295CE738C9 | 2 | true | false | 0 |
+| quantummedica | D03CA99B36BA | 2 | false | true | 11 |
+
+**What differentiates these cases:** Reassignment can occur without overlap; persistent overlap can occur without reassignment. The undated Endato conflict has zero known conflict days because its rule compares available vendor records, not dated observations. Zero known days therefore does not undo its true conflict flag.
+
+Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
 
 ## Statistics by vendor
 
@@ -55,6 +86,6 @@ Measured **October 29, 2026**, across all retained source history. Extraction co
 
 An email counts once if any of its records conflicts. Only the conflicting records contribute to the row count. Endato, RocketReach and DRDB use the undated-data comparison described above.
 
-Current measured counts, executed SQL and snapshot checks (local-only: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation checks (local-only: `../../results/email_linkage_native_validation.json`)
+Current measured counts, executed SQL and snapshot checks (historical output, not retained: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation checks (historical output, not retained: `../../results/email_linkage_native_validation.json`)
 
 [Profile SQL](../../sql/email_linkage_profile.sql) · [Population check](../../tests/email_linkage_history.sql) · [Reassignment](09_has_been_reassigned.md) · [Source tables](../00_source_map.md)

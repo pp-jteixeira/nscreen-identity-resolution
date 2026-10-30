@@ -21,8 +21,7 @@ def main():
     result = {'started_at_utc': now(), 'mode': 'read_only', 'published': False}
 
     def save():
-        path.parent.mkdir(exist_ok=True)
-        path.write_text(json.dumps(result, indent=2) + '\n')
+        print(json.dumps(result, indent=2), flush=True)
 
     def run(name, sql):
         if not sql.lstrip().lower().startswith(('with', 'select', 'explain', '--')):
@@ -102,7 +101,7 @@ SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, npi_registry_status
             raise ValueError('Published input changed during measurement')
     result.update(verified=True, completed_at_utc=now())
     save()
-    print(f'Saved {path}', flush=True)
+    print('Results displayed on stdout', flush=True)
 
 
 if __name__ == '__main__':

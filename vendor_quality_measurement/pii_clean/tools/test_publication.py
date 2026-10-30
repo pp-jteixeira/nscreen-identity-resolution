@@ -13,6 +13,12 @@ import pipeline as p
 class PublicationTests(unittest.TestCase):
     def run_build(self, failure=None, batched=True, preserve=False):
         writes = []
+        checkpoints = []
+
+        def capture(*args, **kwargs):
+            if args and isinstance(args[0], str) and args[0].startswith("{"):
+                checkpoints.append(json.loads(args[0]))
+
         events = []
         stored = [{'source': source, 'metric_rows': 1, 'duplicate_keys': 0,
                      'evidence_checksum': source} for source in sorted(p.SOURCES)]
@@ -64,13 +70,14 @@ class PublicationTests(unittest.TestCase):
             root = Path(directory)
             (root / 'tests').mkdir()
             for test in ('source_integrity', 'email_npi_multiplicity', 'email_linkage_history',
-                         'name_consistency', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location', 'link_freshness', 'link_stability'):
+                         'name_consistency', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location', 'link_freshness', 'link_stability', 'npi_identity'):
                 (root / f'tests/{test}.sql').write_text('SELECT ' + test)
             with patch.object(p, 'ROOT', root), patch.object(p, 'query', query), \
                     patch.object(p, 'read_model', return_value='SELECT * FROM union_models'), \
                     patch.object(p, 'render_sql', side_effect=lambda sql, variables, overrides:
                                  sql + ' FROM ' + overrides[p.FINAL_MODEL]), \
                     patch.object(p, 'explain_fragments', explain), patch.object(p, 'run_write', write), \
+                    patch.object(p, 'print', side_effect=capture, create=True), \
                     contextlib.redirect_stdout(io.StringIO()):
                 preservation = {'columns': ['source'], 'rows': stored[:-1] if failure == 'preservation' else stored}
                 if failure:
@@ -78,7 +85,8 @@ class PublicationTests(unittest.TestCase):
                         p.build_final(Mock(), preservation=preservation if preserve or failure == 'preservation' else None)
                 else:
                     p.build_final(Mock(), preservation=preservation if preserve else None)
-            manifest = json.loads((root / 'results/final_build.json').read_text())
+            manifest = checkpoints[-1]
+            self.assertFalse((root / 'results').exists())
         self.assertEqual(manifest['verified'], failure is None)
         return writes, events, manifest
 
@@ -100,7 +108,7 @@ class PublicationTests(unittest.TestCase):
                              if kind == 'write' and sql.startswith('CREATE OR REPLACE TABLE'))
         tests = [(i, sql) for i, (kind, sql) in enumerate(events)
                  if kind == 'query' and sql.startswith('SELECT ') and 'evidence_checksum' not in sql]
-        self.assertEqual(len(tests), 13)
+        self.assertEqual(len(tests), 14)
         self.assertTrue(all(i < publish_index and 'candidate_' in sql for i, sql in tests))
 
     def test_union_also_validates_candidate_before_publication(self):

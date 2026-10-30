@@ -16,8 +16,7 @@ def now():
 
 
 def save(path, data):
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
+    print(json.dumps(data, indent=2), flush=True)
 
 
 def main():
@@ -109,7 +108,7 @@ SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, conflicting_npis_sh
                 raise ValueError('Outcomes do not partition conflict rows')
     result.update(verified=True, completed_at_utc=now())
     save(path, result)
-    print(f'Saved {path}', flush=True)
+    print('Results displayed on stdout', flush=True)
 
 
 if __name__ == '__main__':

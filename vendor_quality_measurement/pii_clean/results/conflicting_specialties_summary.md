@@ -2,7 +2,7 @@
 
 **Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
 
-Measured October 29, 2026. Executed queries and results (local-only: `conflicting_specialties_measure.json`) record the final-table snapshot and extraction times. Inputs: `iceberg.jteixeira_ipa.pii_clean`, `iceberg.npi.nppes_npidata_latest`, and `iceberg.npi.npi_taxonomy`. Vendor history is the full saved population; the current taxonomy reference has no vendor-day alignment. Source references are not pinned.
+Measured October 29, 2026. Executed queries and results (historical output, not retained: `conflicting_specialties_measure.json`) record the final-table snapshot and extraction times. Inputs: `iceberg.jteixeira_ipa.pii_clean`, `iceberg.npi.nppes_npidata_latest`, and `iceberg.npi.npi_taxonomy`. Vendor history is the full saved population; the current taxonomy reference has no vendor-day alignment. Source references are not pinned.
 
 The input contains 75,564,265 source-record/email-position rows and 26,730,605 distinct source/email/NPI links. The recognized-code lookup contains 9,208,126 distinct NPIs, each with at least one dictionary-recognized code, and at most fifteen distinct codes per provider. This is the recognized subset, not all NPPES providers; it does not imply complete registry coverage.
 
@@ -56,6 +56,6 @@ All fifteen NPPES slots contribute equally. Exact code equality does not general
 - Native Trino: 26 synthetic record outcomes passed; independent relational checks returned no failures.
 - Full conflict evaluation retained all 313,775 unique metric-row keys. Independent peer, null, date-subset and intersection checks returned no failures.
 - Enrichment of saved rows is read-only. Existing rows are retained as inputs; a full source rebuild, publication and before/after checksums have not executed.
-- Vendor query plans (local-only: `conflicting_specialties_plans.json`) validate the rendered local models. Existing vendor batching remains the publication approach for queries exceeding the combined stage limit.
+- Vendor query plans (historical output, not retained: `conflicting_specialties_plans.json`) validate the rendered local models. Existing vendor batching remains the publication approach for queries exceeding the combined stage limit.
 
-[Metric definition](../docs/metrics/16_conflicting_npis_share_specialty.md) · Local test output (local-only: `conflicting_specialties_local_tests.txt`) · Native evidence (local-only: `conflicting_specialties_native.json`)
+[Metric definition](../docs/metrics/16_conflicting_npis_share_specialty.md) · Local test output (historical output, not retained: `conflicting_specialties_local_tests.txt`) · Native evidence (historical output, not retained: `conflicting_specialties_native.json`)

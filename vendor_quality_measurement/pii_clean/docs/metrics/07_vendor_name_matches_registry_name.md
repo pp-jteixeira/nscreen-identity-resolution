@@ -26,16 +26,62 @@ bool_or(vendor_registry_match) AS vendor_name_matches_registry_name
 
 Any qualifying pair gives true; usable comparisons without a match give false; all-null comparisons stay unknown. Usability requires one first-name letter and two last-name letters. Names from different records are never combined.
 
-**Illustrative examples:**
-
-| Vendor name | Registry name | Result | Reason |
-|---|---|---|---|
-| ROBERT SMITH | BOB SMITH | `true` | Nickname agreement; last names match. |
-| JOHN SMITH-JONES | JOHN SMITH | `true` | First names match; last names share a token. |
-| JOHN SMITH | JOHN JONES | `false` | First-name-only agreement is insufficient. |
-| Missing | JOHN SMITH | Unknown (`null`) | No usable vendor name to compare. |
-
 **Limits:** common names, shared tokens and broad nickname mappings can produce false matches. Only this record’s vendor name and current readable registry variants contribute; HealthLink uses its separate HCP reference; no historical as-of alignment is implied. Endato compares its returned person's name, not the NPI-holder name supplied as input. No score or filtering is applied.
+
+## Real examples: exact, fuzzy, disagreement and unknown
+
+Seven selected Endato records show why different names can match and why missing names remain unknown. The query below was executed on October 30, 2026. It reads the stored metric and usability flags from `iceberg.jteixeira_ipa.pii_clean`, alongside normalized vendor names in `source_name_values`. Registry names come from the current readable `iceberg.jteixeira_ipa.pii__int_npi__names` view; they are inspection evidence, not a stored historical copy. The displayed pairs were checked against the implemented comparison rules on the extraction date.
+
+Selection uses exact record/email-position keys because records sharing an NPI can have different vendor names and outcomes. `DISTINCT` removes identical displayed comparisons; it does not recalculate the stored metric. Emails are omitted. These selected cases do not measure prevalence.
+
+[Runnable example SQL](../../sql/examples/07_vendor_name_matches_registry_name.sql):
+
+```sql
+SELECT DISTINCT
+    m.source,
+    m.npi,
+    concat(s.first_name, ' ', s.last_name) AS vendor_name,
+    concat(r.first_name, ' ', r.last_name) AS registry_name,
+    m.source_name_usable,
+    m.registry_name_usable,
+    m.vendor_name_matches_registry_name AS matches
+FROM iceberg.jteixeira_ipa.pii_clean m
+LEFT JOIN UNNEST(m.source_name_values)
+    AS s(first_name, last_name, first_variants) ON true
+LEFT JOIN iceberg.jteixeira_ipa.pii__int_npi__names r ON m.npi = r.npi
+WHERE m.source = 'endato'
+  AND m.metric_row_id IN (
+      '06AB31EC5574E57D8BB1D4D59458B398E5389AD406E98827B2DC8823A8DB5763',
+      '001632ED6AB8E6E8E2C8D203E1988812E3F950707428DBA8D78289AB202A87CC',
+      '00B93621FC5F2483F73C12B32DECBAD80480445C3CD407F0322BFF1A8E12D2B7',
+      '0266F98E9735CB80EDAF62E5EAB302C958544CDFD4E70512AC1EFC7DAFCA7898',
+      '5E463BFBBFA7821EA11FD393E13084C53B86EE3F55799BD657C9040A7F8E7460',
+      '0457353A2653E64F33BC90E1AA0FC845139B0055EEAAD8FF6E861054D7751091',
+      '01F2DBC4D54F8DCB79678C8F5AC82F7828B0EFC6ECBFC06DB1E15FE592682357'
+  )
+ORDER BY m.npi
+```
+
+**Result:** seven rows. `matches` is the stored `vendor_name_matches_registry_name`; NULL means unknown. An unusable vendor name has no entry in `source_name_values`, so the left unnest preserves the record with a NULL displayed name.
+
+| source | npi | vendor_name | registry_name | source_name_usable | registry_name_usable | matches |
+|---|---|---|---|---|---|---|
+| endato | `1104097450` | HYUNSUK KIM | HYUN KIM | true | true | true |
+| endato | `1205977915` | MARY CHANG | NULL | true | false | NULL |
+| endato | `1255544516` | NULL | RONALD CHENG | false | true | NULL |
+| endato | `1770915233` | MITCHELL EATON | MICHELLE EATON | true | true | true |
+| endato | `1821316597` | SARAH HAJJAJI | SARAH NAJJAR | true | true | false |
+| endato | `1922088731` | JIM OGBURN | JAMES OGBURN | true | true | true |
+| endato | `1952426611` | BLANCA PYLE | BLANCA PYLE | true | true | true |
+
+**What differentiates these cases:**
+
+- **Exact versus fuzzy agreement:** BLANCA PYLE matches exactly. JIM/JAMES matches through nickname expansions. HYUN/HYUNSUK matches through a four-letter first-token prefix. Each also has an exact last-name match.
+- **Permissive edit rule:** MITCHELL/MICHELLE has edit distance two. Both first names have eight letters, so the rule accepts this pair with the matching surname EATON. This demonstrates a possible false match, not confirmed shared identity.
+- **One matching part is insufficient:** SARAH matches, but HAJJAJI/NAJJAR does not pass the last-name rules. The result is false.
+- **Unknown differs from disagreement:** MARY CHANG lacks a usable registry name. The RONALD CHENG record lacks a usable vendor name. Both results are NULL, rather than false.
+
+Later publications or registry-view refreshes can change these results.
 
 ## Statistics by source
 
@@ -55,6 +101,6 @@ Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-
 
 Unknown is null, not false. Name outcomes can differ across records sharing the same email/NPI. These row counts do not establish distinct-email outcome counts.
 
-Derived row statistics (local-only: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (local-only: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (local-only: `../../results/final_build.json`)
+Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
 
 [Profile SQL](../../sql/name_match_profile.sql) · [Rule SQL](../../macros/name_matching.sql)

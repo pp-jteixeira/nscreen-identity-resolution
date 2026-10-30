@@ -215,15 +215,11 @@ def explain_fragments(db, sql):
 
 def build_final(db, preservation=None):
     """Materialize vendor outputs once, validate the candidate, then publish it."""
-    directory = ROOT / 'results'
-    directory.mkdir(exist_ok=True)
     manifest = {'started_at_utc': datetime.now(timezone.utc).isoformat(),
                 'table': relation(FINAL_MODEL), 'sources': {}, 'verified': False,
                 'session_properties': EVIDENCE_SESSION_PROPERTIES}
-    path = directory / 'final_build.json'
-
     def save():
-        path.write_text(json.dumps(manifest, indent=2) + '\n')
+        print(json.dumps(manifest, indent=2), flush=True)
 
     # Every path validates stored rows before touching the canonical table.
     # Retain the candidate for audit/recovery; cleanup is an explicit operation.
@@ -291,7 +287,7 @@ def build_final(db, preservation=None):
     save()
     if (len(actual) != len(SOURCES) or {r['source'] for r in actual} != set(SOURCES)
             or any(r['metric_rows'] < 1 or r['duplicate_keys'] for r in actual)):
-        raise ValueError('Candidate source coverage or grain check failed; inspect final_build.json')
+        raise ValueError('Candidate source coverage or grain check failed; inspect stdout checkpoint')
     for row in actual:
         manifest['sources'][row['source']]['materialized'] = row
         print(f"Checked {row['source']}: {row['metric_rows']:,} metric_rows", flush=True)
@@ -311,7 +307,7 @@ def build_final(db, preservation=None):
     if failures:
         raise ValueError(f'Evidence integrity checks failed: {failures}')
     manifest['linkage_checks'] = {}
-    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql'):
+    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql'):
         test_sql = render_sql((ROOT / 'tests' / name).read_text(), {'metric_model': FINAL_MODEL}, overrides)
         failures = query(db, test_sql)
         manifest['linkage_checks'][name] = {'sql': test_sql, 'failures': failures}
@@ -369,7 +365,7 @@ def test_source(db, source):
             raise ValueError(f'{stage}: exact-record preservation failed: {checked}')
         print(f'PASS {stage}: raw copies preserved; record IDs unique', flush=True)
     variables = {'metric_model': f'int_{source}__metrics'}
-    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql'):
+    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql'):
         failures = query(db, render_sql((PROJECT / 'tests' / name).read_text(), variables))
         if failures:
             raise ValueError(f'{name} failed: {failures}')
@@ -395,9 +391,6 @@ def report(db, source):
     rows = query(db, sql)
     data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
     name = f'{source}_intermediate_metrics'
-    directory = ROOT / 'results'
-    directory.mkdir(exist_ok=True)
-    (directory / f'{name}.json').write_text(json.dumps(data, indent=2) + '\n')
     lines = [f"| {r['source']} | {r['metric_rows']:,} | {r['invalid_metric_rows']:,} ({r['invalid_pct']:.5f}%) | {r['unknown_metric_rows']:,} ({r['unknown_pct']:.5f}%) |" for r in rows]
     md = f'''# {source}: email-format metric
 
@@ -410,11 +403,10 @@ The indicator checks `email` against `^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{{2,}}$
 |---|---:|---:|---:|
 {chr(10).join(lines)}
 
-[Metric documentation](../docs/metrics/02_email_format_valid.md) · Query results (local-only: `{name}.json`)
+[Metric documentation](../docs/metrics/02_email_format_valid.md)
 '''
-    (directory / f'{name}.md').write_text(md)
+    print(md)
     print(json.dumps(rows, indent=2))
-    print(f'Saved {directory / (name + ".md")}')
 
 
 def report_role(db, source):
@@ -423,11 +415,7 @@ def report_role(db, source):
     rows = query(db, sql)
     data = {'relation': table, 'source': source, 'metric': 'email_role_account',
             'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_email_role_account.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
-    print(f'Saved {path}', flush=True)
 
 
 def report_domain(db, source):
@@ -438,11 +426,7 @@ def report_domain(db, source):
         raise ValueError(f'{source}: stored domain classes differ from the rule')
     data = {'relation': table, 'source': source, 'metric': 'email_domain_class',
             'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_email_domain_class.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
-    print(f'Saved {path}', flush=True)
     return data
 
 
@@ -457,11 +441,7 @@ def report_names(db, source, metric=None):
             raise ValueError(f'{source}: name outcomes do not partition metric_rows')
     data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
             'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_name_matching.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps([r for r in rows if metric is None or r['metric'] == metric], indent=2), flush=True)
-    print(f'Saved {path}', flush=True)
     return data
 
 
@@ -473,9 +453,6 @@ def report_linkage(db, source, metric='email_npi_count'):
     if any(r.get('mismatched_emails', 0) for r in rows):
         raise ValueError(f'{source}: stored linkage metrics differ from the rule')
     data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_{profile.removesuffix(".sql")}.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return data
 
@@ -487,9 +464,6 @@ def report_name_consistency(db, source):
     if any(r['mismatched_emails'] for r in rows):
         raise ValueError(f'{source}: inconsistent name-history outcomes')
     data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_name_consistency.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return data
 
@@ -500,9 +474,6 @@ def report_conflicting_names(db, source, state=False, facility=False, specialty=
     sql = render_profile(f'{filename}_profile.sql', source)
     rows = query(db, sql)
     data = {'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(), 'sql': sql, 'rows': rows}
-    path = ROOT / f'results/{source}_{filename}.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps(data, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return data
 
@@ -511,10 +482,6 @@ def report_registry_status(db, source):
     table = relation(FINAL_MODEL)
     sql = render_profile('registry_status_profile.sql', source)
     rows = query(db, sql)
-    path = ROOT / f'results/{source}_registry_status.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps({'relation': table, 'source': source, 'measured_at_utc': datetime.now(timezone.utc).isoformat(),
-                               'sql': sql, 'rows': rows}, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return rows
 
@@ -524,12 +491,10 @@ def report_location(db, source, metric):
     profile = {'vendor_state_evidence': 'vendor_facility_state_profile.sql',
                'cookie_location_status': 'cookie_location_profile.sql',
                'link_freshness': 'link_freshness_profile.sql',
-               'link_stability': 'link_stability_profile.sql'}[metric]
+               'link_stability': 'link_stability_profile.sql',
+               'npi_identity': 'npi_identity_profile.sql'}[metric]
     sql = render_profile(profile, source)
     rows = query(db, sql)
-    path = ROOT / f'results/{source}_{metric}.json'
-    path.parent.mkdir(exist_ok=True)
-    path.write_text(json.dumps({'relation': table, 'source': source, 'sql': sql, 'rows': rows}, indent=2) + '\n')
     print(json.dumps(rows, indent=2), flush=True)
     return rows
 
@@ -537,7 +502,7 @@ def report_location(db, source, metric):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('render', 'source', 'test', 'report', 'build', 'final'))
-    parser.add_argument('--metric', choices=('email_format_valid', 'email_role_account', 'email_domain_class', *NAME_METRICS, *LINKAGE_METRICS, *NAME_CONSISTENCY_METRICS, CONFLICTING_NAME_METRIC, 'conflicting_npis_share_state', 'conflicting_npis_share_facility', 'conflicting_npis_share_specialty', 'npi_registry_status', 'vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability'),
+    parser.add_argument('--metric', choices=('email_format_valid', 'email_role_account', 'email_domain_class', *NAME_METRICS, *LINKAGE_METRICS, *NAME_CONSISTENCY_METRICS, CONFLICTING_NAME_METRIC, 'conflicting_npis_share_state', 'conflicting_npis_share_facility', 'conflicting_npis_share_specialty', 'npi_registry_status', 'vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability', 'npi_identity'),
                         default='email_format_valid', help='Metric for the report command')
     parser.add_argument('--model', help='Model to render without a warehouse connection')
     parser.add_argument('--source', choices=(*SOURCES, 'all'))
@@ -585,6 +550,7 @@ def main():
         subprocess.run([sys.executable, str(ROOT / 'tools/test_location_evidence.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_link_freshness.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_link_stability.py')], check=True)
+        subprocess.run([sys.executable, str(ROOT / 'tools/test_npi_identity.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_email_lookup.py')], check=True)
     db, _ = bootstrap()
     for source in sources:
@@ -597,7 +563,7 @@ def main():
                 report_domain(db, source)
             elif args.metric in LINKAGE_METRICS:
                 report_linkage(db, source, args.metric)
-            elif args.metric in ('vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability'):
+            elif args.metric in ('vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability', 'npi_identity'):
                 report_location(db, source, args.metric)
             elif args.metric == 'npi_registry_status':
                 report_registry_status(db, source)

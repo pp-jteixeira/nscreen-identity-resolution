@@ -25,6 +25,13 @@ def fixture():
         'source_latest_observed_day': "DATE '2020-01-02'",
         'link_last_observed_day': "DATE '2020-01-01'",
         'source_age_days': 'cast(1 AS bigint)',
+        'npi_format_valid': 'true',
+        'npi_checksum_valid': 'row_id <> 3',
+        'npi_structure_valid': 'row_id <> 3',
+        'npi_entity_type_evidence': "ARRAY[CAST(ROW('1') AS row(entity_type_code varchar)), CAST(ROW(NULL) AS row(entity_type_code varchar))]",
+        'npi_entity_type_reference_row_count': 'cast(2 AS bigint)',
+        'npi_entity_type_variant_count': 'cast(2 AS bigint)',
+        'npi_identity_as_of_day': "DATE '2020-01-03'",
         'email_observed_day_count': 'cast(5 AS bigint)',
         'link_observed_day_count': 'cast(4 AS bigint)',
         'link_conflict_day_count': 'cast(1 AS bigint)',
@@ -65,12 +72,12 @@ class EmailLookupTests(unittest.TestCase):
             for name in ('name_mismatch_count', 'shared_name_count', 'unknown_name_match_count'):
                 self.assertEqual(row[name], expected)
             self.assertEqual(row['name_comparison_count'], 3 * expected)
-            self.assertEqual(len(row), 120)
+            self.assertEqual(len(row), 132)
         tree = sqlglot.parse_one(render_lookup(), read='trino')
         self.assertEqual(['.'.join(part.name for part in t.parts) for t in tree.find_all(exp.Table)],
                          ['iceberg.jteixeira_ipa.pii_clean', 'params'])
-        self.assertEqual(len(tree.expressions), 120)
-        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 120)
+        self.assertEqual(len(tree.expressions), 132)
+        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 132)
         self.assertEqual(execute(render_lookup('absent@example.test', {p.FINAL_MODEL: '(' + stored + ')'})), [])
 
     def test_email_literal_escaping_and_single_edit(self):
