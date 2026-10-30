@@ -2,13 +2,13 @@
 
 PII Clean evaluates vendor records across all retained source history. Metrics and indicators precede email–NPI deduplication. Scoring remains unimplemented.
 
-Warehouse schema and freshness publication were verified on October 30, 2026. The table contains 108 columns and 75,564,265 metric rows. The freshness addition preserved all 103 previous fields and rows, including stored `computed_at`. Historical measurements retain their stated extraction times. See the [freshness publication report](results/publication_20261030/report.md) and the [October 29 full-build report](results/publication_20261029/report.md).
+Warehouse schema and stability publication were verified on October 30, 2026. The table contains 114 columns and 75,564,265 metric rows. Stability preserved all 108 previous fields and rows, including stored freshness dates and `computed_at`. Historical measurements retain their extraction times. See the [stability publication report](results/publication_stability_20261030/report.md), [freshness publication](results/publication_20261030/report.md) and [October 29 full build](results/publication_20261029/report.md).
 
 | Output | Columns | Availability |
 |---|---:|---|
-| Published `iceberg.jteixeira_ipa.pii_clean` | 108 | All record attributes and implemented metric/evidence groups, including link freshness. |
-| Vendor metric views and local models | 108 | Match the published schema. |
-| Complete email lookup | 114 | All 108 stored model fields plus six display/count helpers for one email. |
+| Published `iceberg.jteixeira_ipa.pii_clean` | 114 | All record attributes and implemented metric/evidence groups, including freshness and stability. |
+| Vendor metric views and local models | 114 | Match the published schema. |
+| Complete email lookup | 120 | All 114 stored model fields plus six display/count helpers for one email. |
 
 | Layer | Responsibility |
 |---|---|
@@ -49,11 +49,13 @@ Only nonempty cleaned email/NPI keys enter metric outputs. Missing-key records r
 
 [Link freshness](docs/metrics/20_link_freshness.md) separates vendor source age from link lag. Its five published columns use retained vendor observation dates, with no thresholds or scoring. Missing dates stay unknown. The October 30 publication preserved every existing field, row and stored evidence date.
 
+[Link stability](docs/metrics/21_link_stability.md) publishes distinct email/link/conflict day counts, presence and overlap fractions, and an incomplete-date flag. It measures dated history without adding thresholds or scores. One-day histories and undated peers remain visible.
+
 ## Validation and measurements
 
 Intermediate contains [nine SQL models](models/intermediate/README.md): one CTE pipeline per vendor and two shared lookups. Staging and final remain separate. Legacy helper views are outside the managed build graph.
 
-The managed build contains 23 dependency views and `iceberg.jteixeira_ipa.pii_clean`. The published table contains 75,564,265 metric rows with the previously published record attributes and indicators, including raw `record_payload`, normalized names/states and comparison details. The final model remains a plain `UNION ALL`; the October 29 build published 103 fields through validated vendor batches. October 30 added five freshness fields from the stored snapshot. It represents 26,730,605 distinct source/email/NPI links. Counts measured October 29 and confirmed October 30, 2026.
+The managed build contains 23 dependency views and `iceberg.jteixeira_ipa.pii_clean`. The published table contains 75,564,265 metric rows with the previously published record attributes and indicators, including raw `record_payload`, normalized names/states and comparison details. The final model remains a plain `UNION ALL`; the October 29 build published 103 fields through validated vendor batches. October 30 added five freshness fields and then six stability fields from pinned stored snapshots. It represents 26,730,605 distinct source/email/NPI links. Counts measured October 29 and confirmed October 30, 2026.
 
 | Vendor | Metric rows | Distinct email–NPI links | Distinct emails |
 |---|---:|---:|---:|
@@ -98,17 +100,18 @@ From this directory, using the repository `.venv` and PulsePoint Trino connectio
 ../../.venv/bin/python tools/pipeline.py report --source all --metric conflicting_npis_share_name
 ../../.venv/bin/python tools/pipeline.py report --source all --metric conflicting_npis_share_state
 ../../.venv/bin/python tools/pipeline.py report --source all --metric link_freshness
+../../.venv/bin/python tools/pipeline.py report --source all --metric link_stability
 ```
 
 Use `--source all` to apply source, test or report to every vendor separately. The `report` command reads `iceberg.jteixeira_ipa.pii_clean` filtered to the requested vendor. Reports use stored evidence and evaluation dates, so changes to raw data or model code appear only after publication. Report metadata records the published relation and vendor. Source and candidate validation continue to inspect their respective build inputs. Source commands recreate selected staging/intermediate views and shared name dependencies; they do not refresh the published final table. `build` recreates all 23 dependency views once, then publishes `pii_clean`. `final` publishes from existing views.
 
-Both commands materialize vendor outputs once into a uniquely named candidate table. If the combined union exceeds Trino’s stage limit, the runner writes separate vendor batches. All validation reads stored candidate data: schema, coverage of all seven vendors, nonempty per-vendor row counts, unique keys and twelve integrity checks. A supplied `build_final(..., preservation=...)` baseline also checks that previous published attributes are preserved; ordinary CLI builds do not require unchanged values across refreshes. Only after these checks pass does the runner atomically replace the final table, then compare its schema, counts and substantive-column checksums with the candidate. It does not execute vendor views again for baseline checksums. Candidate tables remain for audit and are not automatically deleted. `computed_at` records materialization time and is excluded from checksums. Source snapshots are not pinned, so batches can reflect source changes during a build. Build SQL and validation are saved in `results/final_build.json` (local-only).
+Both commands materialize vendor outputs once into a uniquely named candidate table. If the combined union exceeds Trino’s stage limit, the runner writes separate vendor batches. All validation reads stored candidate data: schema, coverage of all seven vendors, nonempty per-vendor row counts, unique keys and thirteen integrity checks. A supplied `build_final(..., preservation=...)` baseline also checks that previous published attributes are preserved; ordinary CLI builds do not require unchanged values across refreshes. Only after these checks pass does the runner atomically replace the final table, then compare its schema, counts and substantive-column checksums with the candidate. It does not execute vendor views again for baseline checksums. Candidate tables remain for audit and are not automatically deleted. `computed_at` records materialization time and is excluded from checksums. Source snapshots are not pinned, so batches can reflect source changes during a build. Build SQL and validation are saved in `results/final_build.json` (local-only).
 
 The October 29 publication verified vendor batching in the warehouse using the earlier live-view baseline checks. The runner’s single-materialization validation flow has local regression coverage; it has not yet been used for a full warehouse rebuild.
 
-The complete local suite passed 67 tests on October 30, 2026, including freshness scope/date cases, exact lag percentiles, publication success and failure cases for union and vendor-batch candidates, plus reproducible SQLTools-safe lookup generation and published-report source filtering. The earlier lookup checkpoint (local-only: `results/email_lookup_full_local_tests.txt`) passed 58 tests. Historical metric-specific logs preserve their smaller suite sizes. Local tests cover synthetic execution and publication control flow. Separate warehouse checks cover live raw-versus-staging row counts and intermediate integrity. Local fixtures run translated SQL in DuckDB; they do not replace Trino checks. Install local test dependencies from [requirements-dev.txt](requirements-dev.txt). The runner renders Jinja; dbt itself is not the execution engine, and Spark has not been tested.
+The complete local suite passed 70 tests on October 30, 2026, including stability denominators and missing-date cases, freshness scope/date cases, exact lag percentiles, publication success and failure cases for union and vendor-batch candidates, plus reproducible SQLTools-safe lookup generation and published-report source filtering. The earlier lookup checkpoint (local-only: `results/email_lookup_full_local_tests.txt`) passed 58 tests. Historical metric-specific logs preserve their smaller suite sizes. Local tests cover synthetic execution and publication control flow. Separate warehouse checks cover live raw-versus-staging row counts and intermediate integrity. Local fixtures run translated SQL in DuckDB; they do not replace Trino checks. Install local test dependencies from [requirements-dev.txt](requirements-dev.txt). The runner renders Jinja; dbt itself is not the execution engine, and Spark has not been tested.
 
-All 16 profile SQL files remain templates for reusable validation. `tools/pipeline.py` supplies published rows through `render_profile(filename, source=None)` and renders any metric macros. A specific `source` restricts the input before aggregation; omitting it profiles all vendors. Existing `report` commands use this renderer. For the general observation profile, render SQL from the project directory:
+All 17 profile SQL files remain templates for reusable validation. `tools/pipeline.py` supplies published rows through `render_profile(filename, source=None)` and renders any metric macros. A specific `source` restricts the input before aggregation; omitting it profiles all vendors. Existing `report` commands use this renderer. For the general observation profile, render SQL from the project directory:
 
 ```bash
 PYTHONPATH=tools ../../.venv/bin/python -c 'import pipeline; print(pipeline.render_profile("profile.sql"))'
@@ -126,7 +129,7 @@ Report commands for the published metrics are:
 ../../.venv/bin/python tools/pipeline.py report --source all --metric cookie_location_status
 ```
 
-The [complete single-email lookup](docs/email_lookup.md) reads all 108 model columns directly from the published `pii_clean` table and adds six display/count helpers from stored arrays. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
+The [complete single-email lookup](docs/email_lookup.md) reads all 114 model columns directly from the published `pii_clean` table and adds six display/count helpers from stored arrays. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
 
 ## Documentation
 

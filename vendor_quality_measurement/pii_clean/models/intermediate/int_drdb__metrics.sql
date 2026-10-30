@@ -101,8 +101,16 @@ location_metrics AS (
 cookie_metrics AS (
 {{ cookie_location_records('location_metrics') }}
 ),
-metrics AS (
+freshness_metrics AS (
 {{ link_freshness_records('cookie_metrics', 'metric_records') }}
+),
+stability_inputs AS (
+SELECT m.source, m.email, m.npi, m.observed_days, m.undated_observation_count,
+       array_intersect(m.observed_days, e.conflict_days) AS conflict_days
+FROM metric_records m LEFT JOIN email_linkage e ON m.source = e.source AND m.email = e.email
+),
+metrics AS (
+{{ link_stability_records('freshness_metrics', 'stability_inputs') }}
 )
 {% if var('debug', false) %}
 , comparisons AS (

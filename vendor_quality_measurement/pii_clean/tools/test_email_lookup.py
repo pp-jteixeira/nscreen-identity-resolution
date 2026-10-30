@@ -25,6 +25,12 @@ def fixture():
         'source_latest_observed_day': "DATE '2020-01-02'",
         'link_last_observed_day': "DATE '2020-01-01'",
         'source_age_days': 'cast(1 AS bigint)',
+        'email_observed_day_count': 'cast(5 AS bigint)',
+        'link_observed_day_count': 'cast(4 AS bigint)',
+        'link_conflict_day_count': 'cast(1 AS bigint)',
+        'link_presence_share': 'cast(0.8 AS double)',
+        'link_overlap_share': 'CASE WHEN row_id = 3 THEN CAST(NULL AS double) ELSE cast(0.25 AS double) END',
+        'link_stability_has_undated_observations': 'row_id = 3',
         'link_lag_days': 'CASE WHEN row_id = 3 THEN CAST(NULL AS bigint) ELSE cast(1 AS bigint) END',
         'npi_registry_status_as_of_day': "DATE '2020-01-02'",
         'cookie_location_window_start': "DATE '2019-12-26'",
@@ -59,12 +65,12 @@ class EmailLookupTests(unittest.TestCase):
             for name in ('name_mismatch_count', 'shared_name_count', 'unknown_name_match_count'):
                 self.assertEqual(row[name], expected)
             self.assertEqual(row['name_comparison_count'], 3 * expected)
-            self.assertEqual(len(row), 114)
+            self.assertEqual(len(row), 120)
         tree = sqlglot.parse_one(render_lookup(), read='trino')
         self.assertEqual(['.'.join(part.name for part in t.parts) for t in tree.find_all(exp.Table)],
                          ['iceberg.jteixeira_ipa.pii_clean', 'params'])
-        self.assertEqual(len(tree.expressions), 114)
-        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 114)
+        self.assertEqual(len(tree.expressions), 120)
+        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 120)
         self.assertEqual(execute(render_lookup('absent@example.test', {p.FINAL_MODEL: '(' + stored + ')'})), [])
 
     def test_email_literal_escaping_and_single_edit(self):

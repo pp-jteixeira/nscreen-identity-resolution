@@ -485,6 +485,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_endato__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -970,6 +996,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_haymarket__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1455,6 +1507,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_healthlink__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -1940,6 +2018,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_medscape__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2425,6 +2529,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_quantummedica__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -2910,6 +3040,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_rocketreach__metrics
   description: Reviewed indicators per exact source record and email position; email–NPI
     deduplication deferred.
@@ -3395,6 +3551,32 @@ models:
   - name: link_lag_days
     description: Days from link_last_observed_day to source_latest_observed_day. Null
       for undated links or future-dated source evidence. No stale threshold.
+  - name: email_observed_day_count
+    description: Distinct known observation days across all NPIs for this source/email.
+      Zero means no dated email history.
+    data_tests:
+    - not_null
+  - name: link_observed_day_count
+    description: Distinct known observation days for this source/email/NPI, across all
+      records and email positions.
+    data_tests:
+    - not_null
+  - name: link_conflict_day_count
+    description: Distinct days this source/email/NPI overlapped another NPI. Zero counts
+      known overlap days only.
+    data_tests:
+    - not_null
+  - name: link_presence_share
+    description: Link observed days divided by email observed days, as a fraction from
+      zero to one. Null when this link has no dated observations.
+  - name: link_overlap_share
+    description: Link conflict days divided by link observed days, as a fraction from
+      zero to one. Null for undated links.
+  - name: link_stability_has_undated_observations
+    description: True when any record for this source/email, including peer NPIs,
+      contains undated or invalid-day observations. Shares cover known dates only.
+    data_tests:
+    - not_null
 - name: int_name__variants
   description: One nickname expansion set per normalized first name.
 - name: int_npi__names

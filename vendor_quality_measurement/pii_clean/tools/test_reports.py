@@ -17,7 +17,7 @@ from test_models import execute
 class PublishedReportTests(unittest.TestCase):
     def test_profiles_read_published_rows_and_preserve_source_scope(self):
         profiles = sorted((p.ROOT / 'sql').glob('*profile.sql'))
-        self.assertEqual(len(profiles), 16)
+        self.assertEqual(len(profiles), 17)
         for path in profiles:
             for source in (None, 'endato'):
                 with self.subTest(profile=path.name, source=source):
@@ -54,6 +54,7 @@ class PublishedReportTests(unittest.TestCase):
             (p.report_location, {'metric': 'vendor_state_evidence'}),
             (p.report_location, {'metric': 'cookie_location_status'}),
             (p.report_location, {'metric': 'link_freshness'}),
+            (p.report_location, {'metric': 'link_stability'}),
         ]
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

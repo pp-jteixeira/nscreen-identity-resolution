@@ -100,3 +100,7 @@ Evaluation uses seven completed days before Europe/Paris today, configurable wit
 ## Link freshness dates
 
 [Link freshness](metrics/20_link_freshness.md) uses `last_seen_day` from retained eligible vendor records. The latest day is calculated within each source/email/NPI, then within each vendor. Endato, RocketReach and DRDB remain undated. Invalid source-day text contributes no parsed date. Future parsed dates remain visible but make the vendor age and link lags unknown until the evaluation date reaches them. The vendor baseline excludes records without eligible email/NPI keys and does not certify raw-delivery completeness. Reference, cookie and publication timestamps never fill missing vendor observation dates.
+
+## Link stability dates
+
+[Link stability](metrics/21_link_stability.md) unions exact `observed_days` and `conflict_days`, separately within each vendor. Dates do not come from references, cookies or publication timestamps. Counts represent known distinct days, not raw records or delivery frequency. Endato, RocketReach and DRDB retain zero known-day counts and NULL shares. `link_stability_has_undated_observations` flags any undated or invalid-day evidence across the entire vendor/email history, including another NPI whose overlap timing cannot be established. Known-day shares remain usable with that qualification. Calendar gaps are not filled.

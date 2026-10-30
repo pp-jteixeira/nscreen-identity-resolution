@@ -8,7 +8,7 @@ Use the **complete lookup** to inspect every implemented metric for one email ac
 
 Open [email_lookup_full.sql](../sql/email_lookup_full.sql), copy the entire statement into Trino, and replace `person@example.com` **once** in the opening `params` CTE. No table or view is created. No matching records produces no rows.
 
-The query reads all **108 published model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
+The query reads all **114 published model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
 
 | Metric group | Included outputs |
 |---|---|
@@ -19,6 +19,7 @@ The query reads all **108 published model columns** directly from `iceberg.jteix
 | Vendor versus facility state | `vendor_state_evidence`, nullable `vendor_state_corroborated`, facility state and reference quality. |
 | Cookie location | `cookie_location_status`, UID/day counts, states, ties, vendor/facility comparisons and source-date coverage. |
 | Link freshness | Stored evaluation day, vendor/link latest observation dates, source age and link lag. |
+| Link stability | Distinct email/link/conflict day counts, presence and overlap fractions, and incomplete-date flag. |
 
 The email filter retains **every source, NPI and record for the selected email**. Stored metrics, peer comparisons and email-level counts are returned unchanged. Only the six display/count helpers are calculated at lookup time.
 
@@ -28,7 +29,7 @@ The query scans the published table with an email filter. It avoids raw location
 
 ## Published-table shortcut
 
-[The shorter query](../sql/email_lookup_published.sql) selects a smaller subset of the same stored attributes and indicators. Both queries read `pii_clean` directly. Replace its email once as well; use the complete query for all 108 stored columns.
+[The shorter query](../sql/email_lookup_published.sql) selects a smaller subset of the same stored attributes and indicators. Both queries read `pii_clean` directly. Replace its email once as well; use the complete query for all 114 stored columns.
 
 ## Attributes
 
@@ -69,6 +70,9 @@ The pipeline normalizes stored states through the shared [state macro](../macros
 | `link_freshness_as_of_day` | Date used to evaluate stored freshness. The lookup does not update it to today. |
 | `source_latest_observed_day`, `source_age_days` | Latest observation among the vendor's eligible records and days from that date to evaluation. Unknown for undated vendors; future maxima make age null. |
 | `link_last_observed_day`, `link_lag_days` | Latest observation within source/email/NPI and days behind the vendor maximum. Repeated on every record of the link. Undated links and future source maxima give null lag. No stale threshold. |
+| `email_observed_day_count`, `link_observed_day_count`, `link_conflict_day_count` | Distinct known days for the vendor/email, vendor/email/NPI and this link's overlap with other NPIs. Repeated records do not inflate counts. |
+| `link_presence_share`, `link_overlap_share` | Fractions from 0 to 1. Presence divides link days by email days; overlap divides conflict days by link days. Both are NULL for an undated link. Multiply by 100 for percentages. |
+| `link_stability_has_undated_observations` | Any undated or invalid-day evidence for the vendor/email, including peer NPIs. Shares describe known days only. Zero known days does not mean confirmed absence. |
 | `name_comparison_count` | Number of peer name-comparison entries for this record, not unique NPIs or people. |
 | `name_mismatch_count`, `shared_name_count`, `unknown_name_match_count` | Entries with `shares_name` false, true, or null, respectively. A null array element also counts as unknown. These counts sum to `name_comparison_count`. |
 
@@ -86,6 +90,7 @@ All complete-query rows retain `record_payload`, original record IDs, exact `obs
 | [Vendor/facility state](metrics/18_vendor_facility_state.md) | Each record’s states versus its own NPI’s usable rank-1 facility state. Multiple states including the reference are mixed, not false. |
 | [Cookie geography](metrics/19_cookie_location_evidence.md) | Untied same-day primary-state observations. No usable parsed mapping is not proof that no cookie exists. Missing dates and observed disagreement remain separate. |
 | [Link freshness](metrics/20_link_freshness.md) | Vendor observation dates only. Zero lag can coexist with an old feed. Repeated delivery is not independent verification; missing links do not prove deletion. |
+| [Link stability](metrics/21_link_stability.md) | Known-day persistence and overlap. Full presence over one day is weak historical evidence; shares do not establish switching frequency or ownership. |
 
 The complete query also includes the detailed [lifecycle output reference](../results/registry_status_summary.md#output-columns) and [location output reference](../results/location_evidence_summary.md#output-columns). Tied UID primary states supply no agreement. Daily snapshots are not independent confirmations. Do not sum per-email UID/day counts repeated across source records.
 
@@ -93,17 +98,19 @@ For population coverage, percentages use all distinct source/email/NPI links wit
 
 ## Validation and publication status
 
-The earlier enrichment-based lookup passed native validation and planning with 46 fragments, plus three synthetic records across two NPIs. Those historical checks are retained locally in `../results/email_lookup_full_validation.json`; they describe the earlier query, not the current direct lookup.
+The earlier enrichment-based lookup passed native validation and planning with 46 fragments, plus three synthetic records across two NPIs. Those checks describe the earlier query. The historical validation output is not retained.
 
 The direct lookup passed native Trino schema validation on October 29, 2026. Native synthetic execution preserved all 103 stored fields across three matching records and verified the six helpers. Full execution for an existing email returned 17 records with 109 columns in 13.6 seconds. No email identifiers or result values were retained in the validation evidence. Query metadata and the standalone SQL are local-only: `../results/email_lookup_published_validation_20261029.json`. This sample does not guarantee the same runtime for every email.
 
-The current local lookup tests check all 108 stored fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 114 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL.
+The current local lookup tests check all 114 stored fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 120 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL.
 
-The expanded direct lookup passed native Trino validation on October 30, 2026. Native synthetic execution preserved all 108 stored fields and the six helper outputs. Full execution for an existing email returned 3 records with 114 columns in 51.6 seconds. Individual identifiers and values were not retained. Evidence is local-only: `../results/email_lookup_published_validation_20261030.json`.
+The freshness-only lookup passed native Trino validation on October 30, 2026. Native synthetic execution preserved all 108 stored fields and the six helper outputs. Full execution for an existing email returned 3 records with 114 columns in 51.6 seconds. Individual identifiers and values were not retained. Evidence is local-only: `../results/email_lookup_published_validation_20261030.json`.
+
+The stability lookup passed native Trino validation on October 30, 2026. Native fixtures preserved all 114 stored fields and the six helpers. Full execution for an existing email returned 11 records with 120 columns in 8.1 seconds. Individual result values were not retained.
 
 The underlying metrics have their separately dated native and population validations. The October 29 location measurement retained 75,564,265 metric rows; usable locations accompanied 2,728,645 of 26,730,605 source/email/NPI links (10.21%). Mapping dates covered 6/7 days (85.71%), missing October 28; geo dates covered 7/7 (100%). These counts are dated measurements, not a guarantee of today’s reference contents or individual lookup results. Date presence does not establish full data completeness.
 
-The October 30 freshness publication contains 108 stored columns and preserves all 103 fields from the October 29 build, including `computed_at` and prior reference evaluation dates. Freshness uses its own evaluation day. [Freshness publication report](../results/publication_20261030/report.md). Running the lookup is read-only and returns the stored evidence for the requested email.
+The October 30 stability publication contains 114 stored columns and preserves all 108 previous fields, including `computed_at`, freshness dates and reference evaluation dates. Stability uses stored dated history without an evaluation-day filter. [Stability publication report](../results/publication_stability_20261030/report.md). Running the lookup is read-only and returns stored evidence for the requested email.
 
 ## Regenerate and maintain
 

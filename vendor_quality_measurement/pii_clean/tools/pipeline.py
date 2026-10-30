@@ -311,7 +311,7 @@ def build_final(db, preservation=None):
     if failures:
         raise ValueError(f'Evidence integrity checks failed: {failures}')
     manifest['linkage_checks'] = {}
-    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql'):
+    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql'):
         test_sql = render_sql((ROOT / 'tests' / name).read_text(), {'metric_model': FINAL_MODEL}, overrides)
         failures = query(db, test_sql)
         manifest['linkage_checks'][name] = {'sql': test_sql, 'failures': failures}
@@ -369,7 +369,7 @@ def test_source(db, source):
             raise ValueError(f'{stage}: exact-record preservation failed: {checked}')
         print(f'PASS {stage}: raw copies preserved; record IDs unique', flush=True)
     variables = {'metric_model': f'int_{source}__metrics'}
-    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql'):
+    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'cookie_location.sql', 'link_freshness.sql', 'link_stability.sql'):
         failures = query(db, render_sql((PROJECT / 'tests' / name).read_text(), variables))
         if failures:
             raise ValueError(f'{name} failed: {failures}')
@@ -523,7 +523,8 @@ def report_location(db, source, metric):
     table = relation(FINAL_MODEL)
     profile = {'vendor_state_evidence': 'vendor_facility_state_profile.sql',
                'cookie_location_status': 'cookie_location_profile.sql',
-               'link_freshness': 'link_freshness_profile.sql'}[metric]
+               'link_freshness': 'link_freshness_profile.sql',
+               'link_stability': 'link_stability_profile.sql'}[metric]
     sql = render_profile(profile, source)
     rows = query(db, sql)
     path = ROOT / f'results/{source}_{metric}.json'
@@ -536,7 +537,7 @@ def report_location(db, source, metric):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('command', choices=('render', 'source', 'test', 'report', 'build', 'final'))
-    parser.add_argument('--metric', choices=('email_format_valid', 'email_role_account', 'email_domain_class', *NAME_METRICS, *LINKAGE_METRICS, *NAME_CONSISTENCY_METRICS, CONFLICTING_NAME_METRIC, 'conflicting_npis_share_state', 'conflicting_npis_share_facility', 'conflicting_npis_share_specialty', 'npi_registry_status', 'vendor_state_evidence', 'cookie_location_status', 'link_freshness'),
+    parser.add_argument('--metric', choices=('email_format_valid', 'email_role_account', 'email_domain_class', *NAME_METRICS, *LINKAGE_METRICS, *NAME_CONSISTENCY_METRICS, CONFLICTING_NAME_METRIC, 'conflicting_npis_share_state', 'conflicting_npis_share_facility', 'conflicting_npis_share_specialty', 'npi_registry_status', 'vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability'),
                         default='email_format_valid', help='Metric for the report command')
     parser.add_argument('--model', help='Model to render without a warehouse connection')
     parser.add_argument('--source', choices=(*SOURCES, 'all'))
@@ -583,6 +584,7 @@ def main():
         subprocess.run([sys.executable, str(ROOT / 'tools/test_registry_status.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_location_evidence.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_link_freshness.py')], check=True)
+        subprocess.run([sys.executable, str(ROOT / 'tools/test_link_stability.py')], check=True)
         subprocess.run([sys.executable, str(ROOT / 'tools/test_email_lookup.py')], check=True)
     db, _ = bootstrap()
     for source in sources:
@@ -595,7 +597,7 @@ def main():
                 report_domain(db, source)
             elif args.metric in LINKAGE_METRICS:
                 report_linkage(db, source, args.metric)
-            elif args.metric in ('vendor_state_evidence', 'cookie_location_status', 'link_freshness'):
+            elif args.metric in ('vendor_state_evidence', 'cookie_location_status', 'link_freshness', 'link_stability'):
                 report_location(db, source, args.metric)
             elif args.metric == 'npi_registry_status':
                 report_registry_status(db, source)
