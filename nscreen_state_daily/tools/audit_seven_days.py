@@ -18,6 +18,7 @@ p.add_argument(
 )
 a = p.parse_args()
 root = Path(__file__).resolve().parents[1] / "evidence"
+root.mkdir(exist_ok=True)
 if a.kind == "source":
     inner = f"SELECT g.day,g.uid,m.state FROM iceberg.crossscreen.nscreen_geo_daily_ua FOR VERSION AS OF 3964805227883162890 g LEFT JOIN iceberg.jteixeira_ipa.tmp_zip3_to_state m ON regexp_like(g.geo,'^[0-9]{{1,3}}$') AND lpad(g.geo,3,'0')=m.zip3 WHERE g.day BETWEEN '{a.start}' AND '{a.end}'"
 else:
@@ -56,9 +57,6 @@ try:
             "columns": ["day", "rows", "null_uid", "null_state", "uid_state_checksum"],
             "rows": rows,
         }
-        (root / f"audit_7d_{a.kind}_{a.start}_{a.end}.json").write_text(
-            json.dumps(result, indent=2) + "\n"
-        )
         print(json.dumps({"query_id": cur.query_id, "rows": daily}), flush=True)
         day += timedelta(days=1)
 finally:

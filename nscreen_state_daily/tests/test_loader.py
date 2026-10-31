@@ -120,52 +120,37 @@ class LoaderSafetyTests(unittest.TestCase):
 
 class EvidenceTests(unittest.TestCase):
     def run_finalizer(self, evidence):
-        with tempfile.TemporaryDirectory() as temp:
-            base = Path(temp)
-            (base / "tools").mkdir()
-            (base / "evidence").mkdir()
-            script = base / "tools/finalize_seven_day_audit.py"
-            script.write_text((ROOT / "tools/finalize_seven_day_audit.py").read_text())
-            for name, value in evidence.items():
-                (base / "evidence" / name).write_text(json.dumps(value))
-            result = subprocess.run(
-                [sys.executable, str(script)],
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            output = base / "evidence/seven_day_validation.json"
-            return result, json.loads(output.read_text()) if output.exists() else None
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "tools/finalize_seven_day_audit.py")],
+            input=json.dumps(evidence), capture_output=True, text=True, check=False,
+        )
+        return result, json.loads(result.stdout) if result.returncode == 0 else None
 
     def evidence(self):
-        return {
-            p.name: json.loads(p.read_text())
-            for p in (ROOT / "evidence").glob("audit_7d_*.json")
-        }
+        rows = [[f"2026-10-{day}", 10, 0, 1, f"synthetic-{day}"] for day in range(20, 27)]
+        return {"source": {"columns": ["day", "rows", "null_uid", "null_state", "uid_state_checksum"],
+                           "rows": rows},
+                "targets": [{"rows": [list(row)]} for row in rows]}
 
-    def test_saved_audits_reproduce_manifest(self):
+    def test_matching_audits_display_manifest_without_files(self):
+        before = set((ROOT / "evidence").glob("*.json"))
         result, manifest = self.run_finalizer(self.evidence())
         self.assertEqual(result.returncode, 0, result.stderr)
-        saved = json.loads((ROOT / "evidence/seven_day_validation.json").read_text())
-        for field in [
-            "rows",
-            "total_rows",
-            "unmapped_state_rows",
-            "source_snapshot",
-            "status",
-        ]:
-            self.assertEqual(manifest[field], saved[field])
+        self.assertEqual(manifest["total_rows"], 70)
+        self.assertEqual(manifest["unmapped_state_rows"], 7)
+        self.assertEqual(manifest["status"], "verified_complete")
+        self.assertEqual(set((ROOT / "evidence").glob("*.json")), before)
 
     def test_mismatched_checksum_never_publishes_manifest(self):
         evidence = self.evidence()
-        evidence["audit_7d_target_2026-10-22_2026-10-22.json"]["rows"][0][-1] = "wrong"
+        evidence["targets"][2]["rows"][0][-1] = "wrong"
         result, manifest = self.run_finalizer(evidence)
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(manifest)
 
     def test_missing_day_never_publishes_manifest(self):
         evidence = self.evidence()
-        evidence["audit_7d_source_2026-10-20_2026-10-26.json"]["rows"].pop()
+        evidence["source"]["rows"].pop()
         result, manifest = self.run_finalizer(evidence)
         self.assertNotEqual(result.returncode, 0)
         self.assertIsNone(manifest)

@@ -4,6 +4,11 @@ Runs the graph from prepared production inputs using a local Python controller,
 server-side Trino SQL, and the original Java clustering calculator. Spark is not
 required. All remote writes are restricted to `iceberg.jteixeira_ipa.nscreen2_*`.
 
+## Explicit authorization for local results
+
+Replay persists checkpoints and intermediate datasets. Storage is disabled by default: every `Replay(...)` constructor requires explicit `allow_local_results=True`, and CLI runs, comparisons and local resumption require `--allow-local-results` before the subcommand. Finalization also requires this flag. Use it only when local exports have been explicitly requested. The commands below describe the opt-in workflow; without authorization, run only inspection or SQL rendering commands. Historical local replay datasets are not retained.
+
+
 ## Replay boundary
 
 Inputs are the selected day's `iceberg.crossscreen.liveramp_source`,
@@ -304,6 +309,8 @@ prove which snapshots historical production jobs read. Earlier source mutations
 or an expired snapshot can prevent reproducible production parity.
 
 ## Tests
+
+Tests read Forge SQL from `NSCREEN_FORGE`, defaulting to `~/forge`. Set this environment variable to the available Forge checkout when it lives elsewhere.
 
 ```bash
 # From nscreen-replay/

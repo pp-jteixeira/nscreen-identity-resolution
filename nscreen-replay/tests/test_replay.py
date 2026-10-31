@@ -173,7 +173,7 @@ def test_date_input_ref_normalizes_day_for_forge_sql(tmp_path, monkeypatch):
         input_tables={
             "liveramp_source": "iceberg.jteixeira_ipa.sample_liveramp"
         },
-    )
+     allow_local_results=True)
     replay.state["snapshots"]["liveramp_source"] = {
         "source_table": "iceberg.jteixeira_ipa.sample_liveramp",
         "snapshot_id": 42,
@@ -212,11 +212,11 @@ def test_input_overrides_are_persisted_and_immutable(tmp_path, monkeypatch):
         warehouse=object(),
         input_tables={"liveramp_source": sample},
         profile="sample-v1",
-    )
+     allow_local_results=True)
     assert replay.state["input_tables"]["liveramp_source"] == sample
     assert replay.state["profile"] == "sample-v1"
     replay.lock.close()
-    resumed = runner.Replay("sample_inputs", FORGE, warehouse=object())
+    resumed = runner.Replay("sample_inputs", FORGE, warehouse=object(), allow_local_results=True)
     assert resumed.input_tables["liveramp_source"] == sample
     resumed.lock.close()
     with pytest.raises(ValueError, match="another input configuration"):
@@ -225,7 +225,7 @@ def test_input_overrides_are_persisted_and_immutable(tmp_path, monkeypatch):
             FORGE,
             warehouse=object(),
             input_tables={"liveramp_source": "iceberg.other.sample"},
-        )
+         allow_local_results=True)
 
 
 def test_resume_does_not_republish_completed_stage(tmp_path, monkeypatch):
@@ -245,7 +245,7 @@ def test_resume_does_not_republish_completed_stage(tmp_path, monkeypatch):
 
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     db = FakeWarehouse()
-    replay = runner.Replay("resume_test", FORGE, "2026-09-18", warehouse=db)
+    replay = runner.Replay("resume_test", FORGE, "2026-09-18", warehouse=db, allow_local_results=True)
     first = replay.artifact("fixture", "SELECT 1 AS value")
     assert replay.artifact("fixture", "SELECT 1 AS value") == first
     assert len(db.writes) == 1
@@ -266,7 +266,7 @@ def test_upload_resume_reconciles_lost_acknowledgement(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "upload_test", FORGE, "2026-09-18", warehouse=FakeWarehouse()
-    )
+    , allow_local_results=True)
     replay.state["clusters"]["key"] = {
         "geo": "G",
         "packed_upload": {
@@ -296,7 +296,7 @@ def test_upload_reconciles_commit_error_without_restart(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "upload_commit_error", FORGE, "2026-09-18", warehouse=FakeWarehouse()
-    )
+    , allow_local_results=True)
     replay.state["clusters"]["key"] = {"geo": "G"}
     output = tmp_path / "output.tsv"
     output.write_text("dWlk\t1\t2\t3\t4\n")
@@ -334,7 +334,7 @@ def test_local_parquet_preserves_cluster_rows(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_parquet", FORGE, "2026-09-18", warehouse=object()
-    )
+    , allow_local_results=True)
     replay.state["clusters"]["key"] = {"geo": "G", "edges": 2}
     source = replay.directory / "cluster.output.tsv"
     source.write_text(
@@ -398,7 +398,7 @@ def test_local_parquet_run_stops_before_louvain_sql(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_stop", FORGE, "2026-09-18", warehouse=object()
-    )
+    , allow_local_results=True)
     for stage in ("lrth", "initial", "connected_ns", "stage1", "stage2", "remainder"):
         replay.state["artifacts"][stage] = {"status": "complete"}
     calls = []
@@ -420,7 +420,7 @@ def test_local_result_run_stays_outside_trino(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_result_stop", FORGE, "2026-09-18", warehouse=object()
-    )
+    , allow_local_results=True)
     for stage in ("lrth", "initial", "connected_ns", "stage1", "stage2", "remainder"):
         replay.state["artifacts"][stage] = {"status": "complete"}
     calls = []
@@ -456,7 +456,7 @@ def test_local_clustering_counts_geographies_without_trino_write(
     database = FakeWarehouse()
     replay = runner.Replay(
         "local_geo_counts", FORGE, "2026-09-18", warehouse=database
-    )
+    , allow_local_results=True)
     replay.state["artifacts"]["remainder"] = {
         "status": "complete",
         "table": "remainder_table",
@@ -490,7 +490,7 @@ def test_local_remainder_streams_into_partitioned_parquet(tmp_path, monkeypatch)
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_remainder", FORGE, "2026-09-18", warehouse=FakeWarehouse()
-    )
+    , allow_local_results=True)
     state = replay.persist_local_remainder(
         "SELECT remainder", "256MB", batch_rows=2
     )
@@ -521,7 +521,7 @@ def test_local_remainder_bypasses_trino_artifact(tmp_path, monkeypatch):
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_remainder_run", FORGE, "2026-09-18", warehouse=object()
-    )
+    , allow_local_results=True)
     for stage in ("lrth", "initial", "connected_ns", "stage1", "stage2"):
         replay.state["artifacts"][stage] = {
             "status": "complete",
@@ -573,7 +573,7 @@ def test_local_downstream_preserves_hash_join_and_final_filters(
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_downstream", FORGE, "2026-09-18", warehouse=FakeWarehouse()
-    )
+    , allow_local_results=True)
     replay.state["artifacts"].update(
         {
             "initial": {"status": "complete", "table": "initial_table"},
@@ -636,7 +636,7 @@ def test_resume_local_downstream_uses_only_completed_local_inputs(
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     replay = runner.Replay(
         "local_resume", FORGE, "2026-09-18", warehouse=object()
-    )
+    , allow_local_results=True)
     replay.state["cluster_output"] = "parquet"
     replay.state["clustering_capacity"] = {"geos": 1}
     replay.state["clusters"] = {
@@ -679,7 +679,7 @@ def test_packed_upload_routes_concurrent_batches_across_shards(
     db = FakeWarehouse()
     replay = runner.Replay(
         "packed_shards", FORGE, "2026-09-18", warehouse=db
-    )
+    , allow_local_results=True)
     replay.state["clusters"]["key"] = {"geo": "G"}
     output = tmp_path / "output.tsv"
     rows = [
@@ -726,7 +726,7 @@ def test_failed_table_can_resume_as_view_without_changing_select(tmp_path, monke
 
     monkeypatch.setattr(runner, "ROOT", tmp_path)
     db = FakeWarehouse()
-    replay = runner.Replay("view_retry", FORGE, "2026-09-18", warehouse=db)
+    replay = runner.Replay("view_retry", FORGE, "2026-09-18", warehouse=db, allow_local_results=True)
     query = "SELECT 1 AS value UNION ALL SELECT 1 UNION ALL SELECT NULL"
     with pytest.raises(RuntimeError, match="HIVE_WRITER_DATA_ERROR"):
         replay.artifact("initial", query, partition_columns=["day"])
@@ -774,13 +774,13 @@ def test_initial_view_choice_persists_and_other_stages_remain_tables(
         runner, "compile_stage", lambda *a, **kw: (None, "SELECT 1 AS value")
     )
     db = FakeWarehouse()
-    replay = runner.Replay("remember_view", FORGE, "2026-09-18", warehouse=db)
+    replay = runner.Replay("remember_view", FORGE, "2026-09-18", warehouse=db, allow_local_results=True)
     replay.run(until="initial", initial_as_view=True)
     assert replay.state["stage_storage"] == {"initial": "view"}
     replay.state["artifacts"]["initial"]["status"] = "failed"
     replay.save()
     replay.lock.close()
-    resumed = runner.Replay("remember_view", FORGE, warehouse=db)
+    resumed = runner.Replay("remember_view", FORGE, warehouse=db, allow_local_results=True)
     resumed.run(until="connected_ns")
     assert ["CREATE VIEW" in sql for sql in db.writes] == [True, True, False]
     resumed.write_report()
@@ -791,7 +791,7 @@ def test_initial_view_does_not_replace_completed_table(tmp_path, monkeypatch):
     from replay import runner
 
     monkeypatch.setattr(runner, "ROOT", tmp_path)
-    replay = runner.Replay("keep_table", FORGE, "2026-09-18", warehouse=object())
+    replay = runner.Replay("keep_table", FORGE, "2026-09-18", warehouse=object(), allow_local_results=True)
     replay.state["artifacts"]["initial"] = {"status": "complete"}
     with pytest.raises(RuntimeError, match="already materialized"):
         replay.run(initial_as_view=True)

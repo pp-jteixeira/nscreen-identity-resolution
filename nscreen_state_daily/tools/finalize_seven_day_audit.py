@@ -4,15 +4,15 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1] / "evidence"
-source_name = "audit_7d_source_2026-10-20_2026-10-26.json"
-target_names = [f"audit_7d_target_2026-10-{d}_2026-10-{d}.json" for d in range(20, 23)]
-target_names.append("audit_7d_target_2026-10-23_2026-10-26.json")
-source = json.loads((ROOT / source_name).read_text())
+import sys
+
+# Input shape: {"source": <audit>, "targets": [<audit>, ...]}.
+# Supply explicitly from an in-memory caller or pipe, without intermediate files.
+payload = json.load(sys.stdin)
+source = payload["source"]
 expected = {r[0]: r for r in source["rows"]}
 actual = {}
-for name in target_names:
-    audit = json.loads((ROOT / name).read_text())
+for audit in payload["targets"]:
     for row in audit["rows"]:
         if row[0] in actual:
             raise RuntimeError("Overlapping target audits")
@@ -37,8 +37,5 @@ result = {
     "verification": "Per-day logical counts, NULL counts, and checksum(ROW(uid,state)) match source",
     "columns": source["columns"],
     "rows": [actual[d] for d in sorted(actual)],
-    "source_audit": source_name,
-    "target_audits": target_names,
 }
-(ROOT / "seven_day_validation.json").write_text(json.dumps(result, indent=2) + "\n")
 print(json.dumps(result, indent=2))

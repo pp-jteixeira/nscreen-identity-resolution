@@ -19,7 +19,10 @@ def main():
     parser.add_argument("--forge", type=Path, default=Path.home() / "forge")
     parser.add_argument("--background", action="store_true")
     parser.add_argument("--accept-engine-change", action="store_true")
+    parser.add_argument("--allow-local-results", action="store_true")
     args = parser.parse_args()
+    if not args.allow_local_results:
+        parser.error("Finalization persists local data. Pass --allow-local-results explicitly.")
     directory = ROOT / "runs" / identifier(args.run_id)
     manifest = directory / "manifest.json"
     if not manifest.exists():
@@ -29,6 +32,7 @@ def main():
             sys.executable,
             "-m",
             "replay.finalize",
+            "--allow-local-results",
             "--run-id",
             args.run_id,
             "--forge",
@@ -84,7 +88,8 @@ def main():
         replay = None
         try:
             replay = Replay(
-                args.run_id, args.forge, accept_engine_change=args.accept_engine_change
+                args.run_id, args.forge, accept_engine_change=args.accept_engine_change,
+                allow_local_results=args.allow_local_results
             )
             status.update(status="comparing", at=stamp())
             save_json(status_path, status)

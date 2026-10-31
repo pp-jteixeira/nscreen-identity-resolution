@@ -8,7 +8,7 @@ The source selects geography using the production 15-day hourly lookback.
 
 ## Verified historical coverage
 
-The saved October 27, 2026 audits establish complete persisted coverage in
+The October 27, 2026 audit checkpoint established complete persisted coverage in
 `iceberg.jteixeira_ipa.tmp_nscreen_state_daily_ua` for October 20–26, 2026.
 These are historical checks, not a check of the current warehouse state.
 Source snapshot: `3964805227883162890`.
@@ -29,10 +29,7 @@ including 24,433,144 NULL-state rows (0.0902% of all rows).
 Physical Iceberg file counts can include position-deleted rows and are not
 proof of logical completeness. Other historical dates may be incomplete.
 
-The [verification manifest](evidence/seven_day_validation.json) links to the
-versioned source and target audits. Their checksums and aggregate counts
-contain no individual UID records. The original repair restored 1,348,883,046
-rows, including October 22's remaining 296,803,784 rows.
+The historical source/target audits compared checksums and aggregate counts without individual UID records. Standalone JSON evidence is no longer retained. The original repair restored 1,348,883,046 rows, including October 22's remaining 296,803,784 rows.
 
 Read only the verified historical window:
 
@@ -111,22 +108,11 @@ they are not repaired automatically.
 
 ## Historical repair and verification
 
-Maintained scripts live under `tools/`. Compact inputs and aggregate audits
-live under `evidence/`. Original local execution history under `logs/` is
-ignored and is not required by these tools.
+Maintained scripts live under `tools/`. Query source may be saved under `evidence/`; result data stays in memory/stdout. Historical standalone audit dumps and logs are not retained.
 
-[repair_seven_days.py](tools/repair_seven_days.py) is specific to the October
-20–22 omissions and pinned source snapshot. It requires the saved
-`verify_7d_*.json` inputs, now versioned in `evidence/`. It verifies existing
-buckets and refuses partial buckets. Transport failures stop execution;
-server query failures are reconciled before bounded retries. It does not
-perform a general backfill. Historical snapshots must still exist to rerun it.
+`repair_seven_days.py` is specific to the October 20–22 omissions and pinned source snapshot. It consumes a JSON object of verification evidence keyed by day through stdin. It verifies existing buckets and refuses partial buckets. It does not perform a general backfill. Historical snapshots must still exist to rerun it.
 
-The commands below audit or regenerate saved artifacts; they do not insert
-warehouse rows. Regenerating source/target audits overwrites the dated evidence,
-so review any resulting diff. Source audits use the pinned source snapshot and
-the current mapping; the original mapping must remain unchanged to reproduce
-the saved comparison.
+The audit commands below do not insert warehouse rows. They display results without saving JSON. Source audits use the pinned source snapshot and current mapping; reproducing the original comparison requires the original mapping. Finalization consumes one explicitly supplied stdin object with `source` and `targets` entries. Each audit has a `rows` array; the source also has `columns`. Pipe this evidence from an in-memory caller, without creating intermediate files.
 
 ```bash
 .venv/bin/python nscreen_state_daily/tools/audit_seven_days.py source \
@@ -142,10 +128,7 @@ the saved comparison.
 .venv/bin/python nscreen_state_daily/tools/finalize_seven_day_audit.py
 ```
 
-`verify_seven_day_gaps.py` regenerates the historical repair prerequisite audits
-against current target contents; its new outputs will differ after repair.
-Do not replace the original prerequisites before reviewing that change.
-Finalization publishes the manifest only when all seven dates match.
+`verify_seven_day_gaps.py` displays repair prerequisite audits against current target contents; these can differ after repair. Finalization displays a verified manifest only when all seven dates match. It writes no result file.
 
 ## Local validation
 
@@ -153,6 +136,6 @@ Finalization publishes the manifest only when all seven dates match.
 .venv/bin/python -m unittest discover -s nscreen_state_daily/tests -v
 ```
 
-Tests use simulated database responses and saved evidence. They do not connect
+Tests use simulated database responses and synthetic in-memory evidence. They do not connect
 to Trino or execute warehouse writes. The revised loader still needs a bounded
 integration run before operational use.

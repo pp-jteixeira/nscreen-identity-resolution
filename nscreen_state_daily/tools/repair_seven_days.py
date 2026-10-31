@@ -9,6 +9,7 @@ October 22 TX pilot bucket is excluded. No UID join or broad deletion is used.
 import argparse
 import concurrent.futures
 import json
+import sys
 import threading
 import time
 from pathlib import Path
@@ -40,6 +41,8 @@ SETTINGS = {
     "iceberg.parquet_writer_block_size": "16MB",
 }
 LOCK = threading.Lock()
+# Explicit verification evidence is supplied through stdin, never cached locally.
+AUDITS = None
 
 
 def log(**data):
@@ -47,13 +50,11 @@ def log(**data):
     line = json.dumps(data)
     with LOCK:
         print(line, flush=True)
-        with (ROOT / "seven_day_repair_events.jsonl").open("a") as out:
-            out.write(line + "\n")
 
 
 def run_day(day, args, db):
     # This audit proves the surviving hex-prefix population is complete.
-    audit = json.loads((ROOT / f"verify_7d_{day}.json").read_text())
+    audit = AUDITS[day]
     source_audit = {(r[0], r[1]): r[2:] for r in audit["source"]["rows"]}
     target_audit = {(r[0], r[1]): r[2:] for r in audit["target"]["rows"]}
     for state in SLICES[day]:
@@ -136,7 +137,7 @@ def run_day(day, args, db):
             if not args.execute:
                 cur.execute("EXPLAIN " + sql)
                 plan = "\n".join(str(r[0]) for r in cur.fetchall())
-                (ROOT / f"{stem}_plan.txt").write_text(plan)
+                print(plan, flush=True)
                 if "Join[" in plan:
                     raise RuntimeError("Unexpected join in append plan")
                 log(
@@ -242,6 +243,7 @@ if __name__ == "__main__":
     p.add_argument("--workers", type=int, choices=[1, 2], default=1)
     p.add_argument("--execute", action="store_true")
     args = p.parse_args()
+    AUDITS = json.load(sys.stdin)
     if not 1 <= args.buckets <= 256 or (
         args.bucket is not None and not 0 <= args.bucket < args.buckets
     ):

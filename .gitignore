@@ -83,11 +83,8 @@ graphify-out/reflections/
 # Local warehouse execution history; maintained tools live under tools/
 /nscreen_state_daily/logs/
 
-# Runtime diagnostics; retain the compact, dated audit evidence
-/nscreen_state_daily/evidence/*
-!/nscreen_state_daily/evidence/audit_7d_*.json
-!/nscreen_state_daily/evidence/verify_7d_*.json
-!/nscreen_state_daily/evidence/seven_day_validation.json
+# Runtime diagnostic results are never versioned
+/nscreen_state_daily/evidence/*.json
 
 # PII measurement outputs; retain reports, queries, models, and tools
 /vendor_quality_measurement/pii_clean/results/**/*.json
@@ -98,3 +95,22 @@ graphify-out/reflections/
 /pii_clean_v2_dashboard/
 ANALYSIS_PREFERENCES.md
 .vscode/settings.json
+
+# Query/debug result formats, including compressed and temporary exports
+*.tsv
+*.feather
+*.arrow
+*.jsonl
+*.ndjson
+*.db
+*.duckdb
+*.sqlite
+*.sqlite3
+*.pkl
+*.pickle
+*.csv.gz
+*.csv.bz2
+*.csv.zst
+*.parquet.tmp
+*.duckdb.wal
+/vendor_quality_measurement/output/

@@ -42,6 +42,8 @@ def main():
     os.umask(0o077)
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--forge", type=Path, default=Path.home() / "forge")
+    parser.add_argument("--allow-local-results", action="store_true",
+                        help="Explicitly authorize persistent replay datasets and checkpoints")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor", help="Check credentials, Trino, Java, source files")
     commands.add_parser(
@@ -131,6 +133,8 @@ def main():
     local_resume.add_argument("--local-sql-memory")
     local_resume.add_argument("--local-sql-threads", type=int, default=2)
     args = parser.parse_args()
+    if args.command in {"run", "compare", "resume-local"} and not args.allow_local_results:
+        parser.error("Replay persists local data. Pass --allow-local-results explicitly.")
     if args.command == "doctor":
         db = Warehouse()
         print("Trino:", db.rows("SELECT version(),current_user"))
@@ -197,6 +201,7 @@ def main():
         replay = Replay(
             args.run_id,
             args.forge,
+            allow_local_results=args.allow_local_results,
             accept_engine_change=args.accept_engine_change,
         )
         try:
@@ -235,6 +240,7 @@ def main():
             args.run_id,
             args.forge,
             day,
+            allow_local_results=args.allow_local_results,
             accept_engine_change=args.accept_engine_change,
             input_tables=inputs or None,
             profile=profile_name,

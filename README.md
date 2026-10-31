@@ -6,6 +6,14 @@ Analysis and prototypes to improve NScreen identities using vendor mappings, IP-
 
 This repository contains research, examples, and a [prepared-source replay pipeline](nscreen-replay/README.md). Production code lives at `~/forge/nscreen-graph/`.
 
+## Result storage
+
+Query, example and debug results stay in memory or stdout. Do not save CSV, JSON, Parquet, database files or notebook outputs. Selected results may appear directly in requested Markdown documentation. SQL sources, code/configuration, synthetic fixtures and the nickname reference vocabulary are retained. Any local export requires an explicit user request.
+
+Run `python3 tools/check_data_storage.py` to inspect local artifacts, including ignored files. Enable the staged-content guard with `git config core.hooksPath .githooks`; it rejects prohibited files and notebook outputs even when force-added. Hooks must be enabled separately in each checkout. This does not purge older commits or remote history.
+
+The audit excludes `.git`, Python environments, dependency caches and the separate ignored `forge/` and `aggr3/` repository checkouts. It checks this repository, rather than every location on the computer. Existing Markdown figures, aggregate findings and requested real examples are documentation, not standalone result dumps. Ignored archived result-writer scripts under historical logs and build targets are disabled; maintained tools display results on stdout.
+
 ## Outline
 
 - [What problem are we solving?](#what-problem-are-we-solving)

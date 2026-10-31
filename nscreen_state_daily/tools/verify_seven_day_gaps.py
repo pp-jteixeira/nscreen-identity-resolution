@@ -8,6 +8,7 @@ from pathlib import Path
 from trino_bootstrap import bootstrap
 
 ROOT = Path(__file__).resolve().parents[1] / "evidence"
+ROOT.mkdir(exist_ok=True)
 SLICES = {
     "2026-10-20": ["CA", "FL"],
     "2026-10-21": ["CA", "FL", "TX"],
@@ -47,9 +48,6 @@ def check(day):
                 "rows": rows,
                 "elapsed_seconds": round(time.monotonic() - start, 1),
             }
-            (ROOT / f"verify_7d_{day}.json").write_text(
-                json.dumps(result, indent=2) + "\n"
-            )
             print(json.dumps({"day": day, "kind": kind, **result[kind]}), flush=True)
         return result
     finally:

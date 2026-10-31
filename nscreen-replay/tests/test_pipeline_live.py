@@ -62,7 +62,7 @@ def test_full_pipeline_and_structural_comparison():
             return query(rows, [r[0] for r in schema], [r[1] for r in schema])
 
     forge = Path(os.environ.get("NSCREEN_FORGE", str(Path.home() / "forge")))
-    replay = FixtureReplay("smoke_" + uuid.uuid4().hex[:12], forge, fixture.DAY)
+    replay = FixtureReplay("smoke_" + uuid.uuid4().hex[:12], forge, fixture.DAY, allow_local_results=True)
     replay.state["fixture_inputs"] = {}
     cols = ["uid", "matchid", "householdid", "stable", "day"]
     types = ["varchar", "bigint", "bigint", "boolean", "varchar"]

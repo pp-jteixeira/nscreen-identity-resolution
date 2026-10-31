@@ -92,7 +92,10 @@ class Replay:
         accept_engine_change=False,
         input_tables=None,
         profile=None,
+        allow_local_results=False,
     ):
+        if not allow_local_results:
+            raise ValueError("Replay persists local data. Explicit allow_local_results=True is required.")
         self.run_id = identifier(run_id)
         self.forge = Path(forge).expanduser().resolve()
         self.source_root = self.forge / "nscreen-graph/src/nscreen_graph/spark/sparksql"
