@@ -3,7 +3,7 @@
 -- Equivalent direct aggregation of the published table. Exact weighted nearest-rank median/P95. Historical docs use saved October 29 grouped populations.
 WITH counts AS (
     SELECT source, observation_count, count(*) AS row_count
-    FROM iceberg.jteixeira_ipa.pii_clean
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     GROUP BY source, observation_count
 ), ranked AS (
     SELECT *, sum(row_count) OVER (PARTITION BY source) AS metric_rows,

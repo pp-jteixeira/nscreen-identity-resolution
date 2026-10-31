@@ -9,5 +9,8 @@ clean-targets: [target]
 models:
   pii_clean:
     +materialized: view
+    intermediate:
+      int_pii__metrics:
+        +materialized: table
     final:
       +materialized: table

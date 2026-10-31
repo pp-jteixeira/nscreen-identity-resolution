@@ -2,7 +2,7 @@
 
 **Question:** does another NPI in this record’s conflict context share an associated facility NPI?
 
-**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
+**Status:** published in canonical snapshot `8811920360682490090`, verified October 31, 2026.
 
 **Target columns:** `conflicting_npis_share_facility`, `facility_npi_values`, `conflicting_npi_facility_comparisons` in `iceberg.jteixeira_ipa.pii__int_<vendor>__metrics` and `iceberg.jteixeira_ipa.pii_clean`. Key: `source`, `metric_row_id`.
 
@@ -25,16 +25,16 @@ Any match gives true. False requires usable, disjoint sets for every peer. Other
 
 Associations have no activity dates. Overlap proves neither coattendance nor ownership; disjoint sets do not prove different workplaces. HealthLink contributes reference evidence.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Conflict examples are selected with exactly one peer comparison, so the displayed peer fully explains the aggregate outcome. Undated Endato comparisons use the available vendor snapshot.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/15_conflicting_npis_share_facility.sql):
+[Executed example SQL](../../sql/examples/15_conflicting_npis_share_facility.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
         'BA2E681A099C6DCF48E741F31F4DA9744B7A4D4FBF656281D78517944D4F72C4',
@@ -43,6 +43,7 @@ WITH selected AS (
         '3BA64E63FD9A2721167D2B60E3B60D71164171D99D17697F44AA1A7D35751BEE'))
 )
 SELECT m.source,
+       m.email,
        m.npi,
        (element_at(m.conflicting_npi_facility_comparisons, 1)).npi AS peer_npi,
        m.facility_npi_values AS own_values,
@@ -53,35 +54,29 @@ FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 4 rows.
-
-| source | npi | peer_npi | own_values | peer_values | conflict | shares_facility |
-|---|---|---|---|---|---|---|
-| endato | 1114929445 | 1922090380 | [] | [] | true | NULL |
-| endato | 1275994485 | 1649528381 | [1194762294, 1538324009, 1962582015] | [1447206370, 1548253917, 1710970918] | true | false |
-| endato | 1558628578 | 1255422341 | [1033475959, 1184709057, 1326033341] | [1184709057, 1326033341] | true | true |
-| haymarket | 1639195985 | NULL | [1306883228, 1457071235, 1881642239, 1932829488, 1942920616] | NULL | false | NULL |
+| source | email | npi | peer_npi | own_values | peer_values | conflict | shares_facility |
+|---|---|---|---|---|---|---|---|
+| endato | cmizelle@att.net | 1114929445 | 1922090380 | [] | [] | true | NULL |
+| endato | mountaindeeva2@aol.com | 1275994485 | 1649528381 | [1194762294, 1538324009, 1659456077] | [1336132364, 1447206370, 1548253917] | true | false |
+| endato | nathan@nobrien.com | 1558628578 | 1255422341 | [1033475959, 1184709057, 1326033341] | [1184709057, 1326033341] | true | true |
+| haymarket | mkubosumi@wvmedical.com | 1639195985 | NULL | [1306883228, 1457071235, 1881642239, 1932829488, 1942920616] | NULL | false | NULL |
 
 **What differentiates these cases:** A known shared value gives true; known disjoint evidence gives false. With an established conflict, missing evidence leaves NULL. Without a conflict, NULL is not applicable. Facility IDs must overlap exactly. Shared state or cluster membership is insufficient, and empty facility sets are unknown.
 
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
+## Statistics by source
 
-## Statistics by vendor
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Statistics SQL](../../sql/statistics/15_conflicting_npis_share_facility.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Run coverage for all vendor denominators, then outcomes for conflict classifications; zero-conflict vendors emit no outcome rows.
+[Executed statistics SQL 1](../../sql/statistics/15_conflicting_npis_share_facility.sql) · [Executed statistics SQL 2](../../sql/statistics/15_conflicting_npis_share_facility_statement_002.sql)
 
-Exact read-only evaluation over 75,564,265 saved metric rows. Percentages below use each vendor’s conflict rows. — means no conflicts.
+| Source | Usable evidence / all records, n (%) | Conflict records | Shared, n (%) | Disjoint, n (%) | Unknown, n (%) |
+|---|---|---|---|---|---|
+| HealthLink | 4,305,037 (38.589376%) | 0 | 0 (—) | 0 (—) | 0 (—) |
+| QuantumMedica | 785,920 (46.075476%) | 56 | 0 (0.000000%) | 10 (17.857143%) | 46 (82.142857%) |
+| Medscape | 19,824,025 (42.031785%) | 46 | 0 (0.000000%) | 21 (45.652174%) | 25 (54.347826%) |
+| Endato | 1,653,631 (30.467867%) | 194,982 | 2,393 (1.227293%) | 19,259 (9.877322%) | 173,330 (88.895385%) |
+| RocketReach | 1,887,187 (38.797918%) | 96,287 | 6,102 (6.337304%) | 12,405 (12.883359%) | 77,780 (80.779337%) |
+| DRDB | 415,129 (37.217448%) | 22,404 | 241 (1.075701%) | 2,807 (12.529013%) | 19,356 (86.395287%) |
+| Haymarket | 1,778,551 (42.113375%) | 0 | 0 (—) | 0 (—) | 0 (—) |
 
-| Vendor | Conflict rows | Shared, n (%) | Disjoint, n (%) | Unknown, n (%) |
-|---|---:|---:|---:|---:|
-| HealthLink | 0 | 0 (—) | 0 (—) | 0 (—) |
-| QuantumMedica | 56 | 0 (0.00%) | 10 (17.86%) | 46 (82.14%) |
-| Medscape | 46 | 0 (0.00%) | 21 (45.65%) | 25 (54.35%) |
-| Endato | 194,982 | 2,347 (1.20%) | 19,181 (9.84%) | 173,454 (88.96%) |
-| RocketReach | 96,287 | 5,998 (6.23%) | 12,309 (12.78%) | 77,980 (80.99%) |
-| DRDB | 22,404 | 235 (1.05%) | 2,832 (12.64%) | 19,337 (86.31%) |
-| Haymarket | 0 | 0 (—) | 0 (—) | 0 (—) |
-
-[Link-level coverage and real examples](../../results/conflicting_facilities_summary.md) · Executed SQL/results (historical output, not retained: `../../results/conflicting_facilities_measure.json`) · Native checks (historical output, not retained: `../../results/conflicting_facilities_native.json`) · Local tests (historical output, not retained: `../../results/conflicting_facilities_local_tests.txt`)
-
-[Lookup/comparison SQL](../../macros/facility_consistency.sql) · [Shared windows](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_facilities.sql) · [Stored facility inspection](../../sql/conflicting_facilities_debug.sql)
+Coverage uses all metric records. Shared/disjoint/unknown percentages use established conflict records. Zero-conflict percentages are undefined (—). Distinct-link outcomes can overlap across records and must not be added.

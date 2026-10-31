@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii__debug_drdb__name_matching_20261028

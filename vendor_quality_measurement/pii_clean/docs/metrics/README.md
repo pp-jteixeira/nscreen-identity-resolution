@@ -1,6 +1,8 @@
 # Metrics
 
-Read these pages in order. Each explains its question, calculation, examples, limitations, exact columns and source statistics. “How it is computed” gives the grouping scope and short SQL expressions. These are calculation excerpts, not standalone queries; named helper values are explained locally. Each page also includes a standalone real-example query, its executed result table with `source`, and a short explanation before statistics. Runnable copies live under [example SQL](../../sql/examples/). Counts describe source-record email positions; they do not establish ownership or scoring weights.
+All **26 metric pages** contain executed real examples, explanations and population statistics. The documentation was refreshed **October 31, 2026**, against `iceberg.jteixeira_ipa.pii_clean` snapshot **`8811920360682490090`**: **75,656,369 metric records across seven sources**.
+
+The refresh executed **32 published-population statistics queries** and **28 example queries** in native Trino. Each page links the exact snapshot-pinned SQL and displays selected results. Pages 23 and 24 include shared, disjoint, unknown and not-applicable vendor-label examples. Page 19 uses the published three-day cookie window, October 28–30, including the missing October 30 input flags. No metric page relies on the old candidate or partial publication for its current results.
 
 | Order | Metric | Question |
 |---|---|---|
@@ -18,21 +20,27 @@ Read these pages in order. Each explains its question, calculation, examples, li
 | 12 | [Email–NPI name conflict](12_email_npi_has_name_conflict.md) | Does one vendor/email/NPI carry names that disagree under fuzzy matching? |
 | 13 | [Conflicting NPIs share a name](13_conflicting_npis_share_name.md) | Does this record share a fuzzy-matching name with another NPI in its conflict context? |
 | 14 | [Conflicting NPIs share a state](14_conflicting_npis_share_state.md) | Does this record share a recognized state with another NPI in its conflict context? |
-| 15 | [Conflicting NPIs share a facility](15_conflicting_npis_share_facility.md) | Do retained facility NPIs overlap in this conflict context? Published and validated October 29, 2026. |
-| 16 | [Conflicting NPIs share a specialty](16_conflicting_npis_share_specialty.md) | Do conflicting NPIs share an exact recognized NPPES taxonomy code? Published and validated October 29, 2026. |
-| 17 | [NPI registry status](17_npi_registry_status.md) | What lifecycle status does current readable NPPES evidence report? Published and validated October 29, 2026. |
-| 18 | [Vendor versus facility state](18_vendor_facility_state.md) | Does this exact record agree with its own NPI’s preferred facility state? Published and validated October 29, 2026. |
-| 19 | [Cookie-location evidence](19_cookie_location_evidence.md) | What untied primary states accompany historical email–UID mappings in the evaluation window? Published and validated October 29, 2026. |
-| 20 | [Link freshness](20_link_freshness.md) | How old is the vendor evidence, and how far does each link trail its vendor? Published and validated October 30, 2026. |
-| 21 | [Link stability](21_link_stability.md) | On what share of observed email days did this NPI appear, and how often did another NPI overlap? Published and validated October 30, 2026. |
-| 22 | [NPI validity and entity type](22_npi_identity.md) | Is the identifier structurally valid, and does NPPES identify an individual or organization? Implementation awaiting publication. |
+| 15 | [Conflicting NPIs share a facility](15_conflicting_npis_share_facility.md) | Do retained facility NPIs overlap in this conflict context? |
+| 16 | [Conflicting NPIs share an NPPES specialty](16_conflicting_npis_share_specialty.md) | Do conflicting NPIs share an exact recognized NPPES taxonomy code? |
+| 17 | [NPI registry status](17_npi_registry_status.md) | What lifecycle status does stored NPPES evidence report? |
+| 18 | [Vendor versus facility state](18_vendor_facility_state.md) | Does this exact record agree with its own NPI’s preferred facility state? |
+| 19 | [Cookie-location evidence](19_cookie_location_evidence.md) | What untied primary states accompany historical email–UID mappings in the evaluation window? |
+| 20 | [Link freshness](20_link_freshness.md) | How old is the vendor evidence, and how far does each link trail its vendor? |
+| 21 | [Link stability](21_link_stability.md) | On what share of observed email days did this NPI appear, and how often did another NPI overlap? |
+| 22 | [NPI validity and entity type](22_npi_identity.md) | Is the identifier structurally valid, and does NPPES identify an individual or organization? |
+| 23 | [Conflicting NPIs share vendor specialty](23_conflicting_npis_share_vendor_specialty.md) | Do conflicting NPIs share exact normalized vendor specialty labels on eligible dates? |
+| 24 | [Conflicting NPIs share vendor profession](24_conflicting_npis_share_vendor_profession.md) | Do conflicting NPIs share exact normalized vendor profession labels on eligible dates? |
+| 25 | [Sequential history](25_sequential_history.md) | How often does a vendor change an email’s NPI set, swap NPIs or return to earlier NPIs? |
+| 26 | [Registration supersession](26_registration_supersession.md) | Which Medscape registration claims have been superseded by a unique latest NPI? |
 
-Real examples were queried October 30, 2026. Pages 01–06, 08–16 and 18–21 pin published snapshot `8096642935433856886`; pages 07 and 17 retain their separately executed examples and documented evaluation dates. Registry-name displays on pages 06 and 07 use the current readable name view, which is not pinned with the metric table. Page 22 uses validated candidate snapshot `2593466519988720108`, pending canonical publication. Samples explain contrasts, not prevalence. Only SQL source and selected Markdown results are retained; no standalone result exports are written.
+## Counting units and dates
 
-One metric-output row represents one exact source record and email position, keyed by `source`, `metric_row_id`. Only raw rows identical except for `day` combine. Email–NPI deduplication is deferred until after metrics and indicators. Repeated source records and distinct observed dates are different counting units. See the [pipeline overview](../../README.md) for row meaning and the [source map](../00_source_map.md) for inputs and available history.
+A metric record is one exact source record and email position, keyed by `source, metric_row_id`. Other denominators are explicitly named: source/emails, source/email/NPI links, source/NPIs or Medscape GUID/email/NPI/status links. Counts across vendors can overlap and must not be added as globally distinct people or emails. Unknown, false, not applicable and zero-denominator percentages are separate outcomes.
 
-Every statistics section links a standalone query under [statistics SQL](../../sql/statistics/README.md). These queries produce population statistics; calculation macros define the indicators themselves. Pages 01–07 link direct aggregations of their saved grouped extraction. Pages 08–13 use October 29 measurements from the current published table. Pages 14–19 retain their documented measurement dates and inputs. Pages 20 and 21 measure the October 30 freshness and stability publications. Changed source data or evaluation dates can change later query results.
+Extraction reads stored evidence without changing evaluation dates. For example, Medscape sequence/freshness evidence remains evaluated on October 30 while cookie evidence uses an October 31 evaluation. Name displays on pages 06 and 07 additionally read the current name-reference view; these display names are not pinned with the stored indicators. Selected examples explain behavior and do not establish prevalence or ownership.
 
-Use the [page template](_template.md) for each new metric. Statistics identify their measurement date, output relation and counting unit. Pages 01–13 use October 29 published-table populations. Pages 08–13 were refreshed together and record a verified stable published snapshot. Use `pii_clean` for stored metrics and the [complete lookup](../email_lookup.md) for all implemented groups.
+## Reproduction and maintenance
 
-Historical metric-specific checkpoints retain their original suite sizes in the documentation; execution logs are not retained. The saved lookup-validation checkpoint (historical output, not retained: `../../results/email_lookup_full_local_tests.txt`) passed 58 tests. See the pipeline overview for the latest complete local-suite result. The [pipeline overview](../../README.md) distinguishes the current 114 published columns from the prepared metric 22 models (126 fields) and lookup (132 outputs), pending publication. Documented measurements are dated evidence; they are not automatically refreshed. Pages 20 and 21 describe the October 30 freshness and stability publications.
+[Example SQL](../../sql/examples/) and [statistics SQL](../../sql/statistics/README.md) are read-only. Current page queries pin the verified snapshot and preserve metric names, scope and denominators. The two raw NPPES diagnostics and the dated partial-history query are separately identified in the statistics index; they are not the basis of current metric-page populations.
+
+The pipeline overview and [build evidence](../build_recovery.md) document publication validation. The 120-test local suite is a separate build checkpoint; this documentation refresh verified queries against the warehouse. Future publications do not automatically refresh these pages. Refresh SQL, displayed results, dates, snapshot IDs and interpretation together. Keep query results in memory and retain selected findings in Markdown rather than exporting result dumps. Use the [page template](_template.md) when adding a metric.

@@ -1,6 +1,6 @@
 # Facility-overlap measurement
 
-**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
+**Historical checkpoint — October 29, 2026.** The population counts and validation results below describe that earlier build. Current publication statistics and executed examples are in [metric 15](../docs/metrics/15_conflicting_npis_share_facility.md), refreshed October 31 against snapshot `8811920360682490090`. Original result dumps are not retained. See [current build validation](../docs/build_recovery.md).
 
 Measured October 29, 2026 using the saved `iceberg.jteixeira_ipa.pii_clean` snapshot recorded in executed queries and results (historical output, not retained: `conflicting_facilities_measure.json`). Reference: `bq_bi.analytics_prod.npi_facility_association`, all ranks, trimmed `provider_npi` and distinct ten-digit nonzero `facility_npis`. Source snapshots are not pinned; the reference has no activity dates.
 
@@ -38,7 +38,7 @@ Across 313,775 conflict rows, 8,580 (2.73%) share facility IDs, 34,353 (10.95%) 
 
 ## Saved examples
 
-Deterministic, truncated examples: the first two metric-row IDs per vendor/outcome were retained. This is diagnostic selection, not a prevalence sample. Full original email/NPI keys, exact dates, peer IDs and comparison arrays remain in the machine-readable results. The examples below omit email text.
+Deterministic, truncated examples: the first two metric-row IDs per vendor/outcome were retained. This is diagnostic selection, not a prevalence sample. The original machine-readable results are no longer retained. Current examples expose email/NPI keys and stored peer comparisons in the linked metric page. The examples below omit email text.
 
 | Vendor | Record NPI | Peer NPI | Shared facility NPIs |
 |---|---|---|---|
@@ -54,6 +54,6 @@ These examples use undated vendor conflict contexts; shared IDs do not establish
 - Native Trino: 26 synthetic record outcomes checked; the independent relational check returned no failures.
 - Full read-only conflict evaluation: all 313,775 conflict rows retained unique metric-row keys. Independent peer/null/intersection checks returned no failures. Published records were inputs only during that measurement. The subsequent full publication verified original-attribute preservation.
 - The saved facility-era combined query plan exceeded Trino’s 150-stage limit at 170 stages. This is a historical plan, not a stage count for the current models. The local runner has a candidate-batch fallback with tests for write, integrity, preservation and unrelated-planning failures. The subsequent October 29 publication verified vendor batching in the warehouse.
-- The [full publication](publication_20261029/report.md) published all five added metric groups and passed preservation and integrity checks. The current runner materializes vendor outputs once, validates the stored candidate before replacement, and compares published checksums against that candidate. Its optimized flow has local regression coverage; a full warehouse rebuild using that flow has not yet run. The [complete email lookup](../docs/email_lookup.md) reads published evidence directly. The earlier enrichment-based lookup validation checkpoint (historical output, not retained: `email_lookup_full_local_tests.txt`) passed 58 tests.
+- The October 29 publication stored all five added metric groups and passed preservation and integrity checks. The later October 31 build uses a stored core followed by separate cookie enrichment and has completed native validation. See [build evidence](../docs/build_recovery.md). The [complete email lookup](../docs/email_lookup.md) reads published evidence directly. The earlier enrichment-based lookup checkpoint passed 58 tests; its raw output is not retained.
 
 Native evidence (historical output, not retained: `conflicting_facilities_native.json`) · Local test output (historical output, not retained: `conflicting_facilities_local_tests.txt`) · Per-vendor planning (historical output, not retained: `conflicting_facilities_candidate_plan.json`) · [Publication implementation](../tools/pipeline.py)

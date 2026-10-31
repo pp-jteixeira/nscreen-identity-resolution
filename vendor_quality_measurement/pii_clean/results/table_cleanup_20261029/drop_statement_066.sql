@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_email_cookie_locations__c6_20261027

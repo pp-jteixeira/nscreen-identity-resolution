@@ -6,7 +6,7 @@ SELECT source, npi,
        npi_entity_type_reason AS entity_reason,
        transform(npi_entity_type_evidence, x -> x.entity_type_code) AS registry_codes,
        npi_identity_as_of_day AS as_of_day
-FROM iceberg.jteixeira_ipa.pii_clean_candidate_npi_identity_39b808aed2af FOR VERSION AS OF 2593466519988720108
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 WHERE source = 'medscape'
   AND metric_row_id IN (
       '00042DFD2EA561D524FBCDA83E5B6BC990D5A9A812A530BBE3DFA0C549A284FE',

@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_vendor_email_metrics_v1_decimal_backup_20261014

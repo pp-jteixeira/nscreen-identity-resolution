@@ -4,6 +4,6 @@ SELECT DISTINCT cookie_location_window_start, cookie_location_window_end,
        cookie_location_window_days, cookie_mapping_available_days,
        cookie_location_available_days, cookie_mapping_missing_days,
        cookie_location_missing_days, cookie_location_window_status
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 ORDER BY cookie_location_window_start, cookie_location_window_end,
          cookie_mapping_available_days, cookie_location_available_days

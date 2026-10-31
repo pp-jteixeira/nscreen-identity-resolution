@@ -37,17 +37,17 @@ NPI-reference names are joined in intermediate for name comparisons. Facility-NP
 
 `first_seen_day` and `last_seen_day` bound the source dates containing the same exact raw record. `observed_day_count` counts those distinct dates. None measures how long someone owned an email. Unknown dates stay null; RocketReach update timestamps are not email observation dates.
 
-Measured October 28, 2026, at exact-record grain. Date bounds describe readable delivery days; they do not imply uninterrupted coverage.
+Measured October 31, 2026, from eligible metric records in `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are the retained dates represented by the publication, not a claim that raw feeds have stopped updating. Date bounds do not imply uninterrupted coverage. [Executed history query](../sql/statistics/08_email_npi_multiplicity.sql).
 
-| Source | Earliest / latest day | Rows with undated observations, n (%) |
-|---|---:|---:|
-| HealthLink | 2026-01-07 / 2026-10-25 | 0 (0.00000%) |
-| QuantumMedica | 2025-09-14 / 2026-10-15 | 0 (0.00000%) |
-| Medscape | 2024-01-10 / 2026-10-27 | 0 (0.00000%) |
-| Endato | Unknown | 5,427,459 (100.00000%) |
-| RocketReach | Unknown | 4,864,145 (100.00000%) |
-| DRDB | Unknown | 1,115,415 (100.00000%) |
-| Haymarket | 2021-07-06 / 2021-07-06 | 0 (0.00000%) |
+| Source | Earliest / latest day | Records with undated observations, n (%) |
+|---|---|---|
+| HealthLink | 2026-01-07 / 2026-10-03 | 0 (0.000000%) |
+| QuantumMedica | 2025-09-14 / 2026-10-15 | 0 (0.000000%) |
+| Medscape | 2024-01-10 / 2026-10-29 | 0 (0.000000%) |
+| Endato | Unknown | 5,427,459 (100.000000%) |
+| RocketReach | Unknown | 4,864,145 (100.000000%) |
+| DRDB | Unknown | 1,115,415 (100.000000%) |
+| Haymarket | 2021-07-06 / 2021-07-06 | 0 (0.000000%) |
 
 Measured history and SQL (historical output, not retained: `../results/email_linkage_measurements.json`). Endato, RocketReach and both DRDB inputs have no delivery `day`; their observation dates stay unknown. Other timestamps remain part of record identity, including RocketReach `created_at` and `updated_at`. For `has_conflict_linkage`, all currently available undated records are compared within each vendor; both DRDB feeds are combined for that comparison. This assumes comparability, not a common collection date. Multi-NPI reassignment remains unknown without dated history.
 
@@ -95,7 +95,7 @@ The rank-1 reference is `bq_bi.analytics_prod.npi_facility_locations_with_ids`: 
 
 Cookie evidence joins normalized email SHA-256 to `iceberg.thirdparty.liveintent_idsync.hashedemail_sha256`; `day` bounds historical mappings and `uids` contains pipe-separated namespace/UID tokens. UID prefixes remain intact; namespaces remain auditable. Join exact UID and mapping date to `iceberg.crossscreen.nscreen_geo_daily_ua` (`day`, `uid`, `geo`). Numeric ZIP3 is left-padded and mapped through `iceberg.jteixeira_ipa.tmp_zip3_to_state` (`zip3`, `state`), after collapsing duplicate/ambiguous keys. The provider-derived map is approximate. Persisted daily state files are not used.
 
-Evaluation uses seven completed days before Europe/Paris today, configurable with `location_evidence_day`. Missing metadata dates remain explicit, and source-date presence does not prove complete rows. Daily geo snapshots can share a 15-day hourly lookback. Rank recognized states by distinct dates per UID before email joins; tied winners supply no state agreement. Current-window evidence is not historical vendor-day reconstruction. See [facility comparison](metrics/18_vendor_facility_state.md) and [cookie evidence](metrics/19_cookie_location_evidence.md). Both passed native fixtures, all vendor plans and full-population read-only measurement on October 29, 2026, and were published after full-build validation on October 29, 2026.
+Evaluation uses three completed days before Europe/Paris today, with evaluation date configurable through `location_evidence_day` and length through `cookie_window_days`. Historical October 29 measurements used seven days. Missing metadata dates remain explicit, and source-date presence does not prove complete rows. Daily geo snapshots can share a 15-day hourly lookback. Rank recognized states by distinct dates per UID before email joins; tied winners supply no state agreement. Current-window evidence is not historical vendor-day reconstruction. See [facility comparison](metrics/18_vendor_facility_state.md) and [cookie evidence](metrics/19_cookie_location_evidence.md). Both passed native fixtures, all vendor plans and full-population read-only measurement on October 29, 2026, and were published after full-build validation on October 29, 2026.
 
 ## Link freshness dates
 
@@ -108,3 +108,21 @@ Evaluation uses seven completed days before Europe/Paris today, configurable wit
 ## NPI structure and entity type
 
 [Metric 22](metrics/22_npi_identity.md) checks retained `npi` text and reads `entity_type_code` from `iceberg.npi.nppes_npidata_latest`. Reference rows collapse per NPI before joining. Entity codes 1 and 2 mean individual and organization, independently of identifier digits and lifecycle status. Missing or conflicting evidence remains unknown. Evaluation date records the reference evaluation, not a historical vendor observation or reference delivery date.
+
+## Vendor specialty and profession inputs
+
+These published metrics compare vendor labels separately from NPPES taxonomy. Metadata is reduced to one NPI/day group before joining; Medscape also requires the exact trimmed registration `guid`. Only delivery dates present in the exact attribution record are joined. There is no latest-row selection, carry-forward or cross-day fallback. All same-key raw labels are retained, normalized and deduplicated. Missing dates or metadata keep empty evidence arrays.
+
+| Vendor | Specialty input | Profession input | Join/grain |
+|---|---|---|---|
+| HealthLink | `iceberg.thirdparty.healthlink_hcp.specialty` | Unsupported; `provtype`, `title`, `standardizedtitle` are not mapped | NPI and exact delivery day |
+| QuantumMedica | `iceberg.thirdparty.quantummedica_hcpmeta.primary_specialty`, `secondary_specialty`, `tertiary_specialty` | `profession` on the same table | NPI and exact delivery day |
+| Medscape | `iceberg.thirdparty.medscape_pii_meta_global.primary_specialty`, `secondary_specialty`, `tertiary_specialty` | `profession` on the same table | `guid`, NPI and exact delivery day |
+| DRDB | `iceberg.thirdparty.drdb_npi.specialty`, `iceberg.thirdparty.npi_enrich_emails_hashlower.specialty` | Unsupported | Original exact undated record |
+| Endato, RocketReach, Haymarket | Unsupported | Unsupported; RocketReach job titles are not mapped | Evidence stays unknown |
+
+`vendor_professional_evidence` stores table provenance, evidence day, raw labels and normalized labels on each metric row. Metadata does not alter record identity, historical observation counts or source/email/NPI grain. `iceberg.thirdparty.medscape_npi_optout` is staged unchanged and consumed by Medscape intermediate eligibility. All cleaned listed NPIs are excluded before metrics, without delivery-day or opt-out-date filtering. The metadata joins themselves do not remove rows. See [vendor specialty](metrics/23_conflicting_npis_share_vendor_specialty.md) and [vendor profession](metrics/24_conflicting_npis_share_vendor_profession.md).
+
+## Medscape opt-out eligibility
+
+`stg_medscape__optout` reads every row from `iceberg.thirdparty.medscape_npi_optout`, retaining raw NPI, delivery day and opt-out day plus cleaned helpers. `int_medscape__metrics.global_versions` excludes any matching `npi_clean` before exact-record grouping through a left join retaining only unmatched NPIs. All retained opt-out deliveries contribute, including records with missing, invalid or future dates. This is cumulative current eligibility, not historical opt-out timing reconstruction. Staging is not filtered; other vendors are unaffected. See [policy and validation](medscape_optout.md).

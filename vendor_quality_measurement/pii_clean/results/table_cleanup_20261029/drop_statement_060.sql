@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_v2_cookie_email_population__c6_20261027

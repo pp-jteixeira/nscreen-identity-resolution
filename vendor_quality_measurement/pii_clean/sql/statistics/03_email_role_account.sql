@@ -4,5 +4,5 @@
 SELECT source, count(*) AS metric_rows,
        count_if(email_role_account) AS flagged_rows,
        100e0 * count_if(email_role_account) / count(*) AS flagged_row_pct
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 GROUP BY source ORDER BY source

@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_pii_source__medscape_bak20261020

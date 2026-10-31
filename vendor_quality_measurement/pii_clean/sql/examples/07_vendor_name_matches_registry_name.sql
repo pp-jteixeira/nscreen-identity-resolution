@@ -6,7 +6,7 @@ SELECT DISTINCT
     m.source_name_usable,
     m.registry_name_usable,
     m.vendor_name_matches_registry_name AS matches
-FROM iceberg.jteixeira_ipa.pii_clean m
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090 m
 LEFT JOIN UNNEST(m.source_name_values)
     AS s(first_name, last_name, first_variants) ON true
 LEFT JOIN iceberg.jteixeira_ipa.pii__int_npi__names r ON m.npi = r.npi

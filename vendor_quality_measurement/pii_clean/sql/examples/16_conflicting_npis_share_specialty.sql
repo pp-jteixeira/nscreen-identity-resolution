@@ -1,6 +1,6 @@
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
         '81EEC062442BE87D989714B321418BF79E372D7467D15AC482DE2844E199216D',
@@ -15,6 +15,6 @@ SELECT m.source,
        m.specialty_code_values AS own_values,
        (element_at(m.conflicting_npi_specialty_comparisons, 1)).specialty_codes AS peer_values,
        m.has_conflict_linkage AS conflict,
-       m.conflicting_npis_share_specialty AS shares_specialty
+       m.conflicting_npis_share_nppes_specialty AS shares_specialty
 FROM selected m
 ORDER BY m.source, m.metric_row_id

@@ -1,4 +1,4 @@
-{% macro record_versions(stage_model) -%}
+{% macro record_versions(stage_model, exclude_npis_model=none) -%}
 {% set schema = record_schema(stage_model) %}
 {% set fields = schema.columns | rejectattr('name', 'equalto', 'day') | list %}
 WITH grouped AS (
@@ -13,7 +13,13 @@ WITH grouped AS (
         count_if(vendor_day IS NULL) AS undated_observation_count,
         count_if(invalid_vendor_day) AS invalid_day_observation_count
     FROM {{ ref(stage_model) }} s
+    {% if exclude_npis_model is not none %}
+    LEFT JOIN (SELECT npi_clean FROM {{ ref(exclude_npis_model) }}) excluded ON s.npi_clean = excluded.npi_clean
+    WHERE excluded.npi_clean IS NULL
+    {% endif %}
+    {# npi_clean is deterministic from raw NPI. Including it preserves grain and permits NPI partition reuse. #}
     GROUP BY {% for field in fields %}s."{{ field.name }}"{% if not loop.last %}, {% endif %}{% endfor %}
+             {% if exclude_npis_model is not none %}, s.npi_clean{% endif %}
 ), serialized AS (
     SELECT g.*, {{ record_payload(stage_model, 'g') }} AS record_payload
     FROM grouped g

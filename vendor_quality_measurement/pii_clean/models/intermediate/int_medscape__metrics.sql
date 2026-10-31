@@ -1,7 +1,11 @@
 -- One row per exact source record and email position. Link deduplication is deferred.
 WITH global_versions AS (
--- Exact raw source content, excluding only delivery day.
-{{ record_versions('stg_medscape__global') }}
+-- Cumulative NPI opt-outs precede version grouping and every downstream metric.
+{% if var('medscape_versioned_records', '') %}
+SELECT * FROM {{ var('medscape_versioned_records') }}
+{% else %}
+{{ record_versions('stg_medscape__global', exclude_npis_model='stg_medscape__optout') }}
+{% endif %}
 ),
 email_candidates AS (
 SELECT CAST('medscape' AS varchar) AS source, v.email_clean AS email, v.npi_clean AS npi,
@@ -103,11 +107,8 @@ registry_metrics AS (
 location_metrics AS (
 {{ vendor_facility_records('registry_metrics') }}
 ),
-cookie_metrics AS (
-{{ cookie_location_records('location_metrics') }}
-),
 freshness_metrics AS (
-{{ link_freshness_records('cookie_metrics', 'metric_records') }}
+{{ link_freshness_records('location_metrics', 'metric_records') }}
 ),
 stability_inputs AS (
 SELECT m.source, m.email, m.npi, m.observed_days, m.undated_observation_count,
@@ -117,8 +118,17 @@ FROM metric_records m LEFT JOIN email_linkage e ON m.source = e.source AND m.ema
 stability_metrics AS (
 {{ link_stability_records('freshness_metrics', 'stability_inputs') }}
 ),
-metrics AS (
+identity_metrics AS (
 {{ npi_identity_records('stability_metrics', 'metric_records') }}
+),
+professional_metrics AS (
+{{ vendor_professional_records('identity_metrics', 'medscape', 'metric_records', derive_conflicts=true) }}
+),
+sequence_metrics AS (
+{{ sequential_history_records('professional_metrics', 'metric_records', 'medscape', undated_flag='m.link_stability_has_undated_observations') }}
+),
+metrics AS (
+{{ registration_supersession_records('sequence_metrics', 'medscape', 'metric_records', inline=true) }}
 )
 {% if var('debug', false) %}
 , comparisons AS (
@@ -126,5 +136,5 @@ metrics AS (
 )
 {{ debug_name_rows('metrics', 'comparisons') }}
 {% else %}
-SELECT * FROM metrics
+SELECT * FROM {% if var('defer_quality_enrichments', false) %}location_metrics{% elif var('defer_sequential_history', false) %}professional_metrics{% else %}metrics{% endif %}
 {% endif %}

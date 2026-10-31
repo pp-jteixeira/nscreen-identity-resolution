@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_liveintent_email_cookies__c6_20261027

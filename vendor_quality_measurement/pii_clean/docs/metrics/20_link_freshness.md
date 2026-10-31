@@ -18,16 +18,16 @@ It joins these dates back to every original record without collapsing email posi
 
 Missing dates remain null. Undated records can inherit a known date from another record of the same link. Future dates remain visible, but a future vendor maximum makes both day counts null for that vendor. No negative ages, thresholds, filters or scores are introduced.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/20_link_freshness.sql):
+[Executed example SQL](../../sql/examples/20_link_freshness.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '174DF23ED50299325123B7660ECB3AA68FEDD02FA7345B47D575396DEAF0419A'))
        OR (source = 'haymarket' AND metric_row_id IN (
@@ -37,6 +37,8 @@ WITH selected AS (
         'ABDD5253F7AE1234C4E9B5856FF54938AD6993BA3DA4740DDF24B1DB96F480AA'))
 )
 SELECT m.source,
+       m.email,
+       m.npi,
        m.link_last_observed_day,
        m.source_latest_observed_day,
        m.source_age_days,
@@ -46,37 +48,29 @@ FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 4 rows.
-
-| source | link_last_observed_day | source_latest_observed_day | source_age_days | link_lag_days | evaluated_on |
-|---|---|---|---|---|---|
-| endato | NULL | NULL | NULL | NULL | 2026-10-30 |
-| haymarket | 2021-07-06 | 2021-07-06 | 1942 | 0 | 2026-10-30 |
-| medscape | 2026-10-28 | 2026-10-28 | 2 | 0 | 2026-10-30 |
-| medscape | 2024-03-07 | 2026-10-28 | 2 | 965 | 2026-10-30 |
+| source | email | npi | link_last_observed_day | source_latest_observed_day | source_age_days | link_lag_days | evaluated_on |
+|---|---|---|---|---|---|---|---|
+| endato | arnie.hicks@gmail.com | 1124164199 | NULL | NULL | NULL | NULL | 2026-10-30 |
+| haymarket | mdusn@yahoo.com | 1497727853 | 2021-07-06 | 2021-07-06 | 1,942 | 0 | 2026-10-30 |
+| medscape | jonathan.weinkle@gmail.com | 1598891004 | 2026-10-29 | 2026-10-29 | 1 | 0 | 2026-10-30 |
+| medscape | jlee2@lghealth.org | 1629337647 | 2024-03-07 | 2026-10-29 | 1 | 966 | 2026-10-30 |
 
 **What differentiates these cases:** Haymarket can have zero link lag while the entire feed is old. Medscape separates a link far behind its feed from a link present on the feed's latest day. Undated Endato evidence stays NULL. Zero lag therefore means current within the retained feed, not fresh in calendar time.
 
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
+## Statistics by source
 
-## Statistics and limits
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Standalone population SQL](../../sql/statistics/20_link_freshness.sql) reads the published columns. Each source/email/NPI contributes once to link counts and exact nearest-rank p50/p95 lag. Latest-day percentages use known-lag links; missing-date percentages use all links. Metric-row counts retain every record.
+[Executed statistics SQL](../../sql/statistics/20_link_freshness.sql)
 
-Repeated deliveries are not independent confirmation. Missing links can reflect partial feeds. Endato, RocketReach and DRDB have no observation dates. See [source dates](../00_source_map.md) and [publication validation](../../results/publication_20261030/report.md).
+| Source | Stored evaluation day | Latest source observation | Source age, days | Email/NPI links | Unknown lag links | At latest day / known lag, n (%) | Lag median / P95, days |
+|---|---|---|---|---|---|---|---|
+| HealthLink | 2026-10-30 | 2026-10-03 | 27 | 7,688,451 | 0 | 6,903,398 (89.789192%) | 0 / 1 |
+| QuantumMedica | 2026-10-30 | 2026-10-15 | 15 | 1,705,723 | 0 | 1,692,618 (99.231704%) | 0 / 0 |
+| Medscape | 2026-10-30 | 2026-10-29 | 1 | 3,659,659 | 0 | 841,805 (23.002280%) | 261 / 966 |
+| Endato | 2026-10-30 | NULL | NULL | 5,427,459 | 5,427,459 | 0 (—) | NULL / NULL |
+| RocketReach | 2026-10-30 | NULL | NULL | 3,199,535 | 3,199,535 | 0 (—) | NULL / NULL |
+| DRDB | 2026-10-30 | NULL | NULL | 826,886 | 826,886 | 0 (—) | NULL / NULL |
+| Haymarket | 2026-10-30 | 2021-07-06 | 1,942 | 4,223,245 | 0 | 4,223,245 (100.000000%) | 0 / 0 |
 
-### Published population, October 30, 2026
-
-Evaluation day: `2026-10-30`. The query covers all 75,564,265 retained rows and 26,730,605 source/email/NPI links. Dates below are latest eligible observations. Percentiles use the exact nearest-rank method and exclude unknown lags. Unknown values display as —.
-
-| Vendor | Links | Undated links (%) | Latest day | Source age (days) | At latest day / known-lag links (%) | p50 / p95 lag (days) | Maximum lag (days) |
-|---|---:|---:|---|---:|---:|---:|---:|
-| drdb | 826,886 | 826,886 (100.00%) | — | — | — | — / — | — |
-| endato | 5,427,459 | 5,427,459 (100.00%) | — | — | — | — / — | — |
-| haymarket | 4,223,245 | 0 (0.00%) | 2021-07-06 | 1,942 | 4,223,245 / 4,223,245 (100.00%) | 0 / 0 | 0 |
-| healthlink | 7,688,451 | 0 (0.00%) | 2026-10-25 | 5 | 6,163,984 / 7,688,451 (80.17%) | 0 / 22 | 291 |
-| medscape | 3,659,306 | 0 (0.00%) | 2026-10-28 | 2 | 845,413 / 3,659,306 (23.10%) | 260 / 965 | 1,022 |
-| quantummedica | 1,705,723 | 0 (0.00%) | 2026-10-15 | 15 | 1,692,618 / 1,705,723 (99.23%) | 0 / 0 | 396 |
-| rocketreach | 3,199,535 | 3,199,535 (100.00%) | — | — | — | — / — | — |
-
-Measured on published snapshot `1613450720463268051`. The linked standalone SQL is the executed aggregation. No future-dated links were observed. Detailed SQL and aggregate measurements are historical output, not retained: `../../results/link_freshness_published_statistics_20261030.json`.
+Latest-day percentages use links with a known lag. Lag quantiles use exact nearest ranks over known lags. Stored evaluation days remain unchanged; October 31 extraction does not reevaluate age. Missing or future-dated source history can leave lag unknown. Zero lag can accompany an old feed.

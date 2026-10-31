@@ -49,7 +49,7 @@ def healthlink_fixture():
             {'day':'2026-01-01','npi':'1','hld_email':'same@example.test'},
             {'day':'2026-01-02','npi':'1','hld_email':'same@example.test'},
             {'day':'2026-01-01','npi':'missing','hld_email':'unknown@example.test'}]),
-        'stg_healthlink__hcp': "(SELECT *, CAST(NULL AS varchar) AS day, CAST(NULL AS varchar) AS state, CAST(NULL AS varchar) AS phone FROM (VALUES ('1','JOHN','SMITH'),('1','JOHN','SMITH'),('1','JANE','JONES')) AS t(npi,firstname,lastname))"})
+        'stg_healthlink__hcp': "(SELECT *, CAST(NULL AS varchar) AS day, CAST(NULL AS varchar) AS state, CAST(NULL AS varchar) AS phone, CAST(NULL AS varchar) AS specialty FROM (VALUES ('1','JOHN','SMITH'),('1','JOHN','SMITH'),('1','JANE','JONES')) AS t(npi,firstname,lastname))"})
 
 
 def check_healthlink(rows):

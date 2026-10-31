@@ -1,4 +1,5 @@
 """Distinct dated history measures presence and overlap without changing record grain."""
+import re
 import unittest
 
 import pipeline as p
@@ -70,8 +71,13 @@ class LinkStabilityTests(unittest.TestCase):
                 self.assertTrue(check('SELECT ' + projection + ' FROM (' + sql + ')'))
 
     def test_population_counts_links_and_excludes_unknown_shares(self):
+        documented = (p.ROOT / 'sql/statistics/21_link_stability.sql').read_text()
+        # Documentation pins its measured snapshot; live profiles use the current table.
+        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
+                                 p.relation(p.FINAL_MODEL), documented)
+        self.assertEqual(pins, 1)
         self.assertEqual(p.render_profile('link_stability_profile.sql') + '\n',
-                         (p.ROOT / 'sql/statistics/21_link_stability.sql').read_text())
+                         unpinned)
         sql = p.render_profile('link_stability_profile.sql').replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')')
         rows = {r['source']: r for r in execute(sql)}
         self.assertEqual(rows['vendor']['metric_rows'], 5)

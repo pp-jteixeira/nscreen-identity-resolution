@@ -1,26 +1,28 @@
 # Final table
 
-The [final model](pii_clean.sql) unions all rows and columns from seven vendor metric models using `SELECT *` with `UNION ALL`. It does not deduplicate, filter, score or recompute metrics.
+The [final model](pii_clean.sql) selects the 154-field output of `int_cookie__metrics`. Seven vendor models first produce 124 non-cookie fields, combined with `UNION ALL` and stored in `int_pii__metrics`. The downstream cookie model computes thirty actual fields over three completed days. No placeholder cookie columns or subsequent MERGE are required.
 
-The October 30, 2026 stability publication contains **114 columns and 75,564,265 rows** in `iceberg.jteixeira_ipa.pii_clean`. It adds six stability fields while preserving all 108 previous fields, including stored freshness dates and `computed_at`. Source/reference evidence was not refreshed. [Stability publication](../../results/publication_stability_20261030/report.md) · [Freshness publication](../../results/publication_20261030/report.md) · [October 29 full build](../../results/publication_20261029/report.md).
+Rows retain exact source-record/email-position grain, keyed by `source, metric_row_id`. Historical observations, raw `record_payload`, nullable outcomes, reference provenance and comparison evidence remain available. Publication does not score or deduplicate links.
 
-Local metric 22 models declare 126 columns, pending publication. Vendor views and the canonical table remain at the verified 114-column checkpoint.
-
-Rows remain at exact source-record/email-position grain. `record_payload` preserves original email-bearing source fields except `day`, represented through observation history. Typed columns retain names, states, provenance and comparison evidence. The October 29 full build preserved the original 41 columns' substantive values and row counts, excluding query-time `computed_at` from checksum comparisons.
+## Build and validation
 
 From the project directory:
 
 ```bash
-../../.venv/bin/python tools/pipeline.py build
+../../.venv/bin/python tools/pipeline.py build --direct
 ../../.venv/bin/python tools/pipeline.py final
 ```
 
-`build` refreshes all dependencies and publishes the final table. `final` publishes from existing vendor views. Both require identical vendor column names, order and types, then materialize vendor outputs once into a candidate. The runner uses the combined union when its plan fits Trino's stage limit, otherwise separate vendor batches.
+`build` refreshes source dependencies, builds stored core and publishes cookie-enriched output. `core --direct` writes vendor batches directly into the core table. `core --direct --resume` retains completed source batches after schema and key checks. Default core builds can instead validate a separate candidate before replacement. Stage-limit fallback uses narrow stored execution inputs.
 
-Validation reads the stored candidate, without recomputing vendor views for checksums. All seven vendors must be present with nonempty row counts and unique keys. Candidate schema and fourteen integrity checks must pass before atomic publication. A supplied `build_final(..., preservation=...)` baseline also checks previous published attributes; this is not required by ordinary CLI refreshes. Published schema, per-vendor counts and substantive-column checksums must match the candidate. Source snapshots are not pinned across batches. The current runner flow has local regression coverage but has not yet been exercised in a full warehouse rebuild.
+Core requires identical vendor schemas, all seven sources, unique keys and sixteen integrity checks. Final enrichment preserves counts, keys and all 124 core-field checksums, including `computed_at`, and validates cookie outcomes. `final` and `cookies` read stored core without recomputing vendor metrics. [Cookie workflow](../../docs/cookie_stage.md).
 
-The October 29 103-column combined vendor plan exceeded Trino's 150-stage limit at 721 stages. The full publication used a uniquely named candidate table and separate vendor batches. The candidate passed all eleven native integrity checks and preserved the previous published attributes before atomic `CREATE OR REPLACE TABLE ... AS` publication. Published schema and checksums were rechecked afterward. The candidate was retained for audit. The historical execution manifest is not retained locally.
+Medscape recovery uses sixteen email hash batches with raw-history checksums and a fixed full-source freshness date. Ordinary source-level resume does not establish that partial email batches are complete. [Recovery details](../../docs/build_recovery.md).
 
-The destination is Joel's `jteixeira_ipa` schema. Source/reference tables are read-only. The [complete email lookup](../../docs/email_lookup.md) is prepared for 126 stored fields and six display/comparison fields, giving 132 outputs after metric 22 publication.
+## Publication checkpoints
 
-[Metric definitions](../../docs/metrics/README.md) · [Name inspection](../../sql/conflicting_names_debug.sql) · [State inspection](../../sql/conflicting_states_debug.sql)
+The October 31, 2026 publication has 154 columns and 75,656,369 records across all seven sources, at snapshot `8811920360682490090`. It preserves all 124 core fields and passes cookie integrity checks. The three-day cookie window is October 28–30; October 30 is missing in both source feeds and remains explicitly flagged.
+
+The earlier direct rebuild stopped with six sources after HDFS allocation failures. Recovery preserved those 28,492,003 core records and built 47,164,366 eligible Medscape records in sixteen email batches. Bounded writers and a reusable exact-record input resolved the build. See [execution evidence](../../docs/build_recovery.md).
+
+The [complete email lookup](../../docs/email_lookup.md) reads all 154 stored fields and six display/comparison helpers. Source and reference tables remain read-only; build relations stay in `iceberg.jteixeira_ipa`.

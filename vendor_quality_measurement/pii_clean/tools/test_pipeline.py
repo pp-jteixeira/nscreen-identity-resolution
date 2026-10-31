@@ -46,7 +46,7 @@ class LayerContractTests(unittest.TestCase):
     def test_evidence_preserves_vendor_history_and_unknowns(self):
         from test_models import execute
         dependencies = []
-        pipeline.read_model('pii_clean', dependencies=dependencies)
+        pipeline.read_model(pipeline.CORE_MODEL, dependencies=dependencies)
         self.assertEqual(dependencies, [f'int_{s}__metrics' for s in pipeline.SOURCES])
         fields = ['first_seen_day', 'last_seen_day', 'observed_day_count', 'observation_count',
                   'undated_observation_count', 'invalid_day_observation_count', 'source_tables',
@@ -60,7 +60,7 @@ class LayerContractTests(unittest.TestCase):
                      + ', '.join(f'NULL AS {c}' for c in fields)
                      + ', CAST(ARRAY[] AS array(row(first_name varchar, last_name varchar, first_variants array(varchar)))) AS source_name_values'
                      + " FROM (VALUES ('older_npi', 'record_1'), ('older_npi', 'record_2'), ('newer_npi', 'record_3')) AS records(npi, metric_row_id))" for s in pipeline.SOURCES}
-        rows = execute(pipeline.read_model('pii_clean', ref_overrides=overrides))
+        rows = execute(pipeline.read_model('int_pii__metrics', ref_overrides=overrides))
         self.assertEqual(len(rows), 21)
         self.assertEqual(len({(r['source'], r['metric_row_id']) for r in rows}), 21)
         self.assertEqual(len({(r['source'], r['email'], r['npi']) for r in rows}), 14)

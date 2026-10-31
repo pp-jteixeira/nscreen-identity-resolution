@@ -8,7 +8,7 @@ SELECT DISTINCT
         evidence -> evidence.replacement_npi)) AS raw_replacements,
     npi_registry_status_reason AS reason,
     npi_registry_status_as_of_day AS evaluated_on
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 WHERE source = 'endato'
   AND npi IN ('1215977517', '1295334530', '1376022061',
               '1588945042', '1871599357', '1962620666')

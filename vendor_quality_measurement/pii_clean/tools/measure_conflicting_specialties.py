@@ -80,13 +80,13 @@ GROUP BY m.source ORDER BY m.source''')
 ), evaluated AS ({metrics}) SELECT * FROM evaluated'''
         run('outcomes', f'''WITH measured AS ({candidate})
 SELECT source, count(*) AS conflict_rows, count(DISTINCT metric_row_id) AS distinct_record_keys,
-       count_if(conflicting_npis_share_specialty) AS shared_specialty_rows,
-       count_if(conflicting_npis_share_specialty = false) AS different_specialty_rows,
-       count_if(conflicting_npis_share_specialty IS NULL) AS unknown_specialty_rows,
+       count_if(conflicting_npis_share_nppes_specialty) AS shared_specialty_rows,
+       count_if(conflicting_npis_share_nppes_specialty = false) AS different_specialty_rows,
+       count_if(conflicting_npis_share_nppes_specialty IS NULL) AS unknown_specialty_rows,
        count(DISTINCT ROW(email, npi)) AS conflict_links,
-       count(DISTINCT IF(conflicting_npis_share_specialty, ROW(email, npi), NULL)) AS shared_specialty_links,
-       count(DISTINCT IF(conflicting_npis_share_specialty = false, ROW(email, npi), NULL)) AS different_specialty_links,
-       count(DISTINCT IF(conflicting_npis_share_specialty IS NULL, ROW(email, npi), NULL)) AS unknown_specialty_links
+       count(DISTINCT IF(conflicting_npis_share_nppes_specialty, ROW(email, npi), NULL)) AS shared_specialty_links,
+       count(DISTINCT IF(conflicting_npis_share_nppes_specialty = false, ROW(email, npi), NULL)) AS different_specialty_links,
+       count(DISTINCT IF(conflicting_npis_share_nppes_specialty IS NULL, ROW(email, npi), NULL)) AS unknown_specialty_links
 FROM measured GROUP BY source ORDER BY source''')
         template = (p.ROOT / 'tests/conflicting_specialties.sql').read_text()
         failures = run('independent_check', p.render_sql(template, {'metric_model': p.FINAL_MODEL},
@@ -95,11 +95,11 @@ FROM measured GROUP BY source ORDER BY source''')
             raise ValueError(f'Population check failed: {failures}')
         run('examples', f'''WITH measured AS ({candidate}), ranked AS (
     SELECT source, metric_row_id, email, npi, observed_days, conflict_days,
-           specialty_code_values, conflicting_npis_share_specialty, conflicting_npi_specialty_comparisons,
-           row_number() OVER (PARTITION BY source, conflicting_npis_share_specialty ORDER BY metric_row_id) AS sample_rank
+           specialty_code_values, conflicting_npis_share_nppes_specialty, conflicting_npi_specialty_comparisons,
+           row_number() OVER (PARTITION BY source, conflicting_npis_share_nppes_specialty ORDER BY metric_row_id) AS sample_rank
     FROM measured
 )
-SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, conflicting_npis_share_specialty, sample_rank''')
+SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, conflicting_npis_share_nppes_specialty, sample_rank''')
         expected = {r['source']: r for r in result['coverage']['rows']}
         for row in result['outcomes']['rows']:
             if row['conflict_rows'] != expected[row['source']]['conflict_rows'] or row['distinct_record_keys'] != row['conflict_rows']:

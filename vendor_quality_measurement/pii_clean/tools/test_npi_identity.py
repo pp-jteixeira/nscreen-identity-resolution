@@ -1,4 +1,5 @@
 """Identifier validation, independent registry evidence and record preservation."""
+import re
 import unittest
 
 import pipeline as p
@@ -93,7 +94,12 @@ class NpiIdentityTests(unittest.TestCase):
 
     def test_statistics_distinguish_records_and_identifiers(self):
         profile = p.render_profile('npi_identity_profile.sql')
-        self.assertEqual(profile + '\n', (p.ROOT / 'sql/statistics/22_npi_identity.sql').read_text())
+        documented = (p.ROOT / 'sql/statistics/22_npi_identity.sql').read_text()
+        # Documentation pins its measured snapshot; live profiles use the current table.
+        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
+                                 p.relation(p.FINAL_MODEL), documented)
+        self.assertEqual(pins, 1)
+        self.assertEqual(profile + '\n', unpinned)
         rows = execute(profile.replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')'))
         for dimension in ('structure', 'entity_type', 'entity_reason'):
             selected = [r for r in rows if r['dimension'] == dimension]

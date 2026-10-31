@@ -30,16 +30,16 @@ Endato, RocketReach and DRDB have no delivery days: multiple NPIs give unknown r
 
 Set additions, removals and replacements qualify; this is evidence of changing attribution, not proof of mailbox ownership transfer. Calendar gaps are not filled. No cross-vendor comparisons or row deduplication apply.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `email_key` is a shortened SHA-256 display label. Counts are stored distinct known-day denominators.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/09_has_been_reassigned.sql):
+[Executed example SQL](../../sql/examples/09_has_been_reassigned.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '01C4523510AD571FF0100E5AD6390B33758FCA91EA1A98BB39A1A47C4E5E54F3'))
        OR (source = 'healthlink' AND metric_row_id IN (
@@ -48,8 +48,11 @@ WITH selected AS (
         '5084F30B68BF7BE6EF578F1E2035E1868F1AD45605EB2542687E9AB72B88437D'))
 )
 SELECT m.source,
-       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email,
+       m.npi,
        m.email_npi_count,
+       m.observed_days,
+       m.conflict_days,
        m.email_observed_day_count AS email_days,
        m.link_observed_day_count AS link_days,
        m.has_been_reassigned,
@@ -58,36 +61,28 @@ FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 3 rows.
-
-| source | email_key | email_npi_count | email_days | link_days | has_been_reassigned | has_conflict_linkage |
-|---|---|---|---|---|---|---|
-| endato | B06783EF2BF2 | 2 | 0 | 0 | NULL | true |
-| healthlink | 4184231AAA7E | 2 | 267 | 1 | true | false |
-| quantummedica | 3F56C1D61FDA | 2 | 11 | 11 | false | true |
+| source | email | npi | email_npi_count | observed_days | conflict_days | email_days | link_days | has_been_reassigned | has_conflict_linkage |
+|---|---|---|---|---|---|---|---|---|---|
+| endato | tloan@yahoo.com | 1639195316 | 2 | [] | [] | 0 | 0 | NULL | true |
+| healthlink | jjacobson@mchswecare.com | 1366933715 | 2 | [2026-10-03] | [] | 245 | 1 | true | false |
+| quantummedica | pknudson@primecare.org | 1811935018 | 2 | [2025-09-14, 2025-10-15, 2025-11-15, 2025-12-15, 2026-01-15, 2026-02-15, 2026-03-15, 2026-04-15, 2026-06-15, 2026-09-15, 2026-10-15] | [2025-09-14, 2025-10-15, 2025-11-15, 2025-12-15, 2026-01-15, 2026-02-15, 2026-03-15, 2026-04-15, 2026-06-15, 2026-09-15, 2026-10-15] | 11 | 11 | false | true |
 
 **What differentiates these cases:** Changing dated NPI sets gives reassignment true even without same-day conflict. A repeated conflicting set can remain false for reassignment. Undated competing NPIs establish conflict in the vendor snapshot but cannot establish chronological change. Day counts describe coverage, not calendar continuity.
 
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
+## Statistics by source
 
-## Statistics by vendor
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Statistics SQL](../../sql/statistics/09_has_been_reassigned.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
+[Executed statistics SQL](../../sql/statistics/09_has_been_reassigned.sql)
 
-Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:30.647913+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Email percentages use each vendor's distinct emails. Row percentages use its metric rows.
+| Source | Distinct emails | True: emails, n (%) | Unknown: emails, n (%) | True: records, n (%) |
+|---|---|---|---|---|
+| HealthLink | 7,688,331 | 120 (0.001561%) | 0 (0.000000%) | 271 (0.002429%) |
+| QuantumMedica | 1,705,695 | 1 (0.000059%) | 0 (0.000000%) | 2 (0.000117%) |
+| Medscape | 3,550,359 | 109,289 (3.078252%) | 0 (0.000000%) | 2,359,930 (5.003629%) |
+| Endato | 5,324,318 | 0 (0.000000%) | 91,841 (1.724935%) | 0 (0.000000%) |
+| RocketReach | 3,163,679 | 0 (0.000000%) | 29,990 (0.947947%) | 0 (0.000000%) |
+| DRDB | 819,454 | 0 (0.000000%) | 7,400 (0.903040%) | 0 (0.000000%) |
+| Haymarket | 4,223,245 | 0 (0.000000%) | 0 (0.000000%) | 0 (0.000000%) |
 
-| Vendor | Reassigned emails, n (%) | Unknown emails, n (%) | Reassigned metric rows, n (%) |
-|---|---:|---:|---:|
-| HealthLink | 120 (0.00156%) | 0 (0.00000%) | 271 (0.00243%) |
-| QuantumMedica | 1 (0.00006%) | 0 (0.00000%) | 2 (0.00012%) |
-| Medscape | 109,243 (3.07722%) | 0 (0.00000%) | 2,355,717 (5.00447%) |
-| Endato | 0 (0.00000%) | 91,841 (1.72493%) | 0 (0.00000%) |
-| RocketReach | 0 (0.00000%) | 29,990 (0.94795%) | 0 (0.00000%) |
-| DRDB | 0 (0.00000%) | 7,400 (0.90304%) | 0 (0.00000%) |
-| Haymarket | 0 (0.00000%) | 0 (0.00000%) | 0 (0.00000%) |
-
-Endato, RocketReach and DRDB have no dated history. Their multi-NPI emails are unknown for reassignment; the remaining emails have one retained NPI and are false.
-
-Current measured counts, executed SQL and snapshot checks (historical output, not retained: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation checks (historical output, not retained: `../../results/email_linkage_native_validation.json`)
-
-[Profile SQL](../../sql/email_linkage_profile.sql) · [Independent chronological check](../../tests/email_linkage_history.sql) · [Conflict](10_has_conflict_linkage.md) · [Source date limitations](../00_source_map.md)
+Email percentages use distinct source/emails; record percentages use metric records. Email-level conflict means at least one conflicting record. Unknown chronology remains separate from false.

@@ -1,6 +1,6 @@
 # Vendor/facility state and cookie-location measurements
 
-**Status:** the dated measurements below were performed read-only. Their metric columns were subsequently published and validated in the full October 29, 2026 build. [Publication report](publication_20261029/report.md). Original measurement snapshots, counts and extraction times remain the provenance for these statistics.
+**Historical checkpoint — October 29, 2026.** The population counts and validation results below describe that earlier build. Current publication statistics and executed examples are in [metric 18](../docs/metrics/18_vendor_facility_state.md) and [metric 19](../docs/metrics/19_cookie_location_evidence.md), refreshed October 31 against snapshot `8811920360682490090`. Original result dumps are not retained. See [current build validation](../docs/build_recovery.md).
 
 Both measurements retained all 75,564,265 exact-record/email-position rows and 26,730,605 distinct source/email/NPI links from the same saved `iceberg.jteixeira_ipa.pii_clean` snapshot. Each measurement rechecked that the input snapshot stayed unchanged. The saved vendor-row count is not a count of independent identity confirmations.
 
@@ -93,7 +93,7 @@ The following counts concern links with at least one record in the named compari
 | DRDB | 16,386 (1.98%) | 23,914 (2.89%) | 7,189 (0.87%) | 8,267 (1.00%) |
 | Haymarket | 0 (0.00%) | 0 (0.00%) | 48,731 (1.15%) | 55,562 (1.32%) |
 
-Mixed-state evidence and explicit unknown-reference/unknown-cookie outcomes remain in the machine-readable results. Unknowns are not folded into disagreement. In particular, cookie geography can be compared with a usable facility reference even when the vendor supplies no state.
+The historical scan also measured mixed-state and explicit unknown-reference/unknown-cookie outcomes; its machine-readable results are no longer retained. Current stored evidence and selected outcomes are documented in metrics 18 and 19. Unknowns are not folded into disagreement. In particular, cookie geography can be compared with a usable facility reference even when the vendor supplies no state.
 
 ## Original-state diagnostic examples
 
@@ -140,7 +140,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 
 | Column | Meaning |
 |---|---|
-| `cookie_count` | Distinct usable mapped UID strings within the seven completed days; not verified browser-cookie counts. |
+| `cookie_count` | Distinct usable mapped UID strings within the configured completed-day window (currently three days); not verified browser-cookie counts. |
 | `cookie_mapping_days` | Distinct dates with a valid email-hash/UID mapping. |
 | `cookie_mapped_uid_days` | Distinct UID/mapping-day tuples after token and row deduplication. |
 | `cookie_observed_uid_days` | Mapped UID-days with any same-day geo observation, including unmapped ZIP3 states. |
@@ -154,7 +154,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 | `cookie_location_last_day` | Last untied primary-state mapping date; null without usable observations. |
 | `cookie_uid_types` | Sorted distinct mapping namespace labels; raw UID strings retain their prefixes for joins. |
 | `cookie_state_values` | Sorted distinct untied primary states observed on matching mapping dates. Tied states supply no agreement. |
-| `cookie_location_window_days` | Seven completed calendar days before location_evaluation_day. |
+| `cookie_location_window_days` | Configured completed calendar days before location_evaluation_day; currently three, versus seven at this historical checkpoint. |
 | `cookie_mapping_available_days` | Dates present in mapping partition metadata; presence does not prove complete rows. |
 | `cookie_location_available_days` | Dates present in geo partition metadata; presence does not prove complete rows. |
 | `cookie_mapping_missing_days` | Expected dates absent from mapping metadata; missing dates are not mismatches. |
@@ -164,7 +164,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 | `cookie_location_status` | no_mapping, observed, ambiguous_primary_state, unknown_state or no_state_observation. no_mapping means no valid parsed mapping, not proof that no cookie exists. |
 | `cookie_vendor_state_evidence` | Untied observed primary states versus this exact record’s source_state_values; nullable evidence is represented by explicit unknown labels. |
 | `cookie_facility_state_evidence` | Untied observed primary states versus this NPI’s usable rank-1 facility state. |
-| `cookie_location_window_start` | Evaluation day minus seven; current and future days are excluded. |
+| `cookie_location_window_start` | Evaluation day minus cookie_location_window_days; evaluation-day and future rows are excluded. |
 | `cookie_location_window_end` | Evaluation day minus one, inclusive. |
 | `cookie_mapping_table` | iceberg.thirdparty.liveintent_idsync. |
 | `cookie_location_geo_table` | iceberg.crossscreen.nscreen_geo_daily_ua; snapshots may share a 15-day hourly lookback. |
@@ -179,7 +179,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 - Both runs used the same saved input snapshot, and each verified it stayed unchanged. Source-date availability also matched before and after the cookie scan. This is read-only enrichment, not a full raw-source rebuild or before/after checksum comparison of every original attribute.
 - All seven production vendor queries planned successfully: HealthLink 117, QuantumMedica 102, Medscape 102, Endato 93, RocketReach 93, DRDB 110, Haymarket 102 fragments; each is below the 150-stage limit. Native planning does not prove performance of a full future source rebuild.
 - The earlier enrichment-based [complete email lookup](../docs/email_lookup.md) passed native validation, planning with 46 fragments and three synthetic record checks across all five new groups. No real email-result rows were fetched. The saved lookup-validation checkpoint (historical output, not retained: `email_lookup_full_local_tests.txt`) passed 58 tests; native lookup evidence (historical output, not retained: `email_lookup_full_validation.json`) records its own validation.
-- These historical validations changed no warehouse tables or views. The subsequent [full publication](publication_20261029/report.md) stored all five additions: facility relatedness, specialty relatedness, lifecycle, vendor/facility state and cookie location. The complete lookup now reads all published columns directly; the shorter shortcut remains a subset.
+- These historical validations changed no warehouse tables or views. The subsequent full publication (historical report not retained) stored all five additions: facility relatedness, specialty relatedness, lifecycle, vendor/facility state and cookie location. The complete lookup now reads all published columns directly; the shorter shortcut remains a subset.
 
 ### Reproduce read-only checks
 

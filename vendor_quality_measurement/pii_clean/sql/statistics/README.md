@@ -1,39 +1,38 @@
 # Metric statistics SQL
 
-Each numbered SQL file corresponds to the same numbered [metric page](../../docs/metrics/README.md). Run each file as one complete statement in Trino. SQL files contain no semicolons or blank lines. All statements are read-only. No result rows or execution logs are included here.
+The current metric pages use **32 read-only population queries**, executed in native Trino on **October 31, 2026**, against `iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090`. This complete publication contains **75,656,369 records across seven sources**. Each query is pinned to the same snapshot. Execution leaves stored metrics and evaluation dates unchanged.
 
-## Query provenance
+The directory has 35 SQL files: the 32 current publication queries, two independent raw NPPES diagnostics, and one explicitly dated partial-population query. Only SQL source is retained. No result exports or execution logs are stored.
 
-- **01–07:** equivalent direct aggregations of `iceberg.jteixeira_ipa.pii_clean`. The documented October 29, 2026 tables were calculated from the saved grouped-population extraction in [grouped.sql](../../results/metric_population_20261029/grouped.sql), aggregating row counts within each vendor and outcome. All seven equivalent queries passed live Trino execution on October 29, 2026 in the [SQL audit](../../results/sql_audit_20261029/report.md). Observation quantiles use exact weighted nearest-rank median/P95, matching the documented calculation. Percentages use all metric rows in the vendor. Grouped distinct counts are never summed.
-- **08–14:** statistics over the current published `iceberg.jteixeira_ipa.pii_clean` population. Queries 08–13 were re-executed on October 29, 2026 and their metric-page counts, percentages and provenance were refreshed together. Snapshot `6346435822181920647` remained unchanged throughout those six queries. Query 14 also passed the live SQL audit; its page retains its stated extraction time.
-- **15–19:** population statistics aggregate published evidence directly from `iceberg.jteixeira_ipa.pii_clean`. Facility/specialty coverage uses the stored arrays. Lifecycle, facility-state and cookie outcomes use stored classifications. Cookie coverage reports each distinct stored window and source-availability combination, including window start/end. Reference joins and cookie-history scans are not repeated. The two raw NPPES diagnostics (`17_npi_registry_status.sql` and `_statement_004.sql`) remain independent checks of the current reference, which may differ from the publication snapshot.
-- **20:** link freshness over stored dates and day counts. Each source/email/NPI link contributes once to the distribution. Latest-day percentages use known-lag links; undated percentages use all links. p50 and p95 use exact nearest-rank percentiles over day-count buckets. Stored evaluation dates make source ages reproducible.
-- **21:** link stability counts each source/email/NPI once, with separate email-day and link-day denominators. Shares exclude unknown dates; incomplete email histories and one-day histories are counted explicitly. Mean percentages give each dated link equal weight.
-- **22:** separate identifier-structure, entity-type and entity-reason distributions. Report record counts and distinct NPI counts independently. Each section partitions its vendor/evaluation-date population, and sections must not be added together.
+## Counting units
 
-Queries contain SQL only. The [initial October 29 SQL audit](../../results/sql_audit_20261029/report.md) checked the earlier query versions. Its cookie-outcome query recomputed reference evidence and exceeded the 120-second limit. The current version aggregates stored cookie evidence. Queries 08–13 additionally ran without an output limit for the metric-page refresh. Documented metric tables remain dated measurements, not automatically refreshed results. Current output can differ after a new publication; raw NPPES diagnostics can change independently.
-
-All **27 statistics files present on October 29** passed native Trino semantic validation and full execution on October 29, 2026, with no output limit. The published snapshot stayed unchanged throughout the checks. All five evidence-group denominators matched seven vendors and 75,564,265 metric rows; the facility-state and cookie invariant aggregations returned zero failures. The stored cookie-outcome aggregation completed in 37.2 seconds. The historical validation output is not retained; the SQL and dated findings remain available.
-
-At the freshness checkpoint, 28 statistics files were present. On October 30, native schema validation passed all 28 against the 108-column candidate, and the final exact freshness query ran without a row limit on the published table. Its seven vendor rows matched the candidate exactly, including nearest-rank percentiles. Evidence is historical output, not retained: `../../results/freshness_candidate_queries_20261030.json`, `../../results/link_freshness_exact_candidate_20261030.json` and `../../results/link_freshness_published_statistics_20261030.json`.
-
-At the stability checkpoint there were 29 statistics files. The stability checkpoint passed native schema validation for all 29 files and all 17 profile templates against the 114-column candidate. The standalone stability query ran in full on the published table with all seven vendors and unchanged row/link totals. Results were inspected in memory. See the [publication report](../../results/publication_stability_20261030/report.md).
-
-There are now 30 statistics files. Metric 22 candidate validation passed all 30 statements and 18 profile templates. The new statistics ran in full against the validated 126-column candidate. Canonical publication is pending; [candidate validation](../../results/npi_identity_20261030/report.md) identifies the pinned inputs and substitution needed to reproduce its population.
-
-## Statement files and output sections
-
-Each original path contains its first statement. Additional statements use the same filename stem followed by `_statement_002.sql`, `_statement_003.sql` and so on. Run the separate files in statement order.
-
-| Metric | Statements and interpretation |
+| Metric | Unit and denominator |
 |---|---|
-| 01–14 | One statement per file. Select the documented metric's output columns when a query also reports related indicators. Counts are unrounded; display percentages at the precision used in the metric page. |
-| 15–16 | Coverage supplies every vendor and its conflict-row denominator. Outcomes supply classifications for vendors with conflicts; no outcome row is emitted for a zero-conflict vendor. Such vendors display zero counts with an undefined percentage. |
-| 17 | Reference availability, vendor totals, status outcomes and the independent self-replacement check. Link percentages divide each status count by the vendor's distinct-link total. |
-| 18 | Vendor totals, then grouped outcomes by `vendor_state_evidence` and `facility_reference_status`. Sum record counts within the documented outcome. Distinct-link outcomes can overlap across historical record states; they are not exclusive link classifications. |
-| 19 | Stored window and source-date coverage, vendor totals, then grouped outcome sections. Use the `section` column to distinguish totals, cookie status, vendor-state comparison and facility-state comparison. Do not sum counts across these overlapping grouping sets. Status groups partition vendor links; historical vendor-state comparisons can overlap. |
-| 20 | One statement with per-vendor row/link counts, dated and undated links, source age, latest-day links and exact nearest-rank lag percentiles. Unknown lags are excluded from percentile and latest-day denominators. |
-| 21 | Per-vendor counts and percentages for unknown shares, incomplete email dates, one-day histories, full/partial presence and overlap. Presence/overlap percentages use dated links; unknown/incomplete-date percentages use all links. |
-| 22 | Three outcome sections, with per-vendor record and distinct-NPI denominators and percentages. These sections overlap. Registry unknown reasons stay explicit. |
+| 01 | Exact source-record/email-position counts. Repeated means more than one observation. Median/P95 use exact weighted nearest-rank quantiles. |
+| 02–07 | Record outcomes divided by all metric records within each source. Unknown name evidence remains separate from disagreement. |
+| 08 | Distinct source/emails for multiplicity percentages; metric records for affected-record percentages. |
+| 09–10 | Distinct source/emails for history/conflict prevalence; record counts have their own denominators. |
+| 11 | Distinct source/emails for normalized-name counts. Spellings are not people. |
+| 12 | Distinct source/email/NPI links for conflicting and unknown link outcomes. |
+| 13–16 | Established conflict records for shared/disjoint/unknown percentages. Evidence coverage uses all metric records. Zero-conflict percentages are undefined. |
+| 17 | Published lifecycle outcomes by record, link and NPI. The metric page displays record percentages; overlapping distinct counts must not be summed. |
+| 18 | Vendor/facility evidence groups partition records. Distinct-link groups can overlap across historical records. |
+| 19 | Location-status groups partition source/email/NPI links. Vendor/facility comparison groups are separate and can overlap at link grain. Window checks use stored `cookie_location_window_days`. |
+| 20 | Distinct source/email/NPI links. Latest-day percentages and exact lag quantiles exclude unknown lags. |
+| 21 | Dated source/email/NPI links for presence/overlap percentages. Unknown and one-day histories stay visible. |
+| 22 | Distinct source/NPIs and metric records are separate units. Structure, entity type and entity reason are separate distributions. |
+| 23–24 | All records for usable-label coverage; established conflict records for label-agreement outcomes. |
+| 25 | Distinct source/emails. Swap and flip-back percentages use emails with dated history. |
+| 26 | Distinct Medscape GUID/email/NPI/status combinations, independently of raw record multiplicity. |
 
-SQL references and dated findings are available from a fresh checkout. Result dumps are not retained; rerun the queries for current values.
+## Statement files
+
+Additional statements use `_statement_002.sql`, `_statement_003.sql` and so on. Run each file as one complete statement. SQL files contain no semicolons or blank lines.
+
+- **15–16:** the first query gives all-source coverage. Statement 002 gives conflict outcomes; sources without conflicts have no outcome row and require a zero count with an undefined percentage.
+- **17:** statements 002 and 003 query the published population. `17_npi_registry_status.sql` and statement 004 instead inspect the current raw NPPES reference. Those two diagnostic queries were not rerun for this refresh and are not the source of current page statistics.
+- **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures.
+- **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Its corrected checks passed with the three-day window and explicit missing-source days.
+- **25:** `25_sequential_history.sql` uses the complete publication. `25_sequential_history_partial_20261030.sql` preserves the older six-source snapshot for historical reproduction only.
+
+The current NPPES specialty flag is `conflicting_npis_share_nppes_specialty`. Current statistics and examples use that name. Calculation macros define indicators; these queries measure stored outcomes. See the [metric pages](../../docs/metrics/README.md) for executed examples, tables and interpretation.

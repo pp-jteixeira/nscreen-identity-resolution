@@ -28,13 +28,11 @@ Any qualifying pair gives true; usable comparisons without a match give false; a
 
 **Limits:** common names, shared tokens and broad nickname mappings can produce false matches. Only this record’s vendor name and current readable registry variants contribute; HealthLink uses its separate HCP reference; no historical as-of alignment is implied. Endato compares its returned person's name, not the NPI-holder name supplied as input. No score or filtering is applied.
 
-## Real examples: exact, fuzzy, disagreement and unknown
+## Real examples
 
-Seven selected Endato records show why different names can match and why missing names remain unknown. The query below was executed on October 30, 2026. It reads the stored metric and usability flags from `iceberg.jteixeira_ipa.pii_clean`, alongside normalized vendor names in `source_name_values`. Registry names come from the current readable `iceberg.jteixeira_ipa.pii__int_npi__names` view; they are inspection evidence, not a stored historical copy. The displayed pairs were checked against the implemented comparison rules on the extraction date.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence. Registry-name displays additionally use the current readable name view; those names are not snapshot-pinned with the stored indicators.
 
-Selection uses exact record/email-position keys because records sharing an NPI can have different vendor names and outcomes. `DISTINCT` removes identical displayed comparisons; it does not recalculate the stored metric. Emails are omitted. These selected cases do not measure prevalence.
-
-[Runnable example SQL](../../sql/examples/07_vendor_name_matches_registry_name.sql):
+[Executed example SQL](../../sql/examples/07_vendor_name_matches_registry_name.sql):
 
 ```sql
 SELECT DISTINCT
@@ -45,7 +43,7 @@ SELECT DISTINCT
     m.source_name_usable,
     m.registry_name_usable,
     m.vendor_name_matches_registry_name AS matches
-FROM iceberg.jteixeira_ipa.pii_clean m
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090 m
 LEFT JOIN UNNEST(m.source_name_values)
     AS s(first_name, last_name, first_variants) ON true
 LEFT JOIN iceberg.jteixeira_ipa.pii__int_npi__names r ON m.npi = r.npi
@@ -62,17 +60,15 @@ WHERE m.source = 'endato'
 ORDER BY m.npi
 ```
 
-**Result:** seven rows. `matches` is the stored `vendor_name_matches_registry_name`; NULL means unknown. An unusable vendor name has no entry in `source_name_values`, so the left unnest preserves the record with a NULL displayed name.
-
 | source | npi | vendor_name | registry_name | source_name_usable | registry_name_usable | matches |
 |---|---|---|---|---|---|---|
-| endato | `1104097450` | HYUNSUK KIM | HYUN KIM | true | true | true |
-| endato | `1205977915` | MARY CHANG | NULL | true | false | NULL |
-| endato | `1255544516` | NULL | RONALD CHENG | false | true | NULL |
-| endato | `1770915233` | MITCHELL EATON | MICHELLE EATON | true | true | true |
-| endato | `1821316597` | SARAH HAJJAJI | SARAH NAJJAR | true | true | false |
-| endato | `1922088731` | JIM OGBURN | JAMES OGBURN | true | true | true |
-| endato | `1952426611` | BLANCA PYLE | BLANCA PYLE | true | true | true |
+| endato | 1104097450 | HYUNSUK KIM | HYUN KIM | true | true | true |
+| endato | 1205977915 | MARY CHANG | NULL | true | false | NULL |
+| endato | 1255544516 | NULL | RONALD CHENG | false | true | NULL |
+| endato | 1770915233 | MITCHELL EATON | MICHELLE EATON | true | true | true |
+| endato | 1821316597 | SARAH HAJJAJI | SARAH NAJJAR | true | true | false |
+| endato | 1922088731 | JIM OGBURN | JAMES OGBURN | true | true | true |
+| endato | 1952426611 | BLANCA PYLE | BLANCA PYLE | true | true | true |
 
 **What differentiates these cases:**
 
@@ -81,26 +77,22 @@ ORDER BY m.npi
 - **One matching part is insufficient:** SARAH matches, but HAJJAJI/NAJJAR does not pass the last-name rules. The result is false.
 - **Unknown differs from disagreement:** MARY CHANG lacks a usable registry name. The RONALD CHENG record lacks a usable vendor name. Both results are NULL, rather than false.
 
-Later publications or registry-view refreshes can change these results.
+Registry-name displays use the readable name view at extraction time. Stored match indicators come from the pinned publication.
 
 ## Statistics by source
 
-[Statistics SQL](../../sql/statistics/07_vendor_name_matches_registry_name.sql). This standalone read-only equivalent calculates the displayed row counts and percentages from the published table. The saved October 29 tables were derived from the linked grouped-population extraction; this equivalent has been checked locally, not executed against Trino.
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-record/email-position grain. Percentages use all metric rows within each vendor. Counts are exact and cover all retained history; email–NPI links remain undeduplicated. These are saved measurements, not live counts.
+[Executed statistics SQL](../../sql/statistics/07_vendor_name_matches_registry_name.sql)
 
-| Source | Metric rows | Match, n (%) | No match, n (%) | Unknown, n (%) |
-|---|---:|---:|---:|---:|
-| HealthLink | 11,156,016 | 10,528,135 (94.37182%) | 558,098 (5.00266%) | 69,783 (0.62552%) |
-| QuantumMedica | 1,705,723 | 0 (0.00000%) | 0 (0.00000%) | 1,705,723 (100.00000%) |
-| Medscape | 47,072,262 | 43,780,904 (93.00786%) | 2,597,143 (5.51735%) | 694,215 (1.47479%) |
-| Endato | 5,427,459 | 1,279,079 (23.56681%) | 4,103,800 (75.61181%) | 44,580 (0.82138%) |
-| RocketReach | 4,864,145 | 4,671,247 (96.03429%) | 140,057 (2.87938%) | 52,841 (1.08634%) |
-| DRDB | 1,115,415 | 1,085,065 (97.27904%) | 14,661 (1.31440%) | 15,689 (1.40656%) |
-| Haymarket | 4,223,245 | 3,756,468 (88.94743%) | 224,434 (5.31425%) | 242,343 (5.73831%) |
+| Source | Metric records | Match, n (%) | No match, n (%) | Unknown, n (%) |
+|---|---|---|---|---|
+| HealthLink | 11,156,016 | 10,528,135 (94.371817%) | 558,098 (5.002664%) | 69,783 (0.625519%) |
+| QuantumMedica | 1,705,723 | 0 (0.000000%) | 0 (0.000000%) | 1,705,723 (100.000000%) |
+| Medscape | 47,164,366 | 43,869,281 (93.013613%) | 2,600,509 (5.513716%) | 694,576 (1.472671%) |
+| Endato | 5,427,459 | 1,279,079 (23.566811%) | 4,103,800 (75.611810%) | 44,580 (0.821379%) |
+| RocketReach | 4,864,145 | 4,671,247 (96.034288%) | 140,057 (2.879376%) | 52,841 (1.086337%) |
+| DRDB | 1,115,415 | 1,085,065 (97.279040%) | 14,661 (1.314399%) | 15,689 (1.406562%) |
+| Haymarket | 4,223,245 | 3,756,468 (88.947433%) | 224,434 (5.314255%) | 242,343 (5.738313%) |
 
-Unknown is null, not false. Name outcomes can differ across records sharing the same email/NPI. These row counts do not establish distinct-email outcome counts.
-
-Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
-
-[Profile SQL](../../sql/name_match_profile.sql) · [Rule SQL](../../macros/name_matching.sql)
+Percentages use all metric records within each source. Categories partition records. Distinct-email outcomes cannot be inferred by adding record counts. Unknown is NULL, not disagreement. Names and outcomes can differ between records sharing an email/NPI.

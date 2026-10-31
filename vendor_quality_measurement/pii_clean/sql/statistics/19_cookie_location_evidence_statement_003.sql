@@ -1,4 +1,4 @@
--- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean.
+-- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090.
 -- Reference evidence and evaluation dates come from the stored publication.
 SELECT source,
        CASE WHEN grouping(cookie_location_status) = 0 THEN 'location_status'
@@ -16,7 +16,9 @@ SELECT source,
    OR cookie_located_count > cookie_count
    OR cookie_primary_state_tied_count > cookie_count
    OR cookie_primary_state_multistate_count > cookie_count
-   OR cookie_mapping_days > 7 OR cookie_eligible_observed_days > cookie_mapping_days
+   OR cookie_location_window_days < 1
+   OR date_diff('day', cookie_location_window_start, cookie_location_window_end) + 1 <> cookie_location_window_days
+   OR cookie_mapping_days > cookie_location_window_days OR cookie_eligible_observed_days > cookie_mapping_days
    OR cookie_state_values IS NULL OR cookie_uid_types IS NULL
    OR cookie_state_values IS DISTINCT FROM array_sort(array_distinct(cookie_state_values))
    OR cookie_state_count <> cardinality(cookie_state_values)
@@ -26,10 +28,10 @@ SELECT source,
    OR cookie_location_first_day < cookie_location_window_start
    OR cookie_location_last_day > cookie_location_window_end
    OR cookie_location_first_day > cookie_location_last_day
-   OR cookie_mapping_available_days + cardinality(cookie_mapping_missing_days) <> 7
-   OR cookie_location_available_days + cardinality(cookie_location_missing_days) <> 7
+   OR cookie_mapping_available_days + cardinality(cookie_mapping_missing_days) <> cookie_location_window_days
+   OR cookie_location_available_days + cardinality(cookie_location_missing_days) <> cookie_location_window_days
    OR cookie_location_window_status IS DISTINCT FROM
-      CASE WHEN cookie_mapping_available_days = 7 AND cookie_location_available_days = 7
+      CASE WHEN cookie_mapping_available_days = cookie_location_window_days AND cookie_location_available_days = cookie_location_window_days
            THEN 'all_source_days_present' ELSE 'missing_source_days' END
    OR (cookie_count = 0 AND (cookie_location_status <> 'no_mapping' OR cardinality(cookie_state_values) <> 0))
    OR cookie_vendor_state_evidence IS DISTINCT FROM
@@ -40,7 +42,7 @@ SELECT source,
            ELSE 'mixed_state_evidence' END) AS invariant_failures,
        count(DISTINCT IF(cookie_primary_state_tied_count > 0, email, NULL)) AS emails_with_tied_uids,
        count(DISTINCT IF(cookie_primary_state_multistate_count > 0, email, NULL)) AS emails_with_multistate_uids
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 GROUP BY GROUPING SETS ((source), (source,cookie_location_status),
     (source,cookie_vendor_state_evidence), (source,cookie_facility_state_evidence))
 ORDER BY source, section, cookie_location_status, cookie_vendor_state_evidence, cookie_facility_state_evidence

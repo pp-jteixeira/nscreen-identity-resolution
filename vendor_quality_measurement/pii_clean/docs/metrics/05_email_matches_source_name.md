@@ -28,16 +28,16 @@ Names stay paired within their source record. Changed source records stay separa
 
 Format validation is separate. RocketReach and DRDB full-name parsing can mistake titles or suffixes for name parts.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Domains are omitted. `vendor_names` displays normalized names from this exact record.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/05_email_matches_source_name.sql):
+[Executed example SQL](../../sql/examples/05_email_matches_source_name.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '7043AC9E562F5F136D74A9F97D058212CFA121114A1774A885886A4191415F38',
         'FD13E1A91B10E0169EB0E2880202F0C7024D164C9230CC158C3ABC85C2A6101D'))
@@ -45,7 +45,7 @@ WITH selected AS (
         'D678C06341C0CDE9EE0FE677515A39A66D167424179488066216A273376FC028'))
 )
 SELECT m.source,
-       split_part(m.email, '@', 1) AS mailbox,
+       m.email,
        transform(m.source_name_values, n -> concat(n.first_name, ' ', n.last_name)) AS vendor_names,
        m.source_name_usable,
        m.email_matches_source_name
@@ -53,36 +53,28 @@ FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 3 rows.
-
-| source | mailbox | vendor_names | source_name_usable | email_matches_source_name |
+| source | email | vendor_names | source_name_usable | email_matches_source_name |
 |---|---|---|---|---|
-| endato | gtarbour | [GERALD ARBOUR] | true | true |
-| endato | mrsmiller1987 | [FRANCIS COTTONE] | true | false |
-| quantummedica | ehoffman | [] | false | NULL |
+| endato | gtarbour@bellsouth.net | [GERALD ARBOUR] | true | true |
+| endato | mrsmiller1987@yahoo.com | [FRANCIS COTTONE] | true | false |
+| quantummedica | ehoffman@sunrisehospital.com | [] | false | NULL |
 
 **What differentiates these cases:** `gtarbour` starts with G and ends with ARBOUR, so the initial/surname rule accepts it for GERALD ARBOUR despite the intervening text. A usable nonmatching name gives false. An empty vendor-name array leaves the outcome NULL. Registry evidence never fills the missing vendor name, and mailbox resemblance does not prove ownership.
 
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
-
 ## Statistics by source
 
-[Statistics SQL](../../sql/statistics/05_email_matches_source_name.sql). This standalone read-only equivalent calculates the displayed row counts and percentages from the published table. The saved October 29 tables were derived from the linked grouped-population extraction; this equivalent has been checked locally, not executed against Trino.
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-record/email-position grain. Percentages use all metric rows within each vendor. Counts are exact and cover all retained history; email–NPI links remain undeduplicated. These are saved measurements, not live counts.
+[Executed statistics SQL](../../sql/statistics/05_email_matches_source_name.sql)
 
-| Source | Metric rows | Match, n (%) | No match, n (%) | Unknown, n (%) |
-|---|---:|---:|---:|---:|
-| HealthLink | 11,156,016 | 7,587,293 (68.01078%) | 3,568,038 (31.98308%) | 685 (0.00614%) |
-| QuantumMedica | 1,705,723 | 0 (0.00000%) | 1 (0.00006%) | 1,705,722 (99.99994%) |
-| Medscape | 47,072,262 | 24,943,545 (52.98990%) | 21,969,572 (46.67201%) | 159,145 (0.33809%) |
-| Endato | 5,427,459 | 1,999,756 (36.84516%) | 3,427,481 (63.15075%) | 222 (0.00409%) |
-| RocketReach | 4,864,145 | 2,977,399 (61.21115%) | 1,884,149 (38.73546%) | 2,597 (0.05339%) |
-| DRDB | 1,115,415 | 788,347 (70.67746%) | 321,591 (28.83151%) | 5,477 (0.49103%) |
-| Haymarket | 4,223,245 | 2,528,601 (59.87341%) | 1,502,730 (35.58235%) | 191,914 (4.54423%) |
+| Source | Metric records | Match, n (%) | No match, n (%) | Unknown, n (%) |
+|---|---|---|---|---|
+| HealthLink | 11,156,016 | 7,587,293 (68.010776%) | 3,568,038 (31.983084%) | 685 (0.006140%) |
+| QuantumMedica | 1,705,723 | 0 (0.000000%) | 1 (0.000059%) | 1,705,722 (99.999941%) |
+| Medscape | 47,164,366 | 24,993,116 (52.991523%) | 22,012,109 (46.671059%) | 159,141 (0.337418%) |
+| Endato | 5,427,459 | 1,999,756 (36.845161%) | 3,427,481 (63.150749%) | 222 (0.004090%) |
+| RocketReach | 4,864,145 | 2,977,399 (61.211148%) | 1,884,149 (38.735461%) | 2,597 (0.053391%) |
+| DRDB | 1,115,415 | 788,347 (70.677461%) | 321,591 (28.831511%) | 5,477 (0.491028%) |
+| Haymarket | 4,223,245 | 2,528,601 (59.873415%) | 1,502,730 (35.582354%) | 191,914 (4.544231%) |
 
-Unknown is null, not false. Name outcomes can differ across records sharing the same email/NPI. These row counts do not establish distinct-email outcome counts.
-
-Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
-
-[Profile SQL](../../sql/name_match_profile.sql) · [Rule SQL](../../macros/name_matching.sql)
+Percentages use all metric records within each source. Categories partition records. Distinct-email outcomes cannot be inferred by adding record counts. Unknown is NULL, not disagreement. Names and outcomes can differ between records sharing an email/NPI.

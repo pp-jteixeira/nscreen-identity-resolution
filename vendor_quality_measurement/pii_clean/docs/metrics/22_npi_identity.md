@@ -21,13 +21,11 @@ Registry evidence comes from `iceberg.npi.nppes_npidata_latest`, grouped by trim
 
 `npi_entity_type_evidence` retains distinct raw `ROW(entity_type_code varchar)` entries, including nulls. `npi_entity_type_reference_row_count` counts matched rows; `npi_entity_type_variant_count` counts normalized variants, including missing. No match gives an empty evidence array and zero counts. `npi_identity_as_of_day` records evaluation day, defaulting to Europe/Paris today, with an explicit override available. It is not a reference delivery date. `npi_identity_reference_table` and `npi_identity_definition_version` identify the source and rules.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Seven real Medscape records, queried October 30, 2026, from the validated candidate `iceberg.jteixeira_ipa.pii_clean_candidate_npi_identity_39b808aed2af` at snapshot `2593466519988720108`. **Metric 22 is not yet published to canonical `pii_clean`.** Each selected key identifies one exact source record and email position. These cases illustrate outcomes, not prevalence. Emails and names are omitted; NPI values are displayed unchanged.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-The query aliases stored fields for display and projects the raw entity codes from their evidence rows. `[]` means no registry match; `[NULL]` means a matched row with no entity code. The evaluation date is not a reference delivery date.
-
-[Runnable example SQL](../../sql/examples/22_npi_identity.sql):
+[Executed example SQL](../../sql/examples/22_npi_identity.sql):
 
 ```sql
 SELECT source, npi,
@@ -38,7 +36,7 @@ SELECT source, npi,
        npi_entity_type_reason AS entity_reason,
        transform(npi_entity_type_evidence, x -> x.entity_type_code) AS registry_codes,
        npi_identity_as_of_day AS as_of_day
-FROM iceberg.jteixeira_ipa.pii_clean_candidate_npi_identity_39b808aed2af FOR VERSION AS OF 2593466519988720108
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 WHERE source = 'medscape'
   AND metric_row_id IN (
       '00042DFD2EA561D524FBCDA83E5B6BC990D5A9A812A530BBE3DFA0C549A284FE',
@@ -52,8 +50,6 @@ WHERE source = 'medscape'
 ORDER BY source, npi_structure_reason, npi_entity_type_reason, npi
 ```
 
-**Result:** 7 rows.
-
 | source | npi | format_ok | checksum_ok | structure_reason | entity_type | entity_reason | registry_codes | as_of_day |
 |---|---|---|---|---|---|---|---|---|
 | medscape | 1487194295 | true | false | checksum_failure | unknown | not_found | [] | 2026-10-30 |
@@ -66,30 +62,20 @@ ORDER BY source, npi_structure_reason, npi_entity_type_reason, npi
 
 **What differentiates these cases:** `12345` cannot receive a checksum result, while `1487194295` has the right format but fails its checksum. `9919111017` fails both checks; the reason reports the unsupported prefix first. `2011017805` passes structure but has no NPPES match. `1235680307` has a registry match with a missing type code. Both the individual and organization examples begin with 1, showing that the first digit does not encode entity type.
 
-No conflicting or unrecognized entity-code outcomes occurred in the measured candidate population, so none is invented here. Reproduction requires the pinned candidate snapshot to remain available. Query ID: `20261030_124025_36476_6efcm`.
+## Statistics by source
 
-## Statistics and validation
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Standalone statistics SQL](../../sql/statistics/22_npi_identity.sql) returns separate structure, entity-type and entity-reason distributions. Each vendor/NPI contributes once to identifier counts; its retained records contribute to record counts. Percentages use all identifiers or all records within that vendor and evaluation date. The three distributions overlap and must not be summed together. Vendor distinct-NPI counts also overlap and cannot be summed into a global provider count. Missing-key records remain in staging and are outside the published metric population.
+[Executed statistics SQL](../../sql/statistics/22_npi_identity.sql)
 
-Tests cover the CMS checksum example, generated checksums for allowed and unsupported prefixes, Unicode and malformed values, missing input, absent references, duplicate/conflicting/missing codes, record preservation and independent invariant failures. Current registry evidence does not reconstruct entity type on historical vendor observation days. No scores, row filters or lifecycle changes are applied.
+| Source | Stored evaluation day | Distinct NPIs | Structurally valid, n (%) | Individual, n (%) | Organization, n (%) | Unknown type, n (%) |
+|---|---|---|---|---|---|---|
+| HealthLink | 2026-10-30 | 3,453,960 | 3,453,960 (100.000000%) | 3,444,877 (99.737026%) | 0 (0.000000%) | 9,083 (0.262974%) |
+| QuantumMedica | 2026-10-30 | 1,022,015 | 1,022,014 (99.999902%) | 1,017,306 (99.539244%) | 0 (0.000000%) | 4,709 (0.460756%) |
+| Medscape | 2026-10-30 | 2,190,514 | 2,180,123 (99.525636%) | 2,097,536 (95.755425%) | 7,197 (0.328553%) | 85,781 (3.916022%) |
+| Endato | 2026-10-30 | 1,194,462 | 1,194,462 (100.000000%) | 1,152,638 (96.498507%) | 214 (0.017916%) | 41,610 (3.483577%) |
+| RocketReach | 2026-10-30 | 593,028 | 593,028 (100.000000%) | 579,639 (97.742265%) | 72 (0.012141%) | 13,317 (2.245594%) |
+| DRDB | 2026-10-30 | 580,189 | 580,187 (99.999655%) | 547,524 (94.369938%) | 1,195 (0.205967%) | 31,470 (5.424095%) |
+| Haymarket | 2026-10-30 | 1,712,938 | 1,709,361 (99.791177%) | 1,627,068 (94.986976%) | 907 (0.052950%) | 84,963 (4.960074%) |
 
-### Candidate population, October 30, 2026
-
-Measured from the validated candidate below, not yet the canonical publication. Each percentage uses the vendor’s distinct-NPI denominator. Original records are retained. Vendor populations overlap, so their distinct-NPI counts must not be summed.
-
-| Vendor | Distinct NPIs | Structurally valid | Individual | Organization | Unknown type |
-|---|---:|---:|---:|---:|---:|
-| drdb | 580,189 | 580,187 (99.99966%) | 547,524 (94.36994%) | 1,195 (0.20597%) | 31,470 (5.42409%) |
-| endato | 1,194,462 | 1,194,462 (100.00000%) | 1,152,638 (96.49851%) | 214 (0.01792%) | 41,610 (3.48358%) |
-| haymarket | 1,712,938 | 1,709,361 (99.79118%) | 1,627,068 (94.98698%) | 907 (0.05295%) | 84,963 (4.96007%) |
-| healthlink | 3,453,960 | 3,453,960 (100.00000%) | 3,444,877 (99.73703%) | 0 (0.00000%) | 9,083 (0.26297%) |
-| medscape | 2,190,293 | 2,179,902 (99.52559%) | 2,097,309 (95.75472%) | 7,197 (0.32859%) | 85,787 (3.91669%) |
-| quantummedica | 1,022,015 | 1,022,014 (99.99990%) | 1,017,306 (99.53924%) | 0 (0.00000%) | 4,709 (0.46076%) |
-| rocketreach | 593,028 | 593,028 (100.00000%) | 579,639 (97.74227%) | 72 (0.01214%) | 13,317 (2.24559%) |
-
-Medscape has 10,391 structurally invalid NPIs: 8,394 malformed values, 1,734 checksum failures and 263 unsupported prefixes. Haymarket has 3,577 checksum failures, DRDB has two, and QuantumMedica has one malformed value. Structural reasons use the documented priority order; individual flags remain available for overlapping failures.
-
-Unknown entity types reflect missing NPPES codes or absent reference records. No conflicting or unrecognized entity-code outcomes appeared in these vendor populations. These results do not establish why codes are missing or whether an absent NPI was ever issued.
-
-Executed [statistics SQL](../../sql/statistics/22_npi_identity.sql) with the published-table relation replaced by `iceberg.jteixeira_ipa.pii_clean_candidate_npi_identity_39b808aed2af`, snapshot `2593466519988720108`. The candidate reads canonical snapshot `8096642935433856886` and NPPES snapshot `4824930614863268861`. [Candidate validation and publication status](../../results/npi_identity_20261030/report.md).
+Percentages use distinct NPIs within each source and stored evaluation day. Structure, entity type and entity-reason distributions are separate and must not be summed. Source populations overlap. Mathematical validity does not prove issuance; missing registry evidence is not a conclusion about a provider’s existence.

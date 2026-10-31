@@ -1,1 +1,0 @@
-DROP VIEW iceberg.jteixeira_ipa.pii_v2_int_email_cookie_locations

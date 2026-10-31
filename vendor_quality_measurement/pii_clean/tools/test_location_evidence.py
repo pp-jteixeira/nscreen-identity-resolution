@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Facility comparison and seven-day UID evidence with synthetic identifiers only."""
+"""Facility comparison and bounded-window UID evidence with synthetic identifiers only."""
 import unittest
 
 import pipeline as p
@@ -11,7 +11,7 @@ def values(columns, rows):
                                                for row in rows) + ') AS t(' + ', '.join(columns) + '))'
 
 
-def fixture_sql():
+def fixture_sql(context=False, window_days=7, evaluation_day='2026-10-29'):
     cases = [('agree', '1', ['NY']), ('disagree', '1', ['CA']), ('mixed', '1', ['NY', 'CA']),
              ('nostate', '1', []), ('unmapped', '1', ['NY']), ('tied', '1', ['NY']),
              ('majority', '1', ['NY']), ('offday', '1', ['NY']), ('unknown', '1', ['NY']),
@@ -51,14 +51,17 @@ def fixture_sql():
         ('2026-10-29', 'u_agree', '900'), ('2026-10-21', 'u_agree', '900')])
     zip_map = values(['zip3', 'state'], [('100', 'NY'), ('100', 'New York'), ('900', 'CA'),
                                        ('999', 'NY'), ('999', 'CA'), ('007', 'NY')])
+    variables = {'location_evidence_day': evaluation_day, 'location_metadata_from_rows': True, 'cookie_window_days': window_days}
+    overrides = {('bq_bi__analytics_prod', 'npi_facility_locations_with_ids'): facility,
+                 ('iceberg__thirdparty', 'liveintent_idsync'): mapping_values,
+                 ('iceberg__crossscreen', 'nscreen_geo_daily_ua'): geo,
+                 ('iceberg__jteixeira_ipa', 'tmp_zip3_to_state'): zip_map}
+    if context:
+        return records, variables, overrides
     return p.render_sql("WITH records AS (SELECT 'fixture' AS source, x.* FROM " + records + " x), "
                         "facility AS ({{ vendor_facility_records('records') }}), "
                         "measured AS ({{ cookie_location_records('facility') }}) SELECT * FROM measured",
-                        {'location_evidence_day': '2026-10-29', 'location_metadata_from_rows': True}, source_overrides={
-                            ('bq_bi__analytics_prod', 'npi_facility_locations_with_ids'): facility,
-                            ('iceberg__thirdparty', 'liveintent_idsync'): mapping_values,
-                            ('iceberg__crossscreen', 'nscreen_geo_daily_ua'): geo,
-                            ('iceberg__jteixeira_ipa', 'tmp_zip3_to_state'): zip_map})
+                        variables, source_overrides=overrides)
 
 
 def check_fixture(rows):
@@ -119,6 +122,22 @@ class LocationEvidenceTests(unittest.TestCase):
         template = (p.ROOT / 'tests/cookie_location.sql').read_text()
         self.assertTrue(execute(p.render_sql(template, {'metric_model': p.FINAL_MODEL}, {p.FINAL_MODEL: '(' + bad + ')'})))
 
+    def test_three_completed_days_exclude_today_and_older_observations(self):
+        sql = fixture_sql(window_days=3, evaluation_day='2026-10-25').replace("'2026-10-29'", "'2026-10-25'")
+        rows = execute(sql)
+        for row in rows:
+            self.assertEqual(row['cookie_location_window_days'],3)
+            self.assertEqual(str(row['cookie_location_window_start']),'2026-10-22')
+            self.assertEqual(str(row['cookie_location_window_end']),'2026-10-24')
+            self.assertEqual(row['cookie_mapping_available_days'],3)
+            self.assertEqual(row['cookie_location_available_days'],3)
+            self.assertEqual(row['cookie_mapping_missing_days'],[])
+        agree=next(r for r in rows if r['metric_row_id']=='agree')
+        self.assertEqual(agree['cookie_count'],1)
+        default = execute(p.render_sql("SELECT {{ cookie_window_start() }} AS start_day, {{ cookie_window_end() }} AS end_day, {{ cookie_window_days() }} AS days",{'location_evidence_day':'2026-10-25'}))[0]
+        self.assertEqual(default['days'],3)
+        self.assertEqual(str(default['start_day']),'2026-10-22')
+
     def test_all_vendor_models_have_matching_schemas_and_preserve_rows(self):
         fields = None
         for source in p.SOURCES:
@@ -127,7 +146,7 @@ class LocationEvidenceTests(unittest.TestCase):
             if fields is not None:
                 self.assertEqual(list(rows[0]), fields)
             fields = list(rows[0])
-            self.assertTrue(all(r['cookie_location_status'] == 'no_mapping' for r in rows))
+            self.assertTrue(all(not any(c.startswith('cookie_') for c in r) for r in rows))
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
         '9E1C49D1B6D6366B653D9BBBA7FB85204BD28AEA2CAAD89533B14325A83E98F4',
@@ -9,6 +9,7 @@ WITH selected AS (
         '1577CCE5C0DE4DA85CBD4D8D5897CC938ADF6B1EB6170CB69C2ED4C93F231E8F'))
 )
 SELECT m.source,
+       m.email,
        m.npi,
        (element_at(m.conflicting_npi_name_comparisons, 1)).npi AS peer_npi,
        transform(m.source_name_values, n -> concat(n.first_name, ' ', n.last_name)) AS own_values,

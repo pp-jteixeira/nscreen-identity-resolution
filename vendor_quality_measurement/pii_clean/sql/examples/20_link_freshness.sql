@@ -1,6 +1,6 @@
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '174DF23ED50299325123B7660ECB3AA68FEDD02FA7345B47D575396DEAF0419A'))
        OR (source = 'haymarket' AND metric_row_id IN (
@@ -10,6 +10,8 @@ WITH selected AS (
         'ABDD5253F7AE1234C4E9B5856FF54938AD6993BA3DA4740DDF24B1DB96F480AA'))
 )
 SELECT m.source,
+       m.email,
+       m.npi,
        m.link_last_observed_day,
        m.source_latest_observed_day,
        m.source_age_days,

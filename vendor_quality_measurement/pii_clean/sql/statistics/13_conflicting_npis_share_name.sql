@@ -3,7 +3,7 @@
 -- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
 -- Shared-name outcomes and conflict-row denominators
 -- Outcomes apply to exact record/email-position rows, not deduplicated links.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090)
 SELECT source, count(*) AS metric_rows,
        count(DISTINCT email) AS distinct_emails,
        count(DISTINCT ROW(email, npi)) AS distinct_links,

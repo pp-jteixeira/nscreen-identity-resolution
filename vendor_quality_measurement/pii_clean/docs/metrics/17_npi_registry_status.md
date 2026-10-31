@@ -1,6 +1,6 @@
 # NPI registry status
 
-**Status:** published in all seven vendor metric views and `iceberg.jteixeira_ipa.pii_clean` on October 29, 2026. Full candidate integrity, schema and checksum checks passed. [Publication report](../../results/publication_20261029/report.md).
+**Status:** published in canonical snapshot `8811920360682490090`, verified October 31, 2026.
 
 **Question:** what does current NPPES evidence report about this NPI?
 
@@ -29,11 +29,11 @@ Uncertainty checks precede replacement and chronology.
 
 Comparison date defaults to Europe/Paris today; `registry_status_as_of_day` fixes evaluation. No historical reconstruction or replacement redirects. Absent deactivation does not independently prove activity.
 
-## Real examples: lifecycle status versus uncertainty
+## Real examples
 
-Six selected Endato NPIs show how reported events and uncertainty produce different outcomes. This read-only query was executed on October 30, 2026, against stored columns in `iceberg.jteixeira_ipa.pii_clean`. All six results retain the stored evaluation date **October 29, 2026**. It does not recalculate status from today's NPPES reference. NPIs were chosen for explanation, not prevalence; emails and names are omitted. `DISTINCT` removes repeated copies of the selected evidence across email-position rows.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/17_npi_registry_status.sql):
+[Executed example SQL](../../sql/examples/17_npi_registry_status.sql):
 
 ```sql
 SELECT DISTINCT
@@ -46,23 +46,21 @@ SELECT DISTINCT
         evidence -> evidence.replacement_npi)) AS raw_replacements,
     npi_registry_status_reason AS reason,
     npi_registry_status_as_of_day AS evaluated_on
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 WHERE source = 'endato'
   AND npi IN ('1215977517', '1295334530', '1376022061',
               '1588945042', '1871599357', '1962620666')
 ORDER BY npi
 ```
 
-**Result:** six rows. All have `evaluated_on = 2026-10-29`; the other seven output columns appear below. `NULL` means absent evidence. `raw_replacements` preserves reported values, including rejected self-replacements; it is a display helper, not the accepted replacement column.
-
-| source | npi | status | deactivated_on | reactivated_on | raw_replacements | reason |
-|---|---|---|---|---|---|---|
-| endato | `1215977517` | not_found | NULL | NULL | `[]` | no_nppes_record |
-| endato | `1295334530` | active_as_reported | NULL | NULL | `[NULL]` | no_deactivation_reported |
-| endato | `1376022061` | unknown | 2019-03-25 | 2019-03-25 | `[NULL]` | ambiguous_event_order |
-| endato | `1588945042` | deactivated | 2024-04-10 | NULL | `[NULL]` | latest_event_deactivation |
-| endato | `1871599357` | reactivated | 2006-03-21 | 2006-04-14 | `[NULL]` | latest_event_reactivation |
-| endato | `1962620666` | unknown | 2006-10-25 | 2007-04-20 | `[1962620666]` | self_replacement |
+| source | npi | status | deactivated_on | reactivated_on | raw_replacements | reason | evaluated_on |
+|---|---|---|---|---|---|---|---|
+| endato | 1215977517 | not_found | NULL | NULL | [] | no_nppes_record | 2026-10-30 |
+| endato | 1295334530 | active_as_reported | NULL | NULL | [NULL] | no_deactivation_reported | 2026-10-30 |
+| endato | 1376022061 | unknown | 2019-03-25 | 2019-03-25 | [NULL] | ambiguous_event_order | 2026-10-30 |
+| endato | 1588945042 | deactivated | 2024-04-10 | NULL | [NULL] | latest_event_deactivation | 2026-10-30 |
+| endato | 1871599357 | reactivated | 2006-03-21 | 2006-04-14 | [NULL] | latest_event_reactivation | 2026-10-30 |
+| endato | 1962620666 | unknown | 2006-10-25 | 2007-04-20 | [1962620666] | self_replacement | 2026-10-30 |
 
 **What differentiates these cases:**
 
@@ -70,26 +68,20 @@ ORDER BY npi
 - **Event chronology versus unresolved order:** `1588945042` has a deactivation without reactivation. `1871599357` has a later reactivation, so it is `reactivated`. Equal dates for `1376022061` cannot establish event order, so it remains `unknown`.
 - **Uncertainty takes priority:** `1962620666` has a later reactivation, but reports itself as its replacement. The self-replacement check takes priority, leaving `unknown` rather than `reactivated` or `replaced`. Its accepted `npi_registry_replacement_npi` remains NULL.
 
-No real `replaced` example was observed in the October 29 measurements: all 82 reported reference replacements were self-replacements. Later publications can change these query results.
+## Statistics by source
 
-## Measurements
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Statistics SQL](../../sql/statistics/17_npi_registry_status.sql). These read-only queries aggregate the published evidence columns in `iceberg.jteixeira_ipa.pii_clean`, without rebuilding reference joins. The tables below retain their stated historical measurement times. A later pipeline publication can change query results. Vendor totals and lifecycle outcomes use published records. The separate NPPES availability and self-replacement statements inspect the current raw reference and can differ from the publication snapshot.
+[Executed statistics SQL 1](../../sql/statistics/17_npi_registry_status_statement_002.sql) · [Executed statistics SQL 2](../../sql/statistics/17_npi_registry_status_statement_003.sql)
 
-All 82/82 replacement values (100%) point to themselves. They remain unknown.
+| Source | Metric records | active_as_reported, n (%) | not_found, n (%) | deactivated, n (%) | reactivated, n (%) | unknown, n (%) | replaced, n (%) |
+|---|---|---|---|---|---|---|---|
+| HealthLink | 11,156,016 | 11,109,756 (99.585336%) | 3,415 (0.030611%) | 12,083 (0.108309%) | 30,263 (0.271271%) | 499 (0.004473%) | 0 (0.000000%) |
+| QuantumMedica | 1,705,723 | 1,692,741 (99.238915%) | 8 (0.000469%) | 8,083 (0.473875%) | 4,805 (0.281699%) | 86 (0.005042%) | 0 (0.000000%) |
+| Medscape | 47,164,366 | 46,657,938 (98.926249%) | 59,354 (0.125845%) | 340,373 (0.721674%) | 104,408 (0.221371%) | 2,293 (0.004862%) | 0 (0.000000%) |
+| Endato | 5,427,459 | 5,227,039 (96.307296%) | 10 (0.000184%) | 189,378 (3.489257%) | 10,773 (0.198491%) | 259 (0.004772%) | 0 (0.000000%) |
+| RocketReach | 4,864,145 | 4,745,762 (97.566212%) | 25 (0.000514%) | 106,667 (2.192924%) | 11,430 (0.234985%) | 261 (0.005366%) | 0 (0.000000%) |
+| DRDB | 1,115,415 | 1,052,613 (94.369629%) | 6 (0.000538%) | 59,394 (5.324834%) | 3,336 (0.299082%) | 66 (0.005917%) | 0 (0.000000%) |
+| Haymarket | 4,223,245 | 4,030,766 (95.442391%) | 6,286 (0.148843%) | 176,950 (4.189906%) | 9,062 (0.214574%) | 181 (0.004286%) | 0 (0.000000%) |
 
-Percentages below use all distinct links within each vendor.
-
-| Vendor | Links | Deactivated, n (%) | Not found, n (%) | Unknown, n (%) |
-|---|---:|---:|---:|---:|
-| HealthLink | 7,688,451 | 9,938 (0.13%) | 3,415 (0.04%) | 346 (0.00450%) |
-| QuantumMedica | 1,705,723 | 8,083 (0.47%) | 8 (0.00047%) | 86 (0.00504%) |
-| Medscape | 3,659,306 | 117,978 (3.22%) | 14,900 (0.41%) | 159 (0.00435%) |
-| Endato | 5,427,459 | 189,378 (3.49%) | 10 (0.00018%) | 259 (0.00477%) |
-| RocketReach | 3,199,535 | 73,265 (2.29%) | 14 (0.00044%) | 171 (0.00534%) |
-| DRDB | 826,886 | 42,214 (5.11%) | 5 (0.00060%) | 47 (0.00568%) |
-| Haymarket | 4,223,245 | 176,950 (4.19%) | 6,286 (0.15%) | 181 (0.00429%) |
-
-[Per-vendor counts, examples and SQL](../../results/registry_status_summary.md) · Executed measurements (historical output, not retained: `../../results/registry_status_measure.json`) · Replacement check (historical output, not retained: `../../results/registry_status_replacement_check.json`)
-
-[Calculation](../../macros/registry_status.sql) · [Integrity check](../../tests/registry_status.sql) · Native fixtures (historical output, not retained: `../../results/registry_status_native.json`) · Local tests (historical output, not retained: `../../results/registry_status_local_tests.txt`)
+Percentages use all metric records within each source. Stored classifications preserve their evaluation dates; extraction does not reread NPPES or infer historical activity. `active_as_reported` is not proof of current clinical activity. The independent raw-reference diagnostics remain separate from these published-population statistics.

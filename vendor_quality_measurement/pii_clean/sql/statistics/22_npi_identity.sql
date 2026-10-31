@@ -1,5 +1,5 @@
 -- Each vendor/NPI contributes once to identifier counts and carries its retained record count.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), npis AS (
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), npis AS (
     SELECT source, npi, npi_identity_as_of_day, npi_structure_reason, npi_entity_type,
            npi_entity_type_reason, count(*) AS metric_rows
     FROM measured

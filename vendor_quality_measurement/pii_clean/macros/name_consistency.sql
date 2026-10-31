@@ -73,7 +73,7 @@ SELECT {{ consistency_base_columns('s') }},
        {% if specialty %}, specialty_code_values, specialty_reference_table, specialty_definition_version,
        CASE WHEN has_conflict_linkage AND cardinality(conflicting_npi_specialty_comparisons) > 0
             THEN any_match(conflicting_npi_specialty_comparisons, p -> p.shares_specialty)
-       END AS conflicting_npis_share_specialty,
+       END AS conflicting_npis_share_nppes_specialty,
        conflicting_npi_specialty_comparisons{% endif %}
 FROM peer_comparisons s
 {%- endmacro %}

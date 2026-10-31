@@ -1,5 +1,6 @@
 {# Descriptive UID evidence only: no scores, fractional votes or row eligibility rules. #}
-{% macro cookie_window_start() -%}cast(date_add('day', -7, {{ location_evaluation_day() }}) AS date){%- endmacro %}
+{% macro cookie_window_days() -%}{{ var('cookie_window_days', 3) }}{%- endmacro %}
+{% macro cookie_window_start() -%}cast(date_add('day', -{{ cookie_window_days() }}, {{ location_evaluation_day() }}) AS date){%- endmacro %}
 {% macro cookie_window_end() -%}cast(date_add('day', -1, {{ location_evaluation_day() }}) AS date){%- endmacro %}
 {% macro cookie_hash(email) -%}lower(to_hex(sha256(to_utf8(lower(trim({{ email }})))))){%- endmacro %}
 {% macro cookie_available_days(relation) -%}
@@ -20,12 +21,12 @@ available AS (
            coalesce((SELECT array_sort(array_agg(day)) FROM geo_days WHERE day IS NOT NULL), cast(ARRAY[] AS array(date))) AS gd,
            transform(sequence({{ cookie_window_start() }}, {{ cookie_window_end() }}, INTERVAL '1' DAY), d -> cast(d AS date)) AS expected
 )
-SELECT cast(7 AS bigint) AS cookie_location_window_days,
+SELECT cast({{ cookie_window_days() }} AS bigint) AS cookie_location_window_days,
        cast(cardinality(md) AS bigint) AS cookie_mapping_available_days,
        cast(cardinality(gd) AS bigint) AS cookie_location_available_days,
        filter(expected, d -> NOT contains(md, d)) AS cookie_mapping_missing_days,
        filter(expected, d -> NOT contains(gd, d)) AS cookie_location_missing_days,
-       CASE WHEN cardinality(md) = 7 AND cardinality(gd) = 7 THEN 'all_source_days_present' ELSE 'missing_source_days' END AS cookie_location_window_status
+       CASE WHEN cardinality(md) = {{ cookie_window_days() }} AND cardinality(gd) = {{ cookie_window_days() }} THEN 'all_source_days_present' ELSE 'missing_source_days' END AS cookie_location_window_status
 FROM available
 {%- endmacro %}
 {% macro cookie_location_email_evidence(input_relation) -%}
@@ -95,11 +96,11 @@ SELECT email_hash, count(DISTINCT uid) AS cookie_count,
        array_sort(array_distinct(filter(array_agg(IF(located AND NOT tied, state, NULL)), s -> s IS NOT NULL))) AS cookie_state_values
 FROM uid_days GROUP BY email_hash
 {%- endmacro %}
-{% macro cookie_state_comparison(states) -%}
-CASE WHEN cookie_location_status <> 'observed' THEN 'unknown_cookie_location'
+{% macro cookie_state_comparison(states, alias='') -%}
+CASE WHEN {{ alias ~ '.' if alias else '' }}cookie_location_status <> 'observed' THEN 'unknown_cookie_location'
      WHEN cardinality({{ states }}) = 0 THEN 'unknown_reference_state'
-     WHEN NOT arrays_overlap({{ states }}, cookie_state_values) THEN 'not_observed'
-     WHEN cardinality({{ states }}) = 1 AND cardinality(cookie_state_values) = 1 THEN 'corroborated'
+     WHEN NOT arrays_overlap({{ states }}, {{ alias ~ '.' if alias else '' }}cookie_state_values) THEN 'not_observed'
+     WHEN cardinality({{ states }}) = 1 AND cardinality({{ alias ~ '.' if alias else '' }}cookie_state_values) = 1 THEN 'corroborated'
      ELSE 'mixed_state_evidence' END
 {%- endmacro %}
 {% macro cookie_location_records(input_relation) -%}

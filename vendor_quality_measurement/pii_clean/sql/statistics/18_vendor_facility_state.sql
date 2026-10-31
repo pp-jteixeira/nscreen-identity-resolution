@@ -3,4 +3,4 @@
 -- Exact executed SQL exported from local location_evidence_facility.json. result rows are excluded. Original source relations are retained.
 -- Exact vendor denominators
 SELECT source, count(*) AS metric_rows,
-count(DISTINCT ROW(email,npi)) AS distinct_links FROM iceberg.jteixeira_ipa.pii_clean GROUP BY source ORDER BY source
+count(DISTINCT ROW(email,npi)) AS distinct_links FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090 GROUP BY source ORDER BY source

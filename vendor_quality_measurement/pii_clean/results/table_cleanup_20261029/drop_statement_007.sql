@@ -1,1 +1,0 @@
-DROP VIEW iceberg.jteixeira_ipa.pii__int_drdb__npi_versions

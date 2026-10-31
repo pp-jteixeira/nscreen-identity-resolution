@@ -8,7 +8,7 @@ WITH pairs AS (
            min(email_name_count) AS minimum_name_count, max(email_name_count) AS name_count,
            bool_or(email_npi_has_name_conflict) AS conflict,
            count(DISTINCT coalesce(cast(email_npi_has_name_conflict AS varchar), 'unknown')) AS conflict_outcomes
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090)
     GROUP BY source, email, npi
 ), emails AS (
     SELECT source, email, max(name_count) AS name_count, sum(metric_rows) AS metric_rows,

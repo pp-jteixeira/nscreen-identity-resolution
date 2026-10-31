@@ -9,5 +9,5 @@ SELECT source,
        100e0 * count_if(email_matches_registry_name = false) / count(*) AS no_match_row_pct,
        count_if(email_matches_registry_name IS NULL) AS unknown_rows,
        100e0 * count_if(email_matches_registry_name IS NULL) / count(*) AS unknown_row_pct
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 GROUP BY source ORDER BY source

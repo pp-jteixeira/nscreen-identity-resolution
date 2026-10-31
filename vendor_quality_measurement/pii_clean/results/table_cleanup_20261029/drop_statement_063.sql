@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii_v2_int_cookie_location_coverage__d20261026_g7__state_union_backup

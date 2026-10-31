@@ -57,7 +57,7 @@ def healthlink_fixture():
  return inlined('int_healthlink__metrics',fixtures={
   'stg_healthlink__email':source_values('stg_healthlink__email',[
    {'npi':npi,'day':'2026-01-01','hld_email':'same@example.test'} for npi in ['1','2']]),
-  'stg_healthlink__hcp':"(SELECT *, CAST(NULL AS varchar) AS day, CAST(NULL AS varchar) AS phone FROM (VALUES ('1','JOHN','SMITH','NY'),('1','JOHN','SMITH','CA'),('1','JOHN','SMITH','NY'),('2','JANE','JONES','New York')) AS t(npi,firstname,lastname,state))"})
+  'stg_healthlink__hcp':"(SELECT *, CAST(NULL AS varchar) AS day, CAST(NULL AS varchar) AS phone, CAST(NULL AS varchar) AS specialty FROM (VALUES ('1','JOHN','SMITH','NY'),('1','JOHN','SMITH','CA'),('1','JOHN','SMITH','NY'),('2','JANE','JONES','New York')) AS t(npi,firstname,lastname,state))"})
 
 def check_healthlink(rows):
  assert len(rows)==2
@@ -95,7 +95,7 @@ class ConflictingStateTests(unittest.TestCase):
     self.assertEqual(row[c],expected[row['metric_row_id']][c])
  def test_final_is_exact_union_including_extra_attributes_and_duplicates(self):
   inputs={f'int_{s}__metrics':f"(SELECT '{s}' AS source, 'same' AS email, '1' AS npi, 'raw-{s}' AS vendor_attribute, true AS custom_metric FROM (VALUES (1),(1)) AS copies(x))" for s in p.SOURCES}
-  rows=execute(p.read_model(p.FINAL_MODEL,ref_overrides=inputs))
+  rows=execute(p.read_model(p.CORE_MODEL,ref_overrides=inputs))
   self.assertEqual(len(rows),14)
   self.assertTrue(all(r['vendor_attribute']=='raw-'+r['source'] and r['custom_metric'] is True for r in rows))
   self.assertEqual(p.relation(p.FINAL_MODEL),'iceberg.jteixeira_ipa.pii_clean')

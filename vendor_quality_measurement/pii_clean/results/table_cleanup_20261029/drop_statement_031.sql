@@ -1,1 +1,0 @@
-DROP VIEW iceberg.jteixeira_ipa.pii__int_quantummedica__name_metrics

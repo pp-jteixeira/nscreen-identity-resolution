@@ -7,5 +7,5 @@ SELECT m.source, count(*) AS metric_rows, count(DISTINCT m.email) AS distinct_em
        count_if(m.has_conflict_linkage = false) AS not_applicable_rows,
        count_if(m.has_conflict_linkage IS NULL) AS unknown_timing_rows,
        count(DISTINCT IF(m.has_conflict_linkage, m.email, NULL)) AS conflict_emails
-FROM iceberg.jteixeira_ipa.pii_clean m
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090 m
 GROUP BY m.source ORDER BY m.source

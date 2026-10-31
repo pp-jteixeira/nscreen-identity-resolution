@@ -55,7 +55,7 @@ def check_dated(rows):
     assert len({r['metric_row_id'] for r in rows}) == len(rows)
     for row in rows:
         key = (row['email'].split('@')[0], row['npi'])
-        assert row['conflicting_npis_share_specialty'] is expected[key], (key, row['conflicting_npis_share_specialty'])
+        assert row['conflicting_npis_share_nppes_specialty'] is expected[key], (key, row['conflicting_npis_share_nppes_specialty'])
         if row['npi'] == '1':
             assert row['specialty_code_values'] == ['207Q00000X', '207R00000X']
         assert bool(row['conflicting_npi_specialty_comparisons']) == (row['has_conflict_linkage'] is True)
@@ -74,7 +74,7 @@ class ConflictingSpecialtyTests(unittest.TestCase):
                 {'email': 'team@example.test', 'npi': '2'}]),
             'nppes_taxonomy': association_fixture(), 'taxonomy_dictionary': dictionary_fixture()}))
         self.assertEqual(len(rows), 2)
-        self.assertTrue(all(r['conflicting_npis_share_specialty'] is True for r in rows))
+        self.assertTrue(all(r['conflicting_npis_share_nppes_specialty'] is True for r in rows))
         self.assertTrue(all(r['conflict_days'] == [] for r in rows))
 
     def test_provider_lookup_unique_and_clean(self):
@@ -96,7 +96,7 @@ class ConflictingSpecialtyTests(unittest.TestCase):
                 self.assertEqual(schema, fields, source)
             fields = schema
             self.assertTrue(all(r['specialty_code_values'] == [] for r in rows))
-            self.assertTrue(all(r['conflicting_npis_share_specialty'] is None for r in rows))
+            self.assertTrue(all(r['conflicting_npis_share_nppes_specialty'] is None for r in rows))
 
     def test_independent_check_and_corruption(self):
         sql = dated_fixture()
@@ -105,13 +105,13 @@ class ConflictingSpecialtyTests(unittest.TestCase):
             return execute(p.render_sql(template, {'metric_model': p.FINAL_MODEL}, {p.FINAL_MODEL: '(' + query + ')'}))
         self.assertEqual(check(sql), [])
         fields = list(execute(sql)[0])
-        projection = ', '.join('false AS ' + c if c == 'conflicting_npis_share_specialty' else c for c in fields)
+        projection = ', '.join('false AS ' + c if c == 'conflicting_npis_share_nppes_specialty' else c for c in fields)
         self.assertTrue(check(f'SELECT {projection} FROM ({sql})'))
 
     def test_debug_preserves_specialty_fields(self):
         rows = {r['metric_row_id']: r for r in execute(dated_fixture())}
         for row in execute(dated_fixture(debug=True)):
-            for field in ('specialty_code_values', 'conflicting_npis_share_specialty',
+            for field in ('specialty_code_values', 'conflicting_npis_share_nppes_specialty',
                           'conflicting_npi_specialty_comparisons', 'specialty_definition_version'):
                 self.assertEqual(row[field], rows[row['metric_row_id']][field])
 

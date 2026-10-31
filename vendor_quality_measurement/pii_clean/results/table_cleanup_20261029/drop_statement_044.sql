@@ -1,1 +1,0 @@
-DROP TABLE iceberg.jteixeira_ipa.pii__debug_haymarket__name_matching_20261028_records

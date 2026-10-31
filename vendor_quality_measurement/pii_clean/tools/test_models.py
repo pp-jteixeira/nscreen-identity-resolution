@@ -49,11 +49,11 @@ def literal(value):
 TABLE_COLUMNS = {
     'stg_npi__reference': 'npi first_name last_name',
     'stg_healthlink__email': 'npi hld_email day emailrank bestemail',
-    'stg_healthlink__hcp': 'npi day firstname lastname state phone',
+    'stg_healthlink__hcp': 'npi day firstname lastname state phone specialty',
     'stg_quantummedica__hcpdata': 'npi day email first_name last_name state',
-    'stg_quantummedica__hcpmeta': 'npi day profession primary_specialty',
+    'stg_quantummedica__hcpmeta': 'npi day profession primary_specialty secondary_specialty tertiary_specialty',
     'stg_medscape__global': 'npi day email_address guid first_name last_name state source',
-    'stg_medscape__meta': 'npi day guid profession',
+    'stg_medscape__meta': 'npi day guid profession primary_specialty secondary_specialty tertiary_specialty',
     'stg_medscape__optout': 'npi day optout_day',
     'stg_endato__pii': 'npi email_1_address email_2_address email_3_address email_4_address email_5_address name_first name_last email',
     'stg_rocketreach__lookup': 'npi name region emails recommended_email recommended_personal_email recommended_professional_email current_work_email current_personal_email',
@@ -120,7 +120,7 @@ def fixture(name):
     return '(SELECT * FROM (VALUES\n' + ',\n'.join(rows) + '\n) AS input(' + ', '.join(columns) + '))'
 
 
-def execute(sql):
+def execute(sql, setup_sql=None):
     def translate_match(node):
         # Trino SHA256 returns bytes; DuckDB SHA256 returns hex text already.
         # Avoid hex-encoding that text a second time in local fixture execution.
@@ -130,6 +130,13 @@ def execute(sql):
             return sqlglot.exp.Upper(this=node.this.copy())
         if isinstance(node, sqlglot.exp.Cast) and node.args['to'].is_type(sqlglot.exp.DataType.Type.JSON):
             return sqlglot.exp.Anonymous(this='to_json', expressions=[node.this.copy()])
+        if (isinstance(node, sqlglot.exp.Window) and isinstance(node.this, sqlglot.exp.Anonymous)
+                and node.this.name.lower() == 'reduce_agg'):
+            # Translate the array-state reduce_agg window into an equivalent union
+            # around an array_agg window for small synthetic fixtures only.
+            window = node.copy()
+            window.set('this', sqlglot.exp.ArrayAgg(this=node.this.expressions[0].copy()))
+            return sqlglot.parse_one('json_format(cast(array_distinct(flatten(' + window.sql(dialect='trino') + ')) AS json))', read='trino').transform(translate_match)
         if isinstance(node, sqlglot.exp.Anonymous) and node.name.lower() == 'any_match':
             args = ', '.join(arg.copy().transform(translate_match).sql(dialect='trino') for arg in node.expressions)
             return sqlglot.parse_one('trino_any_match(transform(' + args + '))', read='trino')
@@ -148,13 +155,23 @@ def execute(sql):
             WHEN list_contains(matches, TRUE) THEN TRUE
             WHEN list_position(matches, NULL) IS NOT NULL THEN NULL
             ELSE FALSE END''')
+        # Test-only order-independent fingerprint. Native Trino checksum requires live validation.
+        db.execute('CREATE MACRO checksum(v) AS bit_xor(hash(v))')
         db.execute('CREATE MACRO levenshtein_distance(a, b) AS levenshtein(a, b)')
+        if setup_sql:
+            setup = sqlglot.parse_one(setup_sql, read='trino').transform(translate_match).sql(dialect='duckdb')
+            db.execute(setup)
         cursor = db.execute(translated)
         names = [d[0] for d in cursor.description]
         return [dict(zip(names, row)) for row in cursor.fetchall()]
 
 
 def inlined(name, cache=None, fixtures=None, variables=None):
+    # Tests opt in to exclusions explicitly. Standalone staging fixtures keep all rows.
+    if name == 'int_medscape__metrics' and 'stg_medscape__optout' not in (fixtures or {}):
+        fixtures = {**(fixtures or {}), 'stg_medscape__optout':
+                    '(SELECT CAST(NULL AS varchar) AS npi, CAST(NULL AS varchar) AS day, '
+                    'CAST(NULL AS varchar) AS optout_day WHERE false)'}
     variables = {'location_metadata_from_rows': True, 'location_evidence_day': '2026-10-29', **(variables or {})}
     cache = cache if cache is not None else {}
     key = (name, json.dumps(variables, sort_keys=True))

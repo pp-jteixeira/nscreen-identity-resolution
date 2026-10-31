@@ -3,7 +3,7 @@
 -- Exact executed SQL exported from local conflicting_states_measurements.json. result rows are excluded. Original source relations are retained.
 -- State availability and shared-state outcomes
 -- Outcomes apply to exact record/email-position rows, not deduplicated links.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090)
 SELECT source, count(*) AS metric_rows,
        count(DISTINCT email) AS distinct_emails,
        count_if(cardinality(source_state_values) > 0) AS usable_state_rows,

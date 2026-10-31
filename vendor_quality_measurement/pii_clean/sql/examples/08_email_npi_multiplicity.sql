@@ -1,6 +1,6 @@
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '2BB0A675D0303E69146D4E78DA29BFA8FA827A7B4299222CF647CACE91D06D07'))
        OR (source = 'healthlink' AND metric_row_id IN (
@@ -8,7 +8,8 @@ WITH selected AS (
         '8CE13EFACD6E7ACB950A70D33FF7C820166332BF9E41BB9972E0978C00F82D63'))
 )
 SELECT m.source,
-       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email,
+       m.npi,
        m.email_npi_count,
        m.email_has_multiple_npis,
        m.has_been_reassigned,

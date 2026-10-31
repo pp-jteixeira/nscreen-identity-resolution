@@ -72,12 +72,12 @@ class EmailLookupTests(unittest.TestCase):
             for name in ('name_mismatch_count', 'shared_name_count', 'unknown_name_match_count'):
                 self.assertEqual(row[name], expected)
             self.assertEqual(row['name_comparison_count'], 3 * expected)
-            self.assertEqual(len(row), 132)
+            self.assertEqual(len(row), 160)
         tree = sqlglot.parse_one(render_lookup(), read='trino')
         self.assertEqual(['.'.join(part.name for part in t.parts) for t in tree.find_all(exp.Table)],
                          ['iceberg.jteixeira_ipa.pii_clean', 'params'])
-        self.assertEqual(len(tree.expressions), 132)
-        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 132)
+        self.assertEqual(len(tree.expressions), 160)
+        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 160)
         self.assertEqual(execute(render_lookup('absent@example.test', {p.FINAL_MODEL: '(' + stored + ')'})), [])
 
     def test_email_literal_escaping_and_single_edit(self):

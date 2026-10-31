@@ -22,16 +22,16 @@ HealthLink’s HCP-reference names have no date alignment. Registry names never 
 
 `conflicting_npi_name_comparisons` retains peer NPIs, names, overlapping days and outcomes for [full manual inspection](../../sql/conflicting_names_debug.sql). Undated comparisons have empty day arrays.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. Conflict examples are selected with exactly one peer comparison, so the displayed peer fully explains the aggregate outcome. Undated Endato comparisons use the available vendor snapshot.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/13_conflicting_npis_share_name.sql):
+[Executed example SQL](../../sql/examples/13_conflicting_npis_share_name.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         '730FB3822EC1EB3855BF21A4E1C10C1F2788A9DAA943ED02124432207C2B0194',
         '9E1C49D1B6D6366B653D9BBBA7FB85204BD28AEA2CAAD89533B14325A83E98F4',
@@ -40,6 +40,7 @@ WITH selected AS (
         '1577CCE5C0DE4DA85CBD4D8D5897CC938ADF6B1EB6170CB69C2ED4C93F231E8F'))
 )
 SELECT m.source,
+       m.email,
        m.npi,
        (element_at(m.conflicting_npi_name_comparisons, 1)).npi AS peer_npi,
        transform(m.source_name_values, n -> concat(n.first_name, ' ', n.last_name)) AS own_values,
@@ -50,37 +51,29 @@ FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 4 rows.
-
-| source | npi | peer_npi | own_values | peer_values | conflict | shares_name |
-|---|---|---|---|---|---|---|
-| endato | 1114929445 | 1922090380 | [ANGRETTE MCCLOSKEY] | [TAHANI MCCLOSKEY] | true | false |
-| endato | 1104264514 | 1649302860 | [] | [] | true | NULL |
-| endato | 1477722270 | 1740371913 | [JOHN SEAWORTH] | [JOHN SEAWORTH] | true | true |
-| haymarket | 1235433285 | NULL | [DENVER CHAO] | NULL | false | NULL |
+| source | email | npi | peer_npi | own_values | peer_values | conflict | shares_name |
+|---|---|---|---|---|---|---|---|
+| endato | cmizelle@att.net | 1114929445 | 1922090380 | [ANGRETTE MCCLOSKEY] | [TAHANI MCCLOSKEY] | true | false |
+| endato | njordanfnp@outlook.com | 1104264514 | 1649302860 | [] | [] | true | NULL |
+| endato | joyce.rodrigue@gmail.com | 1477722270 | 1740371913 | [JOHN SEAWORTH] | [JOHN SEAWORTH] | true | true |
+| haymarket | denverchao@bemg.org | 1235433285 | NULL | [DENVER CHAO] | NULL | false | NULL |
 
 **What differentiates these cases:** A qualifying fuzzy name match gives true; known fuzzy disagreement gives false. With an established conflict, missing evidence leaves NULL. Without a conflict, NULL is not applicable. Names use the same fuzzy first/last rules as metric 07; agreement does not identify the correct NPI.
 
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
+## Statistics by source
 
-## Statistics by vendor
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-[Statistics SQL](../../sql/statistics/13_conflicting_npis_share_name.sql) was executed against the current published `iceberg.jteixeira_ipa.pii_clean` table.
+[Executed statistics SQL](../../sql/statistics/13_conflicting_npis_share_name.sql)
 
-Measured **October 29, 2026**, across all retained source history. Extraction completed at `2026-10-29T17:20:40.438733+01:00`. Published snapshot `6346435822181920647` remained unchanged throughout the six-query refresh. Counts are exact. Percentages use each vendor’s conflict rows. — means that the vendor has no conflict rows.
-
-| Vendor | Conflict rows | Shared name, n (%) | Different names, n (%) | Unknown names, n (%) |
-|---|---:|---:|---:|---:|
+| Source | Conflict records | Shared, n (%) | Disjoint, n (%) | Unknown, n (%) |
+|---|---|---|---|---|
 | HealthLink | 0 | 0 (—) | 0 (—) | 0 (—) |
-| QuantumMedica | 56 | 0 (0.00%) | 0 (0.00%) | 56 (100.00%) |
-| Medscape | 46 | 21 (45.65%) | 21 (45.65%) | 4 (8.70%) |
-| Endato | 194,982 | 131,452 (67.42%) | 63,516 (32.58%) | 14 (0.01%) |
-| RocketReach | 96,287 | 29,601 (30.74%) | 66,538 (69.10%) | 148 (0.15%) |
-| DRDB | 22,404 | 17,010 (75.92%) | 4,985 (22.25%) | 409 (1.83%) |
+| QuantumMedica | 56 | 0 (0.000000%) | 0 (0.000000%) | 56 (100.000000%) |
+| Medscape | 46 | 21 (45.652174%) | 21 (45.652174%) | 4 (8.695652%) |
+| Endato | 194,982 | 131,452 (67.417505%) | 63,516 (32.575315%) | 14 (0.007180%) |
+| RocketReach | 96,287 | 29,601 (30.742468%) | 66,538 (69.103825%) | 148 (0.153707%) |
+| DRDB | 22,404 | 17,010 (75.923942%) | 4,985 (22.250491%) | 409 (1.825567%) |
 | Haymarket | 0 | 0 (—) | 0 (—) | 0 (—) |
 
-Across 75,564,265 metric rows, 75,250,490 are not applicable and 0 have unknown conflict timing. Both groups have a null name-sharing flag. Rows for one email–NPI link can differ.
-
-Current measured counts, executed SQL and snapshot checks (historical output, not retained: `../../results/published_metric_refresh_20261029.json`) · Native fixtures and preservation (historical output, not retained: `../../results/conflicting_names_native_validation.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
-
-[Calculation](../../macros/name_consistency.sql) · [Independent check](../../tests/conflicting_names.sql) · [Profile SQL](../../sql/conflicting_names_profile.sql)
+Percentages use records with `has_conflict_linkage = true`, not all records. A zero conflict denominator is shown as —. Records without an established conflict are not counted as unknown conflicts.

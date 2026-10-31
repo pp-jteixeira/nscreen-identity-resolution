@@ -21,16 +21,16 @@ A match gives true, a non-match false, and a null input null. Metric views exclu
 
 This rule can reject legitimate formats and accept malformed-looking ones. It does not test domain or mailbox existence. Role accounts and test addresses are not excluded by this flag. This indicator does not filter rows or assign scores.
 
-## Real examples: contrasting outcomes
+## Real examples
 
-Selected real records, queried October 30, 2026, from `iceberg.jteixeira_ipa.pii_clean` at snapshot `8096642935433856886`. These examples explain outcomes; they are not prevalence estimates. `format_shape` replaces every lowercase letter and digit with `x`, preserving punctuation and length without exposing an address.
+Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
 
-[Runnable example SQL](../../sql/examples/02_email_format_valid.sql):
+[Executed example SQL](../../sql/examples/02_email_format_valid.sql):
 
 ```sql
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'endato' AND metric_row_id IN (
         'E2D7F6ECD9E1A822A2486BDE5556AAAC8D2BCA39374213AEE006E8C9B5AADE31'))
        OR (source = 'medscape' AND metric_row_id IN (
@@ -38,42 +38,34 @@ WITH selected AS (
         '75941F2B89381BA06B01E0E4ADE6298599723535231BA3603A1C420DEB763599'))
 )
 SELECT m.source,
-       regexp_replace(m.email, '[a-z0-9]', 'x') AS format_shape,
+       m.email,
        m.email_format_valid
 FROM selected m
 ORDER BY m.source, m.metric_row_id
 ```
 
-**Result:** 3 rows.
-
-| source | format_shape | email_format_valid |
+| source | email | email_format_valid |
 |---|---|---|
-| endato | xxxxx.xxxxx@xxxxx.xxx | true |
-| medscape | xxxxxx@xxx..xxx | true |
-| medscape | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxx | false |
+| endato | chris.peetz@gmail.com | true |
+| medscape | pmoyer@pol..net | true |
+| medscape | obrusilnurldiognosticconsultants.com | false |
 
-**What differentiates these cases:** The missing-`@` shape fails. Repeated dots can still pass this regex, demonstrating its permissiveness. Format agreement does not establish a real domain or mailbox. Blank email keys are excluded upstream.
-
-Stored indicators are unchanged by display helpers. Reproduction requires the pinned snapshot to remain available.
+**What differentiates these cases:** The address without `@` fails. Repeated dots can still pass this regex, demonstrating its permissiveness. Format agreement does not establish a real domain or mailbox. Blank email keys are excluded upstream.
 
 ## Statistics by source
 
-[Statistics SQL](../../sql/statistics/02_email_format_valid.sql). This standalone read-only equivalent calculates the displayed row counts and percentages from the published table. The saved October 29 tables were derived from the linked grouped-population extraction; this equivalent has been checked locally, not executed against Trino.
+Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
 
-Measured October 29, 2026, on `iceberg.jteixeira_ipa.pii_clean` at exact source-record/email-position grain. Percentages use all metric rows within each vendor. Counts are exact and cover all retained history; email–NPI links remain undeduplicated. These are saved measurements, not live counts.
+[Executed statistics SQL](../../sql/statistics/02_email_format_valid.sql)
 
-| Source | Metric rows | Invalid rows, n (%) |
-|---|---:|---:|
-| HealthLink | 11,156,016 | 503 (0.00451%) |
-| QuantumMedica | 1,705,723 | 528 (0.03095%) |
-| Medscape | 47,072,262 | 13,434 (0.02854%) |
-| Endato | 5,427,459 | 358 (0.00660%) |
-| RocketReach | 4,864,145 | 212 (0.00436%) |
-| DRDB | 1,115,415 | 1,317 (0.11807%) |
-| Haymarket | 4,223,245 | 225 (0.00533%) |
+| Source | Metric records | Invalid records, n (%) |
+|---|---|---|
+| HealthLink | 11,156,016 | 503 (0.004509%) |
+| QuantumMedica | 1,705,723 | 528 (0.030955%) |
+| Medscape | 47,164,366 | 13,456 (0.028530%) |
+| Endato | 5,427,459 | 358 (0.006596%) |
+| RocketReach | 4,864,145 | 212 (0.004358%) |
+| DRDB | 1,115,415 | 1,317 (0.118073%) |
+| Haymarket | 4,223,245 | 225 (0.005328%) |
 
-No unknown format outcomes were observed. The indicator retains all rows. Distinct-email counts are not reconstructed by summing grouped distinct counts, because groups can overlap.
-
-Derived row statistics (historical output, not retained: `../../results/documentation_row_statistics.json`) · [Executed population SQL](../../results/metric_population_20261029/grouped.sql) · Measurement metadata (historical output, not retained: `../../results/metric_population_20261029/analysis_metadata.json`) · Published-table validation (historical output, not retained: `../../results/final_build.json`)
-
-[Profile SQL](../../sql/email_format_profile.sql) · [Rule SQL](../../macros/email_format_valid.sql)
+Percentages use all metric records within each source. Repeated records can count one email multiple times. This indicator does not remove records.

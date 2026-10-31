@@ -1,5 +1,2 @@
--- Preserve every vendor metric row and every column. No deduplication or scoring.
-{% for vendor in ['healthlink', 'quantummedica', 'medscape', 'endato', 'rocketreach', 'drdb', 'haymarket'] %}
-SELECT * FROM {{ ref('int_' ~ vendor ~ '__metrics') }}
-{% if not loop.last %}UNION ALL{% endif %}
-{% endfor %}
+-- Publish complete, computed metrics from the downstream cookie intermediate.
+SELECT * FROM {{ ref('int_cookie__metrics') }}

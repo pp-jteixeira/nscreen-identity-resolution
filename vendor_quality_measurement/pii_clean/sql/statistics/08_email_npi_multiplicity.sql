@@ -9,7 +9,7 @@ WITH emails AS (
            count_if(undated_observation_count > 0) AS undated_metric_rows,
            min(email_npi_count) AS minimum_stored_count, max(email_npi_count) AS maximum_stored_count,
            count_if(email_npi_count IS NULL OR email_has_multiple_npis IS DISTINCT FROM (email_npi_count > 1)) AS invalid_rows
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090)
     GROUP BY source, email
 )
 SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,

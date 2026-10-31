@@ -11,5 +11,5 @@ SELECT source,
        100e0 * count_if(email_domain_class = 'custom') / count(*) AS custom_row_pct,
        count_if(email_domain_class = 'unknown') AS unknown_rows,
        100e0 * count_if(email_domain_class = 'unknown') / count(*) AS unknown_row_pct
-FROM iceberg.jteixeira_ipa.pii_clean
+FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
 GROUP BY source ORDER BY source

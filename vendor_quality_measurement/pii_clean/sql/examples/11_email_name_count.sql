@@ -1,6 +1,6 @@
 WITH selected AS (
     SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
     WHERE (source = 'drdb' AND metric_row_id IN (
         '76F42EB2F2C6093316B5CDEF2587E5A52525DDC28EA8CF1B437507091D8AF857'))
        OR (source = 'endato' AND metric_row_id IN (
@@ -10,13 +10,13 @@ WITH selected AS (
 ), context_names AS (
     SELECT t.source, t.email,
            array_sort(array_distinct(flatten(array_agg(transform(t.source_name_values, n -> concat(n.first_name, ' ', n.last_name)))))) AS names
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8096642935433856886 t
+    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090 t
     JOIN (SELECT DISTINCT source, email FROM selected) k
       ON t.source = k.source AND t.email = k.email
     GROUP BY t.source, t.email
 )
 SELECT m.source,
-       substr(to_hex(sha256(to_utf8(m.email))), 1, 12) AS email_key,
+       m.email,
        m.email_npi_count,
        m.email_name_count,
        c.names AS email_names,

@@ -1,5 +1,5 @@
 -- One contribution per source/email/NPI link. Exact nearest-rank percentiles exclude unknown lags.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), links AS (
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), links AS (
     SELECT source, email, npi, link_freshness_as_of_day,
            source_latest_observed_day, source_age_days,
            link_last_observed_day, link_lag_days, count(*) AS metric_rows

@@ -1,5 +1,5 @@
 -- Each source/email/NPI contributes once. Mean percentages give each dated link equal weight.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), links AS (
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), links AS (
     SELECT source, email, npi, email_observed_day_count, link_observed_day_count,
            link_conflict_day_count, link_presence_share, link_overlap_share,
            link_stability_has_undated_observations, count(*) AS metric_rows

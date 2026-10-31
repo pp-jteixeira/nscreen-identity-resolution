@@ -5,7 +5,7 @@ WITH link_observations AS (
     FROM {{ observation_relation or input_relation }}
     GROUP BY source, email, npi
 ), latest_observations AS (
-    SELECT *, max(link_last_observed_day) OVER (PARTITION BY source) AS source_latest_observed_day,
+    SELECT *, {% if var('source_latest_observed_day', '') %}DATE '{{ var('source_latest_observed_day') }}'{% else %}max(link_last_observed_day) OVER (PARTITION BY source){% endif %} AS source_latest_observed_day,
            {% if var('link_freshness_as_of_day', '') %}DATE '{{ var('link_freshness_as_of_day') }}'{% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %} AS link_freshness_as_of_day
     FROM link_observations
 )

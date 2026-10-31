@@ -9,7 +9,7 @@ WITH emails AS (
            count(DISTINCT coalesce(cast(has_been_reassigned AS varchar), 'unknown')) AS reassignment_outcomes,
            count_if(has_conflict_linkage) AS conflict_rows,
            count_if(has_conflict_linkage IS NULL) AS conflict_unknown_rows
-    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)
+    FROM (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090)
     GROUP BY source, email
 )
 SELECT source, count(*) AS distinct_emails, sum(metric_rows) AS metric_rows,

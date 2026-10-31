@@ -1,5 +1,6 @@
 """Freshness uses vendor-relative link history without losing source records."""
 from datetime import date
+import re
 import unittest
 
 import pipeline as p
@@ -79,8 +80,13 @@ class LinkFreshnessTests(unittest.TestCase):
                 self.assertTrue(check('SELECT ' + projection + ' FROM (' + sql + ')'))
 
     def test_statistics_use_links_not_repeated_records(self):
+        documented = (p.ROOT / 'sql/statistics/20_link_freshness.sql').read_text()
+        # Documentation pins its measured snapshot; live profiles use the current table.
+        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
+                                 p.relation(p.FINAL_MODEL), documented)
+        self.assertEqual(pins, 1)
         self.assertEqual(p.render_profile('link_freshness_profile.sql') + '\n',
-                         (p.ROOT / 'sql/statistics/20_link_freshness.sql').read_text())
+                         unpinned)
         profile = p.render_profile('link_freshness_profile.sql').replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')')
         rows = {r['source']: r for r in execute(profile)}
         self.assertEqual(rows['dated']['metric_rows'], 6)

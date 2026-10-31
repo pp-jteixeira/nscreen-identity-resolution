@@ -1,7 +1,7 @@
 -- Independent relational peer selection and null aggregation.
 WITH records AS (
     SELECT source, email, npi, metric_row_id, conflict_days, has_conflict_linkage,
-           specialty_code_values, conflicting_npis_share_specialty,
+           specialty_code_values, conflicting_npis_share_nppes_specialty,
            conflicting_npi_specialty_comparisons
     FROM {{ ref(var('metric_model')) }}
 ), peers AS (
@@ -21,7 +21,7 @@ WITH records AS (
 )
 SELECT m.source, count(*) AS failing_metric_rows
 FROM records m LEFT JOIN expected e ON m.source = e.source AND m.metric_row_id = e.metric_row_id
-WHERE m.conflicting_npis_share_specialty IS DISTINCT FROM e.flag
+WHERE m.conflicting_npis_share_nppes_specialty IS DISTINCT FROM e.flag
    OR m.specialty_code_values IS NULL
    OR m.specialty_code_values IS DISTINCT FROM array_sort(array_distinct(m.specialty_code_values))
    OR any_match(m.specialty_code_values, f -> NOT regexp_like(f, '^[0-9A-Z]{10}$') OR f = '0000000000')

@@ -18,7 +18,7 @@ Explain helper values and zero/false/null behavior. Label simplified expressions
 
 ## Real examples: contrasting outcomes
 
-Before statistics, show a few real cases that distinguish outcomes or expose limitations. Name the query date, full source relation, row grain and retained snapshot/evaluation date. Select exact record keys when link histories can differ. Include `source` in both SQL and displayed results. Omit unnecessary personal details and label any masking or display helpers.
+Before statistics, show a few real cases that distinguish outcomes or expose limitations. Name the query date, full source relation, row grain and retained snapshot/evaluation date. Select exact record keys when link histories can differ. Include `source` in both SQL and displayed results. Show stored cleaned identifiers unchanged: full `email` for email-only checks, `npi` for NPI-only checks, and both for email–NPI attribution or link-history metrics. Add only attributes that explain the outcome, such as compared names, peer NPIs, states, facilities, taxonomy codes or exact observation/conflict dates. Do not replace relevant identifiers with hashes, masked shapes, mailbox-only text or domain-only text. Keep exact record keys in the SQL rather than widening the result table with technical identifiers. Label display helpers.
 
 For an unpublished metric, query its validated candidate and explicitly state that the examples are not yet from the canonical publication. Illustrative examples may supplement real cases but do not replace this section.
 
