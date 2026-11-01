@@ -28,6 +28,12 @@ Any qualifying pair gives true; usable comparisons without a match give false; a
 
 **Limits:** common names, shared tokens and broad nickname mappings can produce false matches. Only this record’s vendor name and current readable registry variants contribute; HealthLink uses its separate HCP reference; no historical as-of alignment is implied. Endato compares its returned person's name, not the NPI-holder name supplied as input. No score or filtering is applied.
 
+## Stored comparison explanations
+
+Stored core also retains `name_match_evidence`, `vendor_registry_match_classes`, `name_match_evaluated_at` and `name_match_definition_version`. The array keeps distinct comparisons and their component kinds; the class set includes every outcome, including `first_only`, `last_only`, `none` and `unknown`. Exact/nickname/token/edit comparisons still make the original boolean true. No scoring weights are added.
+
+All four fields are published and verified in core snapshot `3003274000539755025` and final snapshot `4233051104478921549`. [Stored evidence documentation](../name_match_evidence.md) contains executed examples for all eight classes, multiple outcomes on one HealthLink record, and complete per-source class statistics. Those queries read stored comparisons directly, without a fresh reference join. The boolean examples and statistics below retain their original final-snapshot provenance.
+
 ## Real examples
 
 Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence. Registry-name displays additionally use the current readable name view; those names are not snapshot-pinned with the stored indicators.

@@ -113,6 +113,16 @@
 {% macro usable_name(first, last) -%}
 coalesce(length({{ letters(first) }}) >= 1 AND length({{ letters(last) }}) >= 2, false)
 {%- endmacro %}
+{% macro name_match_evidence_row_type() -%}
+row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean)
+{%- endmacro %}
+{% macro vendor_registry_match_class() -%}
+CASE WHEN NOT source_name_usable OR NOT registry_name_usable THEN 'unknown'
+     WHEN lk = 'none' AND fk <> 'none' THEN 'first_only'
+     WHEN fk = 'none' AND lk <> 'none' THEN 'last_only'
+     ELSE {{ name_match_class('first_set', 'first_name', 'last_name', 'registry_first_set', 'registry_first_name', 'registry_last_name') }}
+END
+{%- endmacro %}
 {% macro link_name_metrics(input_model, detail=false, record_grain=false, input_relation=none, include_source_names=false) -%}
 WITH expanded AS (
     SELECT s.*,
@@ -152,30 +162,56 @@ SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
        source_name_usable AS comparison_source_name_usable,
        registry_name_usable AS comparison_registry_name_usable,
        fk AS first_name_match_kind, lk AS last_name_match_kind,
-       CASE WHEN NOT source_name_usable OR NOT registry_name_usable THEN 'unknown'
-            WHEN lk = 'none' AND fk <> 'none' THEN 'first_only'
-            WHEN fk = 'none' AND lk <> 'none' THEN 'last_only'
-            ELSE {{ name_match_class('first_set', 'first_name', 'last_name', 'registry_first_set', 'registry_first_name', 'registry_last_name') }}
-       END AS vendor_registry_match_class,
+       {{ vendor_registry_match_class() }} AS vendor_registry_match_class,
        source_match AS comparison_email_matches_source_name,
        registry_match AS comparison_email_matches_registry_name,
        vendor_registry_match AS comparison_vendor_name_matches_registry_name
 FROM evaluated
 {% else %}
+, comparison_evidence AS (
+    SELECT *, CAST(ROW(
+        CASE WHEN source_name_usable THEN first_name END,
+        CASE WHEN source_name_usable THEN last_name END,
+        registry_first_name, registry_last_name,
+        CASE WHEN source_name_usable AND registry_name_usable THEN fk ELSE 'unknown' END,
+        CASE WHEN source_name_usable AND registry_name_usable THEN lk ELSE 'unknown' END,
+        {{ vendor_registry_match_class() }}, source_match, registry_match, vendor_registry_match
+    ) AS {{ name_match_evidence_row_type() }}) AS comparison
+    FROM evaluated
+), summarized AS (
 SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
        bool_or(source_match) AS email_matches_source_name,
        bool_or(registry_match) AS email_matches_registry_name,
        bool_or(vendor_registry_match) AS vendor_name_matches_registry_name,
        bool_or(source_name_usable) AS source_name_usable,
        bool_or(registry_name_usable) AS registry_name_usable,
-       bool_or(registry_npi_present) AS registry_npi_present
+       bool_or(registry_npi_present) AS registry_npi_present,
+       array_agg(DISTINCT comparison) AS all_name_match_evidence
        {% if include_source_names %},
        coalesce(array_sort(array_agg(DISTINCT CAST(ROW(first_name, last_name, array_sort(first_set))
            AS row(first_name varchar, last_name varchar, first_variants array(varchar))))
            FILTER (WHERE source_name_usable)), CAST(ARRAY[] AS {{ source_name_array_type() }})) AS source_name_values
        {% endif %}
-FROM evaluated
+FROM comparison_evidence
 GROUP BY {% if record_grain %}metric_row_id, {% endif %}email, npi
+), retained AS (
+    SELECT *,
+           -- Explain usable vendor names. When none exist, keep unknown comparisons.
+           CASE WHEN source_name_usable THEN filter(all_name_match_evidence, x -> x.source_first_name IS NOT NULL)
+                ELSE all_name_match_evidence END AS unsorted_name_match_evidence
+    FROM summarized
+)
+SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
+       email_matches_source_name, email_matches_registry_name, vendor_name_matches_registry_name,
+       source_name_usable, registry_name_usable, registry_npi_present,
+       {% if include_source_names %}source_name_values,{% endif %}
+       array_sort(unsorted_name_match_evidence, (a, b) -> CASE
+           WHEN json_format(CAST(a AS json)) < json_format(CAST(b AS json)) THEN -1
+           WHEN json_format(CAST(a AS json)) > json_format(CAST(b AS json)) THEN 1 ELSE 0 END) AS name_match_evidence,
+       array_sort(array_distinct(transform(unsorted_name_match_evidence, x -> x.match_class))) AS vendor_registry_match_classes,
+       {{ var('name_match_evaluated_at', 'CAST(current_timestamp AS timestamp(6) with time zone)') }} AS name_match_evaluated_at,
+       'stored_name_comparisons_v1' AS name_match_definition_version
+FROM retained
 {% endif %}
 {%- endmacro %}
 {% macro debug_name_rows(metric_relation, comparison_relation) -%}

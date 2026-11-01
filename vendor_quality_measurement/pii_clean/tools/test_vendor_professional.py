@@ -142,7 +142,7 @@ class VendorProfessionalTests(unittest.TestCase):
         import yaml
         declared = yaml.safe_load((p.ROOT / 'models/final/schema.yml').read_text())['models'][0]['columns']
         fields = [c['name'] for c in declared if not c['name'].startswith('cookie_')]
-        self.assertEqual(len(fields), 124)
+        self.assertEqual(len(fields), 128)
         order = None
         for source in p.SOURCES:
             model = 'int_' + source + '__metrics'

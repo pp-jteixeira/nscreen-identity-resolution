@@ -1,15 +1,21 @@
 # Metric statistics SQL
 
-The current metric pages use **32 read-only population queries**, executed in native Trino on **October 31, 2026**, against `iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090`. This complete publication contains **75,656,369 records across seven sources**. Each query is pinned to the same snapshot. Execution leaves stored metrics and evaluation dates unchanged.
+The metric pages use **33 read-only population queries**, executed in native Trino on **October 31, 2026**. Each is pinned to the snapshot used for its documented measurements. All three complete snapshots below contain **75,656,369 records across seven sources**. Execution leaves stored metrics and evaluation dates unchanged.
 
-The directory has 35 SQL files: the 32 current publication queries, two independent raw NPPES diagnostics, and one explicitly dated partial-population query. Only SQL source is retained. No result exports or execution logs are stored.
+| SQL files | Relation and snapshot | Evidence |
+|---|---|---|
+| 29 | `pii_clean` at `8811920360682490090` | Complete pre-upgrade publication. These core metrics were preserved through the name-evidence upgrade and cookie refresh. |
+| 3 | `pii_clean` at `4233051104478921549` | Current cookie metrics, recomputed for October 28–30 with all three input days present. |
+| 1 | `pii__int_pii__metrics` at `3003274000539755025` | Stored name-match classes, also preserved in current final output. |
+
+All relations above are in `iceberg.jteixeira_ipa`. The directory has **36 SQL files**: these 33 complete-population queries, two independent raw NPPES diagnostics, and one explicitly dated partial-population query. Only SQL source is retained. No result exports or execution logs are stored.
 
 ## Counting units
 
 | Metric | Unit and denominator |
 |---|---|
 | 01 | Exact source-record/email-position counts. Repeated means more than one observation. Median/P95 use exact weighted nearest-rank quantiles. |
-| 02–07 | Record outcomes divided by all metric records within each source. Unknown name evidence remains separate from disagreement. |
+| 02–07 | Record outcomes divided by all metric records within each source. Unknown name evidence remains separate from disagreement. Name-match classes can overlap within a record and must not be summed as disjoint outcomes. |
 | 08 | Distinct source/emails for multiplicity percentages; metric records for affected-record percentages. |
 | 09–10 | Distinct source/emails for history/conflict prevalence; record counts have their own denominators. |
 | 11 | Distinct source/emails for normalized-name counts. Spellings are not people. |
@@ -29,10 +35,11 @@ The directory has 35 SQL files: the 32 current publication queries, two independ
 
 Additional statements use `_statement_002.sql`, `_statement_003.sql` and so on. Run each file as one complete statement. SQL files contain no semicolons or blank lines.
 
+- **07:** `07_name_match_classes.sql` measures stored name explanations from the complete 128-field core. Class counts use records as their denominator and can overlap.
 - **15–16:** the first query gives all-source coverage. Statement 002 gives conflict outcomes; sources without conflicts have no outcome row and require a zero count with an undefined percentage.
 - **17:** statements 002 and 003 query the published population. `17_npi_registry_status.sql` and statement 004 instead inspect the current raw NPPES reference. Those two diagnostic queries were not rerun for this refresh and are not the source of current page statistics.
 - **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures.
-- **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Its corrected checks passed with the three-day window and explicit missing-source days.
+- **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Current checks passed with the three-day window and all three days present in both inputs. The older publication at `8811920360682490090` recorded October 30 as missing; those historical coverage values do not describe the current cookie refresh.
 - **25:** `25_sequential_history.sql` uses the complete publication. `25_sequential_history_partial_20261030.sql` preserves the older six-source snapshot for historical reproduction only.
 
 The current NPPES specialty flag is `conflicting_npis_share_nppes_specialty`. Current statistics and examples use that name. Calculation macros define indicators; these queries measure stored outcomes. See the [metric pages](../../docs/metrics/README.md) for executed examples, tables and interpretation.

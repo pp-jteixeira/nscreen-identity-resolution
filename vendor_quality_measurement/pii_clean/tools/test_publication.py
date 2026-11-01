@@ -74,6 +74,8 @@ class PublicationTests(unittest.TestCase):
                 return [{'reason': 'duplicate_keys', 'failures': 1}]
             if failure == 'metric' and 'link_stability' in sql:
                 return [{'reason': 'invalid_status', 'failures': 1}]
+            if failure == 'name_evidence' and 'name_match_evidence' in sql:
+                return [{'reason': 'inconsistent_name_evidence', 'failures': 1}]
             return []
 
         def write(sql, **kwargs):
@@ -86,7 +88,7 @@ class PublicationTests(unittest.TestCase):
             root = Path(directory)
             (root / 'tests').mkdir()
             for test in ('source_integrity', 'email_npi_multiplicity', 'email_linkage_history',
-                         'name_consistency', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location', 'link_freshness', 'link_stability', 'npi_identity', 'vendor_professional', 'medscape_optout', 'sequential_history'):
+                         'name_consistency', 'name_match_evidence', 'conflicting_names', 'conflicting_states', 'conflicting_facilities', 'conflicting_specialties', 'registry_status', 'vendor_facility_state', 'cookie_location', 'link_freshness', 'link_stability', 'npi_identity', 'vendor_professional', 'medscape_optout', 'sequential_history'):
                 (root / f'tests/{test}.sql').write_text('SELECT ' + test)
             with patch.object(p, 'ROOT', root), patch.object(p, 'query', query), \
                     patch.object(p, 'publication_schema', side_effect=lambda schema: schema), \
@@ -224,7 +226,7 @@ class PublicationTests(unittest.TestCase):
         tests = [(i, sql) for i, (kind, sql) in enumerate(events)
                  if kind == 'query' and sql.startswith('SELECT ') and 'evidence_checksum' not in sql
                  and 'AS metric_rows FROM' not in sql]
-        self.assertEqual(len(tests), 16)
+        self.assertEqual(len(tests), 17)
         self.assertTrue(all(i < publish_index and 'candidate_' in sql for i, sql in tests))
 
     def test_union_also_validates_candidate_before_publication(self):
@@ -240,7 +242,7 @@ class PublicationTests(unittest.TestCase):
     def test_failed_candidate_never_changes_canonical(self):
         for batched in (False, True):
             for failure in ('missing_source', 'unexpected_source', 'duplicate_keys', 'empty_source',
-                            'integrity', 'metric', 'write', 'unrelated_plan', 'preservation',
+                            'integrity', 'metric', 'name_evidence', 'write', 'unrelated_plan', 'preservation',
                             'vendor_schema', 'candidate_schema'):
                 with self.subTest(failure=failure, batched=batched):
                     writes, _, _ = self.run_build(failure, batched=batched)

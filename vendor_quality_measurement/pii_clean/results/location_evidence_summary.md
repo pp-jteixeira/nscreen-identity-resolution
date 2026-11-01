@@ -1,6 +1,6 @@
 # Vendor/facility state and cookie-location measurements
 
-**Historical checkpoint — October 29, 2026.** The population counts and validation results below describe that earlier build. Current publication statistics and executed examples are in [metric 18](../docs/metrics/18_vendor_facility_state.md) and [metric 19](../docs/metrics/19_cookie_location_evidence.md), refreshed October 31 against snapshot `8811920360682490090`. Original result dumps are not retained. See [current build validation](../docs/build_recovery.md).
+**Historical checkpoint — October 29, 2026.** The population counts and validation results below describe that earlier build. Current publication statistics and executed examples are in [metric 18](../docs/metrics/18_vendor_facility_state.md) and [metric 19](../docs/metrics/19_cookie_location_evidence.md), with each measurement’s date and snapshot identified on its metric page. Original result dumps are not retained. See [current build validation](../docs/build_recovery.md).
 
 Both measurements retained all 75,564,265 exact-record/email-position rows and 26,730,605 distinct source/email/NPI links from the same saved `iceberg.jteixeira_ipa.pii_clean` snapshot. Each measurement rechecked that the input snapshot stayed unchanged. The saved vendor-row count is not a count of independent identity confirmations.
 

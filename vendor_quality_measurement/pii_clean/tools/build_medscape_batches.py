@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Resume Medscape core writes by email hash, preserving every email's history.
 
-The core table must already exist with the 124-field vendor contract. Expected
+The core table must already exist with the 128-field vendor contract. Expected
 record keys and observation histories are recomputed from pinned raw snapshots.
 Each Iceberg INSERT is atomic. A batch is skipped only when its stored key/history
 checksum matches its complete expected population. Results stay on stdout.

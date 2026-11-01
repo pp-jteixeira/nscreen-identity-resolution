@@ -10,7 +10,6 @@ import tempfile
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import jinja2
 import yaml
@@ -398,7 +397,7 @@ def build_core(db, preservation=None, vendor_batches=False, history_inputs=None,
                 base_sql = (f"CREATE TABLE {base_table} WITH (format = 'PARQUET') AS\n"
                             + read_model(f'int_{source}__metrics', variables={'defer_sequential_history': True}))
                 # Exact keys avoid concentrating a single vendor on one worker.
-                # If that plan exceeds the stage cap, store the 73-field location input first.
+                # If that plan exceeds the stage cap, store the 77-field location input first.
                 try:
                     base_fragments = explain_fragments(db, base_sql, session_properties=HISTORY_SESSION_PROPERTIES)
                 except Exception as base_error:
@@ -473,7 +472,7 @@ def build_core(db, preservation=None, vendor_batches=False, history_inputs=None,
     if failures:
         raise ValueError(f'Evidence integrity checks failed: {failures}')
     manifest['linkage_checks'] = {}
-    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
+    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
         test_sql = render_sql((ROOT / 'tests' / name).read_text(), {'metric_model': CORE_MODEL}, overrides)
         failures = query(db, test_sql)
         manifest['linkage_checks'][name] = {'sql': test_sql, 'failures': failures}
@@ -504,49 +503,10 @@ def current_snapshot(db, table):
                      'ORDER BY made_current_at DESC LIMIT 1')[0]['snapshot_id'])
 
 
-def build_final(db):
-    """Publish actual cookie-enriched output after stored core metrics."""
-    require_completed_batches(db)
-    core = relation(CORE_MODEL)
-    target = relation(FINAL_MODEL)
-    core_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + core)]
-    expected = publication_schema(core_schema)
-    columns = [name for name, _ in core_schema]
-    snapshot = current_snapshot(db, core)
-    pinned = core + ' FOR VERSION AS OF ' + snapshot
-    baseline = query(db, evidence_snapshot_sql(pinned, columns, include_computed_at=True))
-    if ({r['source'] for r in baseline} != set(SOURCES)
-            or any(r['metric_rows'] < 1 or r['duplicate_keys'] for r in baseline)):
-        raise ValueError('Core metrics must contain all seven sources with unique record keys')
-    day = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
-    select = read_model('int_cookie__metrics', variables={'location_evidence_day': day},
-                        ref_overrides={CORE_MODEL: pinned})
-    sql = f"CREATE OR REPLACE TABLE {target} WITH (format = 'PARQUET') AS\n{select}"
-    manifest = {'phase': 'cookie_enrichment', 'core_table': core, 'core_snapshot': snapshot,
-                'evaluation_day': day, 'target': target,
-                'plan_fragments': explain_fragments(db, sql, session_properties=HISTORY_SESSION_PROPERTIES),
-                'verified': False}
-    print(json.dumps(manifest, indent=2), flush=True)
-    # Resolve the downstream view only after the core table exists. A view alone
-    # would not create an execution boundary between attribution and cookie work.
-    model = 'int_cookie__metrics'
-    if current_snapshot(db, core) != snapshot:
-        raise ValueError('Core snapshot changed before cookie publication')
-    run_write(f'CREATE OR REPLACE VIEW {relation(model)} AS {select}',
-              session_properties=EVIDENCE_SESSION_PROPERTIES)
-    run_write(sql, session_properties=HISTORY_SESSION_PROPERTIES)
-    actual_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + target)]
-    actual = query(db, evidence_snapshot_sql(target, columns, include_computed_at=True))
-    if actual_schema != expected or actual != baseline:
-        raise ValueError('Enriched publication changed core values, schema, keys or counts')
-    failures = query(db, render_sql((ROOT / 'tests/cookie_location.sql').read_text(),
-                                   {'metric_model': FINAL_MODEL}))
-    if failures:
-        raise ValueError(f'Published cookie metrics failed integrity checks: {failures}')
-    if current_snapshot(db, core) != snapshot:
-        raise ValueError('Core snapshot changed during cookie publication')
-    manifest.update(verified=True, preserved_core=actual)
-    print(json.dumps(manifest, indent=2), flush=True)
+def build_final(db, replace_name_backfill=False):
+    """Enrich sources independently, then combine their stored final records."""
+    from cookie_publication import build_by_source
+    return build_by_source(db, sys.modules[__name__], replace_name_backfill=replace_name_backfill)
 
 
 def stage_input(name):
@@ -583,7 +543,7 @@ def test_source(db, source):
             raise ValueError(f'{stage}: exact-record preservation failed: {checked}')
         print(f'PASS {stage}: raw copies preserved; record IDs unique', flush=True)
     variables = {'metric_model': f'int_{source}__metrics'}
-    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
+    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
         failures = query(db, render_sql((PROJECT / 'tests' / name).read_text(), variables))
         if failures:
             raise ValueError(f'{name} failed: {failures}')
@@ -734,6 +694,8 @@ def main():
     parser.add_argument('--vendor-batches', action='store_true', help='Skip the combined core plan and validate vendor batches')
     parser.add_argument('--direct', action='store_true', help='Rebuild the development table directly by vendor, then validate all rows')
     parser.add_argument('--resume', action='store_true', help='With --direct, retain completed source batches after validating their schema and unique keys')
+    parser.add_argument('--replace-name-backfill', action='store_true',
+                        help='For final/cookies, replace an interrupted name-only backfill using its verified core')
     args = parser.parse_args()
     if args.vendor_batches and args.command not in ('build', 'core'):
         parser.error('--vendor-batches is only available for build and core')
@@ -741,6 +703,8 @@ def main():
         parser.error('--direct is only available for build and core')
     if args.resume and not args.direct:
         parser.error('--resume requires --direct')
+    if args.replace_name_backfill and args.command not in ('final', 'cookies'):
+        parser.error('--replace-name-backfill is only available for final and cookies')
     if args.command == 'render':
         if not args.model or args.source:
             parser.error('render requires --model and does not use --source')
@@ -756,7 +720,7 @@ def main():
         if args.command in ('build', 'core'):
             build_core(db, vendor_batches=args.vendor_batches, direct=args.direct, resume_direct=args.resume)
         if args.command in ('build', 'final', 'cookies'):
-            build_final(db)
+            build_final(db, replace_name_backfill=args.replace_name_backfill)
         return
     if not args.source or args.model:
         parser.error('source, test and report require --source and do not use --model')

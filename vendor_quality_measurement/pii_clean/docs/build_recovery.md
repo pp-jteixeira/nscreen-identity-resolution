@@ -1,10 +1,38 @@
 # Build recovery and verified publication
 
-**Published and verified October 31, 2026:** `iceberg.jteixeira_ipa.pii_clean` contains **75,656,369 records across all seven sources**, with 154 fields, at snapshot `8811920360682490090`. Core snapshot `2198246156417274278` contains the same records and 124 fields. Final enrichment preserved every core field, including `computed_at`, with identical per-source checksums and no duplicate keys. Cookie integrity checks passed.
+**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](name_match_evidence.md) for recovery and validation details.
 
-The cookie window is October 28–30, three completed calendar days before evaluation. Both mapping and geography inputs contain October 28–29 and lack October 30. Every published row retains the missing date and `missing_source_days` status. The window was not extended to compensate for missing data.
+## Stored names and source-scoped cookies — October 31, 2026
 
-Large Medscape writes repeatedly failed with HDFS replica-allocation errors. The recovery path bounds both writer concurrency and transaction size while preserving each email's full observation history. It writes directly into the stored 124-field core, `iceberg.jteixeira_ipa.pii__int_pii__metrics`.
+Core snapshot `3003274000539755025` contains 75,656,369 records and 128 fields. It preserves every original core field, key and source count, including `computed_at`. Full reconstruction found zero differences in the existing name indicators, usability flags or source-name arrays. Stored-name integrity passed over the complete population. Query `20261031_184611_47122_6efcm` published core in 1,005.43 seconds. Name comparisons use NPI-reference snapshot `2149991209070307144` and evaluation timestamp `2026-10-31 18:46:11.738 UTC`.
+
+The source-scoped cookie publisher reads that verified core. It pins LiveIntent snapshot `844438291382994861`, geography `3696066139659628990` and ZIP3 mapping `7123669604605367079`. Evaluation day is October 31, with October 28–30 covered in both cookie inputs: three available days and no missing-day flags. Each source is filtered before cookie calculation. Thirty cookie fields are recomputed; all 128 core fields must remain identical.
+
+All seven source writes completed without retry. Each source passed 128-field preservation, complete counts, unique-key checks and cookie integrity before the next source started:
+
+| Source | Records | Committed snapshot | Write query | Minutes |
+|---|---:|---|---|---:|
+| HealthLink | 11,156,016 | `720901398691810994` | `20261031_205724_51378_6efcm` | 8.03 |
+| QuantumMedica | 1,705,723 | `1661377579457959310` | `20261031_210619_51593_6efcm` | 2.64 |
+| Medscape | 47,164,366 | `1649545757546135012` | `20261031_210933_51656_6efcm` | 30.39 |
+| Endato | 5,427,459 | `6020568208386004321` | `20261031_214323_52932_6efcm` | 3.06 |
+| RocketReach | 4,864,145 | `9046938604591700148` | `20261031_214704_53017_6efcm` | 4.12 |
+| DRDB | 1,115,415 | `4339068729856760244` | `20261031_215149_53106_6efcm` | 1.92 |
+| Haymarket | 4,223,245 | `4233051104478921549` | `20261031_215421_53180_6efcm` | 3.49 |
+
+Final snapshot `4233051104478921549` contains all 75,656,369 records and 158 fields. Full-population preservation passed in 349.01 seconds as query `20261031_215810_53267_6efcm`; cookie integrity passed in 14.55 seconds. The cookie view was refreshed, the incomplete marker was cleared, and the publisher exited successfully. All 128 core fields remain identical to core snapshot `3003274000539755025`. The thirty cookie fields were recomputed from the pinned three-day inputs.
+
+Medscape's write produced 16,582,369,877 bytes. Its individual preservation and cookie checks took 170.66 and 10.82 seconds. Timings describe this execution and are not runtime guarantees. Ordinary refresh or interrupted-source recovery uses `tools/pipeline.py cookies`; incomplete checkpoints retain original snapshot pins, window and coverage.
+
+The current local suite passed all 141 tests in 293.70 seconds. Native Trino verified equivalence of combined and separate cookie calculations on 36 synthetic records, with zero differences. All seven source plans passed at 20 fragments each. Dependency validation confirms 26 project relations, 20 external inputs and 83 direct edges.
+
+## Original core/cookie publication
+
+**Verified October 31, 2026:** `iceberg.jteixeira_ipa.pii_clean` contained **75,656,369 records across all seven sources**, with 154 fields, at snapshot `8811920360682490090`. Core snapshot `2198246156417274278` contains the same records and 124 fields. Final enrichment preserved every core field, including `computed_at`, with identical per-source checksums and no duplicate keys. Cookie integrity checks passed.
+
+The cookie window is October 28–30, three completed calendar days before evaluation. At that evaluation, mapping and geography inputs contained October 28–29 and lacked October 30. Those stored rows retain the missing date and `missing_source_days` status. The window was not extended to compensate for missing data.
+
+Large Medscape writes repeatedly failed with HDFS replica-allocation errors. The recovery path bounds both writer concurrency and transaction size while preserving each email's full observation history. It writes directly into the stored core, `iceberg.jteixeira_ipa.pii__int_pii__metrics`.
 
 ## Email batches
 
@@ -18,7 +46,7 @@ Shared external reference tables are read through the normal metric definitions.
 
 ## Commands
 
-The core table must already have the current 124-field schema. From `vendor_quality_measurement/pii_clean`:
+The core table must match the current 128-field schema. Historical 124-field cores require the [name-evidence upgrade](name_match_evidence.md) or a complete source refresh before resuming; do not fill new evidence fields with placeholders. Stored core has completed that upgrade. The execution evidence below describes the completed 124-field recovery. From `vendor_quality_measurement/pii_clean`:
 
 ```bash
 ../../.venv/bin/python tools/build_medscape_batches.py --day 2026-10-30 --materialize-records
@@ -39,9 +67,9 @@ Writer settings are eight writer tasks, one writer per task, local writer scalin
 
 ## Core and final separation
 
-Completed core rows can be recovered from an explicitly pinned, already validated publication by projecting its 124 non-cookie fields. Recovery must compare counts, unique keys and all-field checksums against that snapshot. Existing cookie values are not copied into core.
+Completed core rows can be recovered from an explicitly pinned, already validated publication by projecting every non-cookie field required by the current contract. The historical 124-field recovery below cannot supply the four additional name-explanation fields. Recovery must compare counts, unique keys and all-field checksums against that snapshot. Existing cookie values are not copied into core.
 
-Final cookie enrichment uses the default three completed days and produces actual 154-field rows. A failed cookie build leaves core available for retry. See [cookie workflow](cookie_stage.md) and the execution evidence below.
+Final cookie enrichment uses the default three completed days and produces actual 158-field rows under the current contract; the dated publication below has 154 fields. A failed cookie build leaves core available for retry. See [cookie workflow](cookie_stage.md) and the execution evidence below.
 
 ## Reusable exact-record input
 
@@ -49,7 +77,7 @@ The raw Medscape global feed contains 1,046,958,615 observations. Native query d
 
 Use `--materialize-records` to create this execution input during a new run, or pass an existing owned-schema table with `--versioned-input`. Before using it, the batch runner compares every expected key/history checksum to freshly grouped pinned raw inputs. The normal metric model remains available without this optional input. Local equivalence checks compare every core field except query-time `computed_at` between raw and stored-version execution.
 
-## Execution evidence
+## Original core recovery evidence
 
 The six completed source batches were recovered from canonical snapshot `2626250323108905113`. All **28,492,003 records**, unique keys and **124-field checksums** match, including `computed_at`. Writes used eight writer tasks, one writer per task and 64 MB target files.
 
@@ -72,7 +100,7 @@ The complete local suite passed 120 tests, including stored-version execution. T
 
 Reusable input `iceberg.jteixeira_ipa.pii_medscape_versions_4721bed4abb8` committed successfully in 285.28 seconds with a five-fragment plan. The first six Medscape buckets were verified before switching execution to this input. Bucket 5 completed as query `20261030_230600_63342_6efcm`, with 2,946,126 records in 174.73 seconds. The redundant raw-scan query for bucket 6, `20261030_230920_63368_6efcm`, was cancelled before resuming from stored versions. Committed buckets remain subject to checksum validation on resume.
 
-The published cookie fields confirm the October 28–30 window, two available days in each input and October 30 missing from both. Date presence measures available partitions, not complete ingestion or independent observations.
+The original snapshot `8811920360682490090` confirms the October 28–30 window, two available days in each input and October 30 missing from both at its evaluation. Date presence measures available partitions, not complete ingestion or independent observations.
 
 The first stored-input batch, bucket 6, committed and verified 2,933,801 records. Query `20261030_231336_63436_6efcm` took 77.30 seconds, read **30.25 GB** and wrote **601.25 MB**. Native query inputs contained **zero scans of `medscape_pii_global`**. Compared with the 673.67 GB raw-batch input, this reduces physical input by approximately **95.5%**. The distributed plan has 74 fragments instead of 96.
 
@@ -83,6 +111,8 @@ Preservation checks must use ordinary read-session aggregation planning. A diagn
 Complete Medscape core measurements found 3,550,359 dated emails, including 3,500,157 with sufficient history, 109,280 with at least one swap (3.0780%) and 13 with at least one flip-back (0.0003662%). Registration-grain measurements found 109,120 superseded links and 3,551,648 latest-observed links. These counts use different units: source/email for sequence metrics, and GUID/email/NPI/status for registration metrics. The existing `fangchenmd@gmail.com` flip-back and `sbrooks.arnp@gmail.com` supersession examples were reproduced from stored core without rebuilding vendor history.
 
 ## Final publication checks
+
+These checks describe the original cookie refresh before the name-evidence upgrade.
 
 Query `20261030_234252_64647_6efcm` published the actual 154-field cookie-enriched table on its first attempt. Its 25-fragment plan finished in 16.92 minutes, reading 391.48 GB and writing 19.41 GB (decimal units), with no HDFS failure. The full 124-field preservation query passed in 104.83 seconds; the cookie invariant query returned no failures in 20.99 seconds. The core snapshot remained unchanged. The publication worker exited successfully.
 

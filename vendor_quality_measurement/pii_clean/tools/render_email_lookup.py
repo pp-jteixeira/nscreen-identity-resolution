@@ -14,17 +14,22 @@ def base_columns():
     return [x.strip() for x in p.render_sql('{{ consistency_base_columns() }}').split(',')] + NAME_HISTORY
 
 
-def published_columns():
+def model_columns():
     schema = yaml.safe_load((p.ROOT / 'models/final/schema.yml').read_text())
     model = next(m for m in schema['models'] if m['name'] == p.FINAL_MODEL)
-    declared = [c['name'] for c in model['columns']]
-    return declared
+    return model['columns']
+
+
+def published_columns():
+    # A local declaration is not proof that a column exists in the warehouse.
+    # Remove published: false only after verifying publication, then regenerate.
+    return [c['name'] for c in model_columns() if c.get('meta', {}).get('published', True)]
 
 
 def render_lookup(email='person@example.com', ref_overrides=None):
     declared = published_columns()
     # Preserve the existing display order while selecting every published field.
-    base = base_columns()
+    base = [c for c in base_columns() if c in declared]
     output = ['email', 'source', 'npi']
     output += [c for c in base + declared if c not in output and c not in ['email', 'source', 'npi']]
     output = list(dict.fromkeys(output))

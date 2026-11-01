@@ -110,5 +110,74 @@ class NameMatchingTests(unittest.TestCase):
                 self.assertEqual(any(values) if values else None,row[metric])
 
 
+    def test_stored_classes_retain_scoring_distinctions(self):
+        cases = [
+            ('exact', 'JOHN', 'SMITH', 'JOHN', 'SMITH', True),
+            ('nickname', 'BOB', 'SMITH', 'ROBERT', 'SMITH', True),
+            ('token', 'JOHN PAUL', 'SMITH', 'JOHN', 'SMITH', True),
+            ('edit', 'JOHN', 'JOHNSTON', 'JOHN', 'JOHNSON', True),
+            ('first_only', 'JOHN', 'SMITH', 'JOHN', 'JONES', False),
+            ('last_only', 'JANE', 'SMITH', 'JOHN', 'SMITH', False),
+            ('none', 'JANE', 'JONES', 'JOHN', 'SMITH', False),
+            ('unknown', None, None, 'JOHN', 'SMITH', None),
+        ]
+        sources = [('jsmith@example.test', label, first, last) for label, first, last, _, _, _ in cases]
+        registry = [(label, first, last) for label, _, _, first, last, _ in cases]
+        rows = {r['npi']: r for r in execute(comparison_sql(sources, registry))}
+        for label, _, _, _, _, expected in cases:
+            row = rows[label]
+            self.assertEqual(row['vendor_registry_match_classes'], [label])
+            self.assertEqual(len(row['name_match_evidence']), 1)
+            item = row['name_match_evidence'][0]
+            self.assertEqual(item['match_class'], label)
+            self.assertIs(item['vendor_name_matches_registry_name'], expected)
+            self.assertIs(row['vendor_name_matches_registry_name'], expected)
+            self.assertEqual(row['name_match_definition_version'], 'stored_name_comparisons_v1')
+            self.assertIsNotNone(row['name_match_evaluated_at'])
+
+    def test_all_reference_outcomes_are_retained_without_duplicate_votes(self):
+        sources = [('jsmith@example.test', '1', 'JANE', 'SMITH')]
+        registry = [('1', 'JANE', 'SMITH'), ('1', 'JANE', 'SMITH'),
+                    ('1', 'JOHN', 'SMITH'), ('1', None, None)]
+        row = execute(comparison_sql(sources, registry))[0]
+        self.assertEqual(row['vendor_registry_match_classes'], ['exact', 'last_only', 'unknown'])
+        self.assertEqual(len(row['name_match_evidence']), 3)
+        self.assertTrue(row['vendor_name_matches_registry_name'])
+        self.assertEqual({r['vendor_name_matches_registry_name'] for r in row['name_match_evidence']},
+                         {True, False, None})
+        # Unknown references do not erase a known disagreement in bool_or.
+        row = execute(comparison_sql(sources, registry[2:]))[0]
+        self.assertFalse(row['vendor_name_matches_registry_name'])
+        self.assertEqual(row['vendor_registry_match_classes'], ['last_only', 'unknown'])
+
+    def test_unusable_vendor_names_have_one_unknown_fallback(self):
+        registry = [('1', 'JOHN', 'SMITH')]
+        sources = [('jsmith@example.test', '1', None, 'SMITH'),
+                   ('jsmith@example.test', '1', 'JOHN', None)]
+        row = execute(comparison_sql(sources, registry))[0]
+        self.assertEqual(len(row['name_match_evidence']), 1)
+        self.assertEqual(row['vendor_registry_match_classes'], ['unknown'])
+        self.assertIsNone(row['name_match_evidence'][0]['source_first_name'])
+        row = execute(comparison_sql(sources + [('jsmith@example.test', '1', 'JOHN', 'SMITH')], registry))[0]
+        self.assertEqual(row['vendor_registry_match_classes'], ['exact'])
+        self.assertEqual(len(row['name_match_evidence']), 1)
+
+    def test_stored_evidence_integrity_rejects_corruption(self):
+        query = "SELECT 'fixture' AS source, npi AS metric_row_id, * FROM (" + fixture_sql() + ')'
+        template = (pipeline.ROOT / 'tests/name_match_evidence.sql').read_text()
+        def check(sql):
+            return execute(pipeline.render_sql(template, {'metric_model': pipeline.CORE_MODEL},
+                                                {pipeline.CORE_MODEL: '(' + sql + ')'}))
+        self.assertEqual(check(query), [])
+        fields = list(execute(query)[0])
+        for field, replacement in [
+            ('vendor_registry_match_classes', "ARRAY['invented']"),
+            ('vendor_name_matches_registry_name', 'NOT vendor_name_matches_registry_name'),
+            ('name_match_evidence', "slice(name_match_evidence, 1, 0)"),
+        ]:
+            corrupted = 'SELECT ' + ', '.join(replacement + ' AS ' + name if name == field else name for name in fields) + ' FROM (' + query + ')'
+            self.assertTrue(check(corrupted), field)
+
+
 if __name__=='__main__':
     unittest.main()

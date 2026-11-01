@@ -172,7 +172,7 @@ def inlined(name, cache=None, fixtures=None, variables=None):
         fixtures = {**(fixtures or {}), 'stg_medscape__optout':
                     '(SELECT CAST(NULL AS varchar) AS npi, CAST(NULL AS varchar) AS day, '
                     'CAST(NULL AS varchar) AS optout_day WHERE false)'}
-    variables = {'location_metadata_from_rows': True, 'location_evidence_day': '2026-10-29', **(variables or {})}
+    variables = {'name_match_evaluated_at': "TIMESTAMP '2026-10-29 00:00:00 UTC'", 'location_metadata_from_rows': True, 'location_evidence_day': '2026-10-29', **(variables or {})}
     cache = cache if cache is not None else {}
     key = (name, json.dumps(variables, sort_keys=True))
     if key in cache:

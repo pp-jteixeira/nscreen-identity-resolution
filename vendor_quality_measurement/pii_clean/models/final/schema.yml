@@ -1,8 +1,8 @@
 version: 2
 models:
 - name: pii_clean
-  description: Complete computed metrics from the downstream cookie intermediate. All 154 columns contain actual
-    metric outputs, without placeholder columns or deferred updates.
+  description: Published 158-field output from source-scoped cookie enrichment of stored core. Includes four stored
+    name-explanation fields. All model outputs are computed, without placeholder columns or deferred updates.
   columns:
   - name: source
     data_tests:
@@ -71,6 +71,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null

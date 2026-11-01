@@ -1,12 +1,13 @@
 """Complete lookup returns stored evidence unchanged, with display helpers only."""
 import hashlib
 import unittest
+from unittest.mock import patch
 
 import sqlglot
 from sqlglot import exp
 
 import pipeline as p
-from render_email_lookup import published_columns, render_lookup
+from render_email_lookup import model_columns, published_columns, render_lookup
 from test_models import execute
 
 
@@ -43,6 +44,10 @@ def fixture():
         'cookie_location_window_start': "DATE '2019-12-26'",
         'cookie_location_window_end': "DATE '2020-01-01'",
         'source_name_values': "ARRAY[CAST(ROW('ALICE', 'SMITH') AS ROW(first_name varchar, last_name varchar)), CAST(ROW('BOB', 'JONES') AS ROW(first_name varchar, last_name varchar))]",
+        'name_match_evidence': p.render_sql("CAST(ARRAY[ROW('ALICE', 'SMITH', 'ALICE', 'SMITH', 'exact', 'exact', 'exact', true, true, true), ROW('BOB', 'JONES', 'ALICE', 'SMITH', 'none', 'none', 'none', false, true, false)] AS array({{ name_match_evidence_row_type() }}))"),
+        'vendor_registry_match_classes': "ARRAY['exact', 'none']",
+        'name_match_evaluated_at': "TIMESTAMP '2020-01-02 12:34:56 UTC'",
+        'name_match_definition_version': "'stored_name_comparisons_v1'",
         'source_state_values': "ARRAY['NY', 'CA']",
         'conflicting_npi_name_comparisons': f"CASE WHEN row_id = 2 THEN CAST(NULL AS {peers_type}) WHEN row_id = 3 THEN CAST(ARRAY[] AS {peers_type}) ELSE CAST(ARRAY[ROW(true), ROW(false), ROW(cast(NULL AS boolean))] AS {peers_type}) END",
     }
@@ -53,6 +58,16 @@ def fixture():
 
 
 class EmailLookupTests(unittest.TestCase):
+    def test_unpublished_fields_stay_out_of_saved_lookup(self):
+        self.assertEqual(len(model_columns()), 158)
+        # Publication metadata must also filter fields in the fixed base list.
+        columns = [dict(c, meta={'published': c['name'] != 'name_match_evidence'})
+                   for c in model_columns()]
+        with patch('render_email_lookup.model_columns', return_value=columns):
+            self.assertEqual(len(published_columns()), 157)
+            self.assertNotIn('r.name_match_evidence', render_lookup())
+            self.assertIn('r.vendor_registry_match_classes', render_lookup())
+
     def test_hash_matches_independent_sha256(self):
         rows = execute(p.render_sql("SELECT {{ cookie_hash(\"'team@example.test'\") }} AS hash"))
         self.assertEqual(rows[0]['hash'], hashlib.sha256(b'team@example.test').hexdigest())
@@ -72,12 +87,12 @@ class EmailLookupTests(unittest.TestCase):
             for name in ('name_mismatch_count', 'shared_name_count', 'unknown_name_match_count'):
                 self.assertEqual(row[name], expected)
             self.assertEqual(row['name_comparison_count'], 3 * expected)
-            self.assertEqual(len(row), 160)
+            self.assertEqual(len(row), len(published_columns()) + 6)
         tree = sqlglot.parse_one(render_lookup(), read='trino')
         self.assertEqual(['.'.join(part.name for part in t.parts) for t in tree.find_all(exp.Table)],
                          ['iceberg.jteixeira_ipa.pii_clean', 'params'])
-        self.assertEqual(len(tree.expressions), 160)
-        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), 160)
+        self.assertEqual(len(tree.expressions), len(published_columns()) + 6)
+        self.assertEqual(len({e.alias_or_name for e in tree.expressions}), len(published_columns()) + 6)
         self.assertEqual(execute(render_lookup('absent@example.test', {p.FINAL_MODEL: '(' + stored + ')'})), [])
 
     def test_email_literal_escaping_and_single_edit(self):

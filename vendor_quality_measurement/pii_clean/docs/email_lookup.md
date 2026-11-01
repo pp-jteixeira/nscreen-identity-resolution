@@ -1,16 +1,20 @@
 # PII Clean email lookup: all attributes and metrics
 
-Last updated: 2026-10-30.
+**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](name_match_evidence.md) for recovery and validation details.
 
-**Published and verified, October 31, 2026:** canonical `pii_clean` has 154 fields and 75,656,369 records across all seven sources, including Medscape, at snapshot `8811920360682490090`. The complete lookup returns those stored fields plus six helpers. [Build evidence](build_recovery.md).
+Last updated: 2026-10-31.
 
-Use the **complete lookup** to inspect every implemented metric for one email across all vendors, NPIs and retained history. Each output row remains one exact source record and email position, keyed by `source`, `metric_row_id`. Names, states and indicators stay attached to their own records; no email–NPI deduplication occurs.
+**Published and verified, October 31, 2026:** canonical `pii_clean` has 158 fields and 75,656,369 records across all seven sources at snapshot `4233051104478921549`. The complete lookup returns all 158 stored fields plus six helpers. [Build evidence](build_recovery.md).
+
+The four [stored name-explanation fields](name_match_evidence.md) are published and included in the 164-output lookup. Their values and evaluation timestamps come directly from the verified final table.
+
+Use the **complete lookup** to inspect every published metric for one email across all vendors, NPIs and retained history. Each output row remains one exact source record and email position, keyed by `source`, `metric_row_id`. Names, states and indicators stay attached to their own records; no email–NPI deduplication occurs.
 
 ## Run the complete lookup
 
 Open [email_lookup_full.sql](../sql/email_lookup_full.sql), copy the entire statement into Trino, and replace `person@example.com` **once** in the opening `params` CTE. No table or view is created. No matching records produces no rows.
 
-The query reads all **154 model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
+The query reads all **158 model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
 
 | Metric group | Included outputs |
 |---|---|
@@ -29,7 +33,7 @@ The query reads all **154 model columns** directly from `iceberg.jteixeira_ipa.p
 
 The email filter retains **every stored source, NPI and record for the selected email**. The current Medscape intermediate view excludes cumulative vendor opt-out NPIs before computing metrics. The complete canonical publication includes this exclusion. The lookup does not recompute opt-outs. Stored metrics, peer comparisons and email-level counts are returned unchanged. Only the six display/count helpers are calculated at lookup time.
 
-Cookie evidence is refreshed independently through [int_cookie__metrics](cookie_stage.md). The core table has no cookie columns. Final publication stores actual cookie enrichment with its evaluation window, currently three completed days. The lookup reads stored values and never triggers a refresh.
+Cookie evidence is refreshed source by source through [int_cookie__metrics](cookie_stage.md), then combined into final output. The core table has no cookie columns. Final publication stores actual cookie enrichment with its evaluation window, currently three completed days. The lookup reads stored values and never triggers a refresh.
 
 Evaluation dates come from the published rows: `npi_registry_status_as_of_day`, `cookie_location_window_start`/`cookie_location_window_end`, `link_freshness_as_of_day`, and `sequence_as_of_day`. The lookup does not reevaluate evidence for today. Reference changes affect results only after a pipeline refresh. Stored lifecycle and geographic evidence still does not reconstruct status or attendance on historical vendor dates.
 
@@ -37,7 +41,7 @@ The query scans the published table with an email filter. It avoids raw location
 
 ## Published-table shortcut
 
-[The shorter query](../sql/email_lookup_published.sql) selects a smaller subset of the same stored attributes and indicators. Both queries read `pii_clean` directly. Replace its email once as well; use the complete query for all 154 model columns.
+[The shorter query](../sql/email_lookup_published.sql) selects a smaller subset of the same stored attributes and indicators. Both queries read `pii_clean` directly. Replace its email once as well; use the complete query for all 158 model columns.
 
 ## Attributes
 
@@ -66,6 +70,9 @@ The pipeline normalizes stored states through the shared [state macro](../macros
 | `email_matches_source_name` | Nullable fuzzy email-to-vendor-name comparison for this record. |
 | `email_matches_registry_name` | Nullable fuzzy email-to-registry-name comparison. |
 | `vendor_name_matches_registry_name` | Nullable fuzzy vendor-to-registry-name comparison. |
+| `name_match_evidence` | Distinct stored source/registry name comparisons with component kinds, overall class and all three comparison-level booleans. Multiple outcomes remain together within the original record. |
+| `vendor_registry_match_classes` | Sorted distinct outcomes: exact, nickname, token, edit, first_only, last_only, none or unknown. Missing evidence is distinct from disagreement. |
+| `name_match_evaluated_at`, `name_match_definition_version` | Stored comparison evaluation timestamp and rules version. The lookup does not refresh either value. |
 | `source_name_usable`, `registry_name_usable` | Whether usable names exist for the relevant comparison. |
 | `registry_npi_present` | Whether the NPI exists in the registry-name reference. |
 | `email_npi_count`, `email_has_multiple_npis` | Distinct reported NPIs for this source/email across retained history, and whether the count exceeds one. These values repeat across records for that source/email. |
@@ -103,6 +110,8 @@ Any match gives true. False requires all eligible comparisons to have usable dis
 
 All complete-query rows retain `record_payload`, original record IDs, exact `observed_days`/`conflict_days`, normalized name/state arrays and peer comparison details. All evidence groups are read unchanged from the published snapshot, including stored nulls, provenance and evaluation dates.
 
+[Stored name explanations](name_match_evidence.md) describe vendor-to-registry comparisons. The six existing display/count helpers are unchanged: `name_comparison_count` and its three outcome counts describe **conflicting-NPI peer comparisons**, not the new registry-name array. Use `cardinality(name_match_evidence)` when inspecting the number of retained registry comparisons. Neither count measures independent confirmations.
+
 | Group | Meaning and limitations |
 |---|---|
 | [Shared facility](metrics/15_conflicting_npis_share_facility.md) | Exact retained facility-NPI overlap within conflict contexts. Missing facility sets remain unknown. |
@@ -119,13 +128,23 @@ For population coverage, percentages use all distinct source/email/NPI links wit
 
 ## Validation and publication status
 
-The complete 160-column lookup passed native execution on October 31, 2026, against final snapshot `8811920360682490090`. `sbrooks.arnp@gmail.com` returned 21 records: 17 Medscape, three HealthLink and one DRDB, in 5.57 seconds. `fangchenmd@gmail.com` returned eight records: five Medscape, two HealthLink and one Haymarket, in 5.03 seconds. Medscape sequence summaries matched the documented swap and flip-back cases. Separate stored-field queries verified their daily transitions and registration statuses. These are selected examples, not a runtime guarantee. Final publication preserved all 124 core fields and passed cookie integrity checks.
+The complete 164-output lookup passed native execution against snapshot `4233051104478921549` on October 31, 2026. It reads all 158 stored fields, including name explanations. Selected executions returned:
+
+| Email | Records | Source distribution | Seconds |
+|---|---:|---|---:|
+| awattmd1@gmail.com | 9 | Haymarket 1, HealthLink 1, Medscape 6, QuantumMedica 1 | 10.45 |
+| fangchenmd@gmail.com | 8 | Haymarket 1, HealthLink 2, Medscape 5 | 10.41 |
+| sbrooks.arnp@gmail.com | 21 | DRDB 1, HealthLink 3, Medscape 17 | 10.02 |
+
+For each email, all 28 cookie-history fields matched across its sources and records. The two vendor/facility comparison fields remain record-specific. The HealthLink ANGELA record retained `[exact, first_only]`, and all selected name-evaluation timestamps remained `2026-10-31 18:46:11.738 UTC`. These selected cases validate stored output and source consistency; they do not establish identity accuracy or guarantee runtime. Full publication preserved all 128 core fields and passed cookie integrity checks.
+
+The previous 160-column lookup passed native execution on October 31, 2026, against final snapshot `8811920360682490090`. `sbrooks.arnp@gmail.com` returned 21 records: 17 Medscape, three HealthLink and one DRDB, in 5.57 seconds. `fangchenmd@gmail.com` returned eight records: five Medscape, two HealthLink and one Haymarket, in 5.03 seconds. Medscape sequence summaries matched the documented swap and flip-back cases. Separate stored-field queries verified their daily transitions and registration statuses. These are selected examples, not a runtime guarantee. Final publication preserved all 124 core fields and passed cookie integrity checks.
 
 The earlier enrichment-based lookup passed native validation and planning with 46 fragments, plus three synthetic records across two NPIs. Those checks describe the earlier query. The historical validation output is not retained.
 
 The direct lookup passed native Trino schema validation on October 29, 2026. Native synthetic execution preserved all 103 stored fields across three matching records and verified the six helpers. Full execution for an existing email returned 17 records with 109 columns in 13.6 seconds. No email identifiers or result values were retained in the validation evidence. Query metadata and the standalone SQL are historical output, not retained: `../results/email_lookup_published_validation_20261029.json`. This sample does not guarantee the same runtime for every email.
 
-The current local lookup tests check all 154 declared fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 160 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL.
+All five current local lookup tests passed after publication. They check all 158 published fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 164 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL.
 
 The freshness-only lookup passed native Trino validation on October 30, 2026. Native synthetic execution preserved all 108 stored fields and the six helper outputs. Full execution for an existing email returned 3 records with 114 columns in 51.6 seconds. Individual identifiers and values were not retained. Evidence is historical output, not retained: `../results/email_lookup_published_validation_20261030.json`.
 
@@ -141,7 +160,7 @@ The earlier October 30 stability publication contained 114 stored columns and pr
 
 ## Regenerate and maintain
 
-The complete standalone SQL is rendered from [its template](../sql/email_lookup_full.sql.j2) and the declared model columns. Display order retains the original base-column sequence. From the project directory:
+The complete standalone SQL is rendered from [its template](../sql/email_lookup_full.sql.j2) and the model columns marked as published in the final schema. Display order retains the original base-column sequence. From the project directory:
 
 ```bash
 ../../.venv/bin/python tools/render_email_lookup.py
@@ -153,7 +172,7 @@ Whenever published metrics, attributes or definitions change, update the output 
 
 ## Sequential history and Medscape registration status
 
-The complete lookup selects twenty additional stored fields from the complete 154-column table. `sequence_as_of_day` applies to both groups. No lookup helper rebuilds histories or changes evaluation dates.
+The complete lookup selects twenty additional stored fields from the complete 158-column table. `sequence_as_of_day` applies to both groups. No lookup helper rebuilds histories or changes evaluation dates.
 
 `n_versions_observed`, `n_npis_window`, `n_npi_changes`, `n_swaps` and `n_flipbacks` summarize all retained eligible dated history within source/email through the cutoff. `sequence_min_versions` controls `stability_history_sufficient` (default three). `sequence_history_status`, `sequence_has_undated_observations` and `sequence_definition_version` qualify these counts. Missing dated history yields NULL counts, false sufficiency and empty evidence. `sequence_daily_evidence` stores per-observed-day NPI sets, additions/removals/returns and cumulative counts. Each entry uses only observations through its own day. These are stored metrics, not display helpers. See [metric 25](metrics/25_sequential_history.md).
 

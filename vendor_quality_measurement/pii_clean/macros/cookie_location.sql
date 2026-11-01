@@ -105,7 +105,7 @@ CASE WHEN {{ alias ~ '.' if alias else '' }}cookie_location_status <> 'observed'
 {%- endmacro %}
 {% macro cookie_location_records(input_relation) -%}
 WITH email_evidence AS ({{ cookie_location_email_evidence(input_relation) }}),
-coverage AS ({{ cookie_source_coverage() }}), joined AS (
+coverage AS ({% if var('cookie_coverage_relation', '') %}SELECT * FROM {{ var('cookie_coverage_relation') }}{% else %}{{ cookie_source_coverage() }}{% endif %}), joined AS (
     SELECT m.*,
 {% for c in ['cookie_count', 'cookie_mapping_days', 'cookie_mapped_uid_days', 'cookie_observed_uid_days', 'cookie_located_uid_days', 'cookie_eligible_uid_days', 'cookie_located_count', 'cookie_primary_state_tied_count', 'cookie_primary_state_multistate_count', 'cookie_eligible_observed_days'] %}
        coalesce(e.{{ c }}, cast(0 AS bigint)) AS {{ c }},{% endfor %}

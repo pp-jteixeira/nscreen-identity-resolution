@@ -71,6 +71,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -545,6 +570,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -1019,6 +1069,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -1493,6 +1568,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -1967,6 +2067,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -2441,6 +2566,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -2915,6 +3065,31 @@ models:
     description: Nullable fuzzy email-to-registry-name comparison; any usable registry name may match.
   - name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - name: source_name_usable
     data_tests:
     - not_null
@@ -3323,7 +3498,7 @@ models:
 - name: int_npi__names
   description: Distinct normalized registry name pairs per NPI, with first-name variants.
 - name: int_pii__metrics
-  description: Stored 124-field union of core vendor metrics. This table is the execution boundary before cookie
+  description: Stored 128-field union of core vendor metrics. This table is the execution boundary before cookie
     work.
   columns:
   - &id001
@@ -3412,6 +3587,35 @@ models:
   - &id019
     name: vendor_name_matches_registry_name
     description: Nullable fuzzy first-and-last comparison between vendor and registry name pairs.
+  - &name_match_evidence
+    name: name_match_evidence
+    description: Distinct normalized vendor/registry name comparisons used by the stored match indicators. Retains
+      all usable vendor names, or unknown comparisons when none exist. Unusable vendor names are represented by null
+      names. Missing reference evidence remains explicit.
+    data_type: array(row(source_first_name varchar, source_last_name varchar, registry_first_name varchar, registry_last_name
+      varchar, first_name_match_kind varchar, last_name_match_kind varchar, match_class varchar, email_matches_source_name
+      boolean, email_matches_registry_name boolean, vendor_name_matches_registry_name boolean))
+    data_tests:
+    - not_null
+  - &vendor_registry_match_classes
+    name: vendor_registry_match_classes
+    description: Sorted distinct match classes across retained name comparisons, including partial, disagreeing and
+      unknown outcomes. No best-match selection.
+    data_type: array(varchar)
+    data_tests:
+    - not_null
+  - &name_match_evaluated_at
+    name: name_match_evaluated_at
+    description: Evaluation time of the stored name comparisons, independent of vendor observation dates.
+    data_type: timestamp(6) with time zone
+    data_tests:
+    - not_null
+  - &name_match_definition_version
+    name: name_match_definition_version
+    description: Version of stored comparison rules and evidence selection. No scoring weights.
+    data_type: varchar
+    data_tests:
+    - not_null
   - &id020
     name: source_name_usable
     data_tests:
@@ -3921,8 +4125,8 @@ models:
     name: registration_supersession_definition_version
     description: Registration supersession rule version. No links are removed or redirected.
 - name: int_cookie__metrics
-  description: Actual cookie enrichment of stored core metrics. One output per source/metric_row_id, retaining all
-    124 core fields and computing thirty cookie fields.
+  description: Source-scoped cookie enrichment of stored core, combined with UNION ALL after each source is enriched.
+    One output per source/metric_row_id, retaining all 128 core fields and computing thirty cookie fields.
   columns:
   - *id001
   - *id002
@@ -3943,6 +4147,10 @@ models:
   - *id017
   - *id018
   - *id019
+  - *name_match_evidence
+  - *vendor_registry_match_classes
+  - *name_match_evaluated_at
+  - *name_match_definition_version
   - *id020
   - *id021
   - *id022

@@ -1,12 +1,14 @@
 # Model boundaries
 
+**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](../docs/name_match_evidence.md) for recovery and validation details.
+
 The project uses Jinja SQL with `source()`, `ref()`, shared macros, source declarations and schema files.
 
 | Layer | Contents |
 |---|---|
 | [Staging](staging/README.md) | One row-preserving model per vendor input table. Conversions and cleaned helpers only. |
 | [Intermediate](intermediate/README.md) | Source-specific record transformations, enrichment joins, evidence, specific metrics and common metrics. |
-| [Final](final/README.md) | Union of reviewed vendor metrics into `pii_clean`; scoring deferred. |
+| [Final](final/README.md) | Stored cookie-enriched source outputs combined in `pii_clean`; scoring deferred. |
 
 HealthLink, QuantumMedica and Medscape each have multiple staging inputs. DRDB's two tables stay separate in staging. Intermediate can combine tables within the same vendor; the cross-vendor union is stored in int_pii__metrics before downstream cookie enrichment.
 
@@ -16,7 +18,7 @@ Exact-record CTEs combine only raw rows identical except for `day`. Metrics use 
 
 Historical observation facts, `email_format_valid`, `email_role_account`, `email_domain_class`, three name comparisons, within-vendor email–NPI multiplicity, reassignment, linkage conflict, vendor name consistency and state sharing across conflicting NPIs are currently computed. Names use shared nickname and NPI-reference lookups. Facility-NPI overlap is published and validated. Specialty-code overlap has five published evidence columns. It uses dictionary-recognized exact NPPES taxonomy codes. NPI lifecycle status has eleven published evidence/status columns. It preserves uncertain dates and self-replacements without dropping or redirecting links. Vendor/facility state comparison and descriptive cookie-location evidence are published. Native Trino fixtures, all seven vendor plans and full-population read-only measurements passed on October 29, 2026. The October 29 cookie summaries used seven completed days before evaluation and preserve historical vendor records. All five groups passed full publication and integrity checks on October 29, 2026. Other claims enrichments await metric-specific review. Missing reference evidence is unknown.
 
-Current vendor views and stored core have 124 fields. The complete canonical table has 154 fields and 75,656,369 records across all seven sources at snapshot `8811920360682490090`. It includes NPI identity, vendor specialty/profession, sequential history and registration supersession. Cookie processing runs in the separate [downstream model](../docs/cookie_stage.md). The [complete email lookup](../docs/email_lookup.md) adds six display/comparison fields for 160 outputs. [Publication checks](../docs/build_recovery.md).
+Vendor models and stored core use 128 fields, including four [name-explanation fields](../docs/name_match_evidence.md). The final contract has 158 fields: core plus thirty cookie fields. It includes NPI identity, vendor specialty/profession, sequential history and registration supersession. Cookie processing runs source by source in the separate [downstream model](../docs/cookie_stage.md), then combines enriched outputs. The [complete email lookup](../docs/email_lookup.md) adds six display/comparison helpers to published columns. See [publication status and checks](../docs/name_match_evidence.md) before assuming a local contract is fully published.
 
 The runner creates source staging and intermediate views. `build` also publishes the final `pii_clean` table; `final` refreshes cookie enrichment using stored core. See [commands and validation status](../README.md).
 

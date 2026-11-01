@@ -1,12 +1,14 @@
 # PII Clean table dependencies
 
-Source and runner inspection: **October 31, 2026**. The direct-dependency table was checked against all rendered models, including macro expansion.
+**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](name_match_evidence.md) for recovery and validation details.
+
+Source and runner inspection: **November 1, 2026**. The direct-dependency table was checked against all rendered models, including macro expansion.
 
 Scope: `vendor_quality_measurement/pii_clean` only. Arrows run from input to consumer. The first two diagrams and dependency table describe logical model inputs. Runtime candidates, stored execution inputs and recovery paths are described separately. The map excludes `pii_clean_v2`, synthetic fixtures, retired cleanup targets and downstream ad hoc queries.
 
 **20 external tables feed 26 project relations:** 13 staging views, 11 intermediate models, one seed view and one final table. Physically, these are **24 views and two stored tables**: `int_pii__metrics` and `pii_clean`. Every staging view has a path to the final model. Medscape opt-outs restrict intermediate eligibility before metrics.
 
-The seven vendor models produce **124 core fields**. Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **30 cookie fields**, using a default three-day window. The final table contains **154 fields**. Cookie sources have no edge into the vendor models.
+The seven-vendor contract defines **128 core fields**, including four stored name-explanation fields verified in core. Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **30 cookie fields**, using a default three-day window. The final contract has **158 fields**; the original complete publication had **154** before the name-evidence upgrade. Cookie sources have no edge into the vendor models.
 
 Model labels below omit `iceberg.jteixeira_ipa.pii__`. The final table is `iceberg.jteixeira_ipa.pii_clean`. External labels retain full names. `nicknames` is a generated view, sourced from `seeds/nicknames.csv`.
 
@@ -84,7 +86,7 @@ flowchart LR
   core --> cookies --> final
 ```
 
-`models/intermediate/int_pii__metrics.sql` defines the `UNION ALL` of seven vendor outputs. This stored union is the boundary between attribution and cookie processing. The final SQL model reads `int_cookie__metrics`; the custom runner renders that same cookie model directly into the final table write. Both use the same enrichment logic.
+`models/intermediate/int_pii__metrics.sql` defines the `UNION ALL` of seven vendor outputs. This stored union is the boundary between attribution and cookie processing. The final SQL model reads `int_cookie__metrics`, whose source-scoped cookie branches are combined with `UNION ALL`. The custom runner renders one branch per source and appends the enriched outputs into the final table. Both use the same enrichment logic and record grain.
 
 ## Shared reference lineage
 
@@ -127,48 +129,51 @@ flowchart LR
 | `iceberg.crossscreen.nscreen_geo_daily_ua` | Same-day UID geography. |
 | `iceberg.jteixeira_ipa.tmp_zip3_to_state` | ZIP3-to-state lookup. |
 
-The cookie macros also read Iceberg `$partitions` metadata for mapping/geo date coverage. These metadata relations belong to the listed base tables and are not additional independent inputs. Core reference transformations remain inside vendor CTEs. Cookie and geography transformations run in the separate downstream model over stored core metrics. [Workflow](cookie_stage.md).
+The cookie macros also read Iceberg `$partitions` metadata for mapping/geo date coverage. These metadata relations belong to the listed base tables and are not additional independent inputs. Core reference transformations remain inside vendor CTEs. Stored name explanations reuse the existing registry-name join and are aggregated within each metric row; they add no dependencies or output rows. Cookie and geography transformations run in the separate downstream model over stored core metrics. [Workflow](cookie_stage.md).
 
 ## Runtime materialization and recovery
 
-The candidate is an optional physical table used by the default core build. It is not a prerequisite for direct builds and is not the stored core itself. The runner creates the 23 upstream views first, then builds core, then creates the cookie view and writes final output.
+The candidate is an optional physical table used by the default core build. It is not a prerequisite for direct builds and is not the stored core itself. The runner creates the 23 upstream views first, then builds core. It renders and writes each cookie source branch directly into final output, validates all source batches and the full population, then refreshes the cookie view and marks publication complete.
 
 ```mermaid
 flowchart LR
-  vendors["Seven vendor outputs: 124 fields"]
+  vendors["Seven vendor outputs: 128 fields"]
   candidate[("Default: pii_clean_candidate_<id>")]
   core[("pii__int_pii__metrics")]
-  cookie["Rendered int_cookie__metrics"]
+  cookie["Rendered int_cookie__metrics source branches"]
   feeds["Mapping + geography + ZIP3"]
-  final[("pii_clean: 154 fields")]
+  final[("pii_clean: 158 fields")]
   vendors -->|default build| candidate
   candidate -->|validate then copy| core
   vendors -->|core --direct: vendor batches| core
   core -->|pinned snapshot| cookie
   feeds --> cookie
-  cookie -->|CREATE OR REPLACE TABLE| final
+  cookie -->|first source: replace, remaining sources: append| final
 ```
 
 `core --direct` replaces core with its first vendor batch and appends later batches. `core --direct --resume` retains existing sources after schema, nonempty-source and unique-key checks; it assumes those source batches are complete. The Medscape recovery tool applies stronger expected key/history checks before retaining individual email batches. An incomplete-batch marker blocks ordinary core resume and final publication.
 
-`build_final()` renders `int_cookie__metrics` against one pinned core snapshot and a fixed Europe/Paris evaluation day. It creates the cookie view from that rendered SQL and separately materializes the same SQL into `pii_clean`. The cookie view is not a stored cookie-results table. Final checks compare every core field, including `computed_at`, plus keys and counts, and validate cookie outcomes. The core snapshot must remain unchanged during publication. [Cookie workflow](cookie_stage.md).
+`build_final()` delegates to [the source-batch cookie publisher](../tools/cookie_publication.py). It pins core and all three cookie input snapshots, freezes evaluation day/window and date coverage, then renders one source at a time through `int_cookie__metrics`. Source filtering occurs before email hashes or cookie mappings are expanded. The first source replaces the final development table, and later sources append. Final is partial until all seven source batches pass schema, count, key, full-core checksum and cookie integrity checks.
+
+The checkpoint is stored atomically in the table comment with the first source. Repeating `cookies` revalidates and skips complete sources, preserving original pins and dates. An uncertain INSERT result is checked before retrying. The logical cookie view is refreshed after completion; it combines all seven source branches but is not a stored cookie-results table. No additional model relations or result tables are introduced. [Cookie workflow](cookie_stage.md).
 
 Optional warehouse execution inputs are outside the 26 model relations:
 
 | Execution input | Producer and consumer |
 |---|---|
-| 73-field location input | A vendor model rendered with `defer_quality_enrichments` writes a stored input. `quality_from_stored_records()` attaches freshness, presence/overlap stability, NPI identity and vendor professional evidence. |
-| 104-field history input | A vendor model rendered with `defer_sequential_history`, or the preceding quality step, writes a stored input. `history_from_stored_records()` attaches sequence and registration fields before writing the 124-field core. |
+| 77-field location input | A vendor model rendered with `defer_quality_enrichments` writes a stored input. `quality_from_stored_records()` attaches freshness, presence/overlap stability, NPI identity and vendor professional evidence. |
+| 108-field history input | A vendor model rendered with `defer_sequential_history`, or the preceding quality step, writes a stored input. `history_from_stored_records()` attaches sequence and registration fields before writing the 128-field core. |
 | `iceberg.jteixeira_ipa.pii_medscape_versions_<id>` | `build_medscape_batches.py --materialize-records` groups eligible exact raw records after cumulative opt-outs. The same Medscape metric model reads this input in sixteen disjoint email-hash batches and appends full core rows. Metadata and shared reference dependencies remain. |
-| Previously validated final snapshot | Recovery can project its 124 non-cookie fields into core for completed sources, with source counts, unique keys and all-field checksums verified against that pinned snapshot. Historical cookie fields are not copied. |
+| Existing core/final snapshots for name evidence | `publish_name_evidence.py --publish` reconstructs name comparisons from stored `source_name_values` and a pinned NPI reference. It validates existing name indicators, writes four additions into core, then attaches them to the preserved final records. It checks every original field and avoids raw vendor-history and cookie scans. This is an upgrade path, not an additional model or table. |
+| Previously validated final snapshot | Recovery requires all 128 current core fields and verified source counts, unique keys and all-field checksums. The historical 154-field publication contains only 124 core fields and cannot resume the new contract without rebuilding name evidence. Historical cookie fields are not copied. |
 
 The first two inputs split plans that exceed the stage limit. They are not cookie intermediates. The Medscape input reduces repeated raw-feed scans while preserving all dates, NPIs and GUIDs for each email. Runtime tables are additional materializations, not additional business metrics. Their exact names and validation evidence belong in the [build recovery record](build_recovery.md).
 
-## Last verified publication
+## Original core/cookie publication
 
-The October 31 publication contains **75,656,369 records** across seven sources. Core snapshot `2198246156417274278` has 124 fields; final snapshot `8811920360682490090` has 154 fields. All core fields, counts and keys were preserved. Six source populations were recovered from a validated publication, and Medscape was rebuilt with email batches and the optional exact-record input. The logical diagram therefore does not imply that every upstream source was freshly rebuilt in this publication.
+The original October 31 publication contained **75,656,369 records** across seven sources. Core snapshot `2198246156417274278` has 124 fields; final snapshot `8811920360682490090` has 154 fields. All core fields, counts and keys were preserved. Six source populations were recovered from a validated publication, and Medscape was rebuilt with email batches and the optional exact-record input. The logical diagram therefore does not imply that every upstream source was freshly rebuilt in this publication.
 
-Cookie evaluation used October 28–30, with October 30 absent from both mapping and geography inputs. Missing dates remain explicitly flagged. Shared references were not all snapshot-pinned across Medscape batches. These are dated publication facts, not a live warehouse inventory. [Execution and preservation evidence](build_recovery.md#final-publication-checks).
+Cookie evaluation used October 28–30, with October 30 absent from mapping and geography inputs at that evaluation. Missing dates remain explicitly flagged. Shared references were not all snapshot-pinned across Medscape batches. These are dated publication facts, not a live warehouse inventory. [Execution and preservation evidence](build_recovery.md#final-publication-checks).
 
 ## Exact direct dependencies
 
