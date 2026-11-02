@@ -44,14 +44,19 @@ def rocket_fixture():
 
 
 def check_medscape(rows):
-    assert len(rows)==6, len(rows)
-    assert len({r['record_id'] for r in rows})==6
-    assert len({r['metric_row_id'] for r in rows})==6
+    # Email case and source label are volatile: they merge into the base record. Name, street and GUID still split records.
+    assert len(rows)==4, len(rows)
+    assert len({r['record_id'] for r in rows})==4
+    assert len({r['metric_row_id'] for r in rows})==4
     assert len({(r['email'],r['npi']) for r in rows})==1
-    repeated=next(r for r in rows if r['observation_count']==3)
+    repeated=next(r for r in rows if r['observation_count']==5)
     assert str(repeated['first_seen_day'])[:10]=='2026-01-01'
-    assert str(repeated['last_seen_day'])[:10]=='2026-01-02'
-    assert repeated['observed_day_count']==2
+    assert str(repeated['last_seen_day'])[:10]=='2026-01-06'
+    assert repeated['observed_day_count']==4
+    merged=json.loads(repeated['record_payload'])
+    assert merged['source']==['feed_a','feed_b']
+    assert merged['email_address']==['JSMITH@example.test','jsmith@example.test']
+    assert repeated['source_feeds']==['feed_a','feed_b']
     changed=next(r for r in rows if json.loads(r['record_payload'])['first_name']=='JANE')
     assert changed['email_matches_source_name'] is False
     assert changed['vendor_name_matches_registry_name'] is False
@@ -86,9 +91,9 @@ class RecordGrainTests(unittest.TestCase):
         metrics = medscape_fixture()
         sql = medscape_fixture(debug=True)
         rows = execute(sql)
-        self.assertEqual(len(rows), 6)
-        self.assertEqual(len({r['debug_comparison_id'] for r in rows}), 6)
-        self.assertEqual(sum(r['comparison_vendor_name_matches_registry_name'] for r in rows), 5)
+        self.assertEqual(len(rows), 4)
+        self.assertEqual(len({r['debug_comparison_id'] for r in rows}), 4)
+        self.assertEqual(sum(r['comparison_vendor_name_matches_registry_name'] for r in rows), 3)
         expected = {row['metric_row_id']: row for row in execute(metrics)}
         for row in rows:
             for metric in p.NAME_METRICS:
