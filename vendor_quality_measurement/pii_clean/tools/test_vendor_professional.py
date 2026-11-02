@@ -9,17 +9,21 @@ from test_models import execute, inlined, literal
 def records_sql(rows, source):
     values = []
     for row in rows:
+        payload = row.get('payload', {'guid': row['id']})
+        days = 'cast(ARRAY[' + ', '.join("DATE '" + day + "'" for day in row.get('days', [])) + '] AS array(date))'
         values.append('(' + ', '.join([
             literal(source), literal(row.get('email', 'team@example.test')),
-            literal(row['npi']), literal(row['id']),
-            literal(json.dumps(row.get('payload', {'guid': row['id']}))),
-            'cast(ARRAY[' + ', '.join("DATE '" + day + "'" for day in row.get('days', [])) + '] AS array(date))',
+            literal(row['npi']), literal(row['id']), days,
             'cast(ARRAY[' + ', '.join("DATE '" + day + "'" for day in row.get('conflicts', row.get('days', []))) + '] AS array(date))',
             str(row.get('conflict', True)).lower(), "'preserved'",
-            "ARRAY['" + ('iceberg.thirdparty.drdb_npi' if 'emailaddress' in row.get('payload', {})
-                         else 'iceberg.thirdparty.npi_enrich_emails_hashlower') + "']"
+            "ARRAY['" + ('iceberg.thirdparty.drdb_npi' if 'emailaddress' in payload
+                         else 'iceberg.thirdparty.npi_enrich_emails_hashlower') + "']",
+            'cast(0 AS bigint)',
+            'ARRAY[CAST(ROW(' + literal(payload.get('guid')) + ', ' + days + ') AS row(guid varchar, days array(date)))]',
+            'cast(ARRAY[' + ', '.join(literal(v) for v in [payload.get('specialty')] if v is not None) + '] AS array(varchar))',
         ]) + ')')
-    return '(SELECT * FROM (VALUES ' + ', '.join(values) + ') AS t(source,email,npi,metric_row_id,record_payload,observed_days,conflict_days,has_conflict_linkage,stored_attribute,source_tables))'
+    return ('(SELECT * FROM (VALUES ' + ', '.join(values) + ') AS t(source,email,npi,link_id,observed_days,conflict_days,'
+            'has_conflict_linkage,stored_attribute,source_tables,undated_observation_count,guid_days,specialty_values))')
 
 
 def metadata_sql(rows, source):
@@ -63,7 +67,7 @@ def same_day_fixture():
 
 def check_same_day(rows):
     assert len(rows) == 2
-    assert {r['metric_row_id'] for r in rows} == {'a', 'b'}
+    assert {r['link_id'] for r in rows} == {'a', 'b'}
     for row in rows:
         assert row['stored_attribute'] == 'preserved'
         assert row['source_vendor_specialty_values'] == ['CARDIOLOGY', 'NEUROLOGY']
@@ -92,7 +96,7 @@ class VendorProfessionalTests(unittest.TestCase):
         metadata = [{'npi': '1', 'guid': 'a', 'day': day, 'specialty': 'Cardiology', 'profession': 'Physician'},
                     {'npi': '2', 'guid': 'b', 'day': day, 'specialty': ' cardiology ', 'profession': ' physician '},
                     {'npi': '3', 'guid': 'c', 'day': '2026-01-02', 'specialty': 'Cardiology', 'profession': 'Physician'}]
-        result = {r['metric_row_id']: r for r in execute(fixture_sql(rows=rows, metadata=metadata))}
+        result = {r['link_id']: r for r in execute(fixture_sql(rows=rows, metadata=metadata))}
         for key in ('a', 'b'):
             self.assertTrue(result[key]['conflicting_npis_share_vendor_specialty'])
             self.assertTrue(result[key]['conflicting_npis_share_vendor_profession'])
@@ -142,7 +146,7 @@ class VendorProfessionalTests(unittest.TestCase):
         import yaml
         declared = yaml.safe_load((p.ROOT / 'models/final/schema.yml').read_text())['models'][0]['columns']
         fields = [c['name'] for c in declared if not c['name'].startswith('cookie_')]
-        self.assertEqual(len(fields), 128)
+        self.assertEqual(len(fields), 134)
         order = None
         for source in p.SOURCES:
             model = 'int_' + source + '__metrics'
@@ -156,25 +160,25 @@ class VendorProfessionalTests(unittest.TestCase):
             if order is not None:
                 self.assertEqual(list(rows[0]), order)
             order = list(rows[0])
-            # Remove only the new wrapping CTE to compare every preexisting field.
-            text = p.model_paths()[model].read_text()
-            before = text.replace("{{ vendor_professional_records('identity_metrics', '" + source + "', 'metric_records', derive_conflicts=true) }}", 'SELECT * FROM identity_metrics')
-            # The baseline intentionally lacks the new vendor fields. Use the
-            # generic registration wrapper rather than its full-schema projection.
-            before = before.replace(', inline=true)', ')')
-            projection = "SELECT {% for f in metric_columns() %}{{ f }}{% if not loop.last %}, {% endif %}{% endfor %} FROM metrics"
-            before = before.replace(projection, 'SELECT * FROM metrics')
+            # Skip only the vendor-label step to compare every preexisting field.
+            from pathlib import Path
             from unittest.mock import patch
-            original = p.read_model
-            def read(name, **kwargs):
-                return p.render_sql(before, **kwargs) if name == model else original(name, **kwargs)
-            with patch.object(p, 'read_model', side_effect=read):
-                old_rows = execute(inlined(model))
-            by_id = {r['metric_row_id']: r for r in old_rows}
+            original = Path.read_text
+            def read_text(path, *args, **kwargs):
+                text = original(path, *args, **kwargs)
+                if path.name != 'link_metrics.sql':
+                    return text
+                text = text.replace("{{ vendor_professional_records('identity_metrics', vendor, 'metric_records', derive_conflicts=true) }}",
+                                    'SELECT * FROM identity_metrics')
+                return text.replace("SELECT {% for f in metric_columns() %}{{ f }}{% if not loop.last %}, {% endif %}{% endfor %} FROM metrics",
+                                    'SELECT * FROM metrics')
+            with patch.object(Path, 'read_text', read_text):
+                old_rows = execute(inlined(model, cache={}))
+            by_id = {r['link_id']: r for r in old_rows}
             self.assertEqual(len(by_id), len(rows))
             for row in rows:
-                for name, value in by_id[row['metric_row_id']].items():
-                    if name != 'computed_at':
+                for name, value in by_id[row['link_id']].items():
+                    if name != 'computed_at' and name not in p.HELPER_COLUMNS:
                         self.assertEqual(row[name], value, (source, name))
 
     def test_independent_integrity_and_population_denominators(self):

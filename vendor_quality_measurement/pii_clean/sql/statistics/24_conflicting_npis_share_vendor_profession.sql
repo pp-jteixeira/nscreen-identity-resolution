@@ -1,5 +1,5 @@
 -- Stored vendor-label evidence from the verified canonical publication.
-WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), dimensions AS (
+WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), dimensions AS (
     SELECT m.source, m.email, m.npi, m.has_conflict_linkage, d.metric,
            CASE d.metric WHEN 'specialty' THEN cardinality(m.source_vendor_specialty_values) > 0
                 ELSE cardinality(m.source_vendor_profession_values) > 0 END AS has_values,

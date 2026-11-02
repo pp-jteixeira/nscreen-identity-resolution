@@ -1,10 +1,10 @@
--- One scan, three independent metrics. Email outcome counts can overlap across records and NPIs.
+-- One scan, three independent metrics. Email outcome counts can overlap across NPIs.
 WITH metric_rows AS (
 /* EVALUATED_SQL */
 )
 SELECT source, metric,
        count(*) AS metric_rows, count(DISTINCT email) AS distinct_emails,
-       count(*) - count(DISTINCT ROW(source, metric_row_id)) AS duplicate_keys,
+       count(*) - count(DISTINCT ROW(source, link_id)) AS duplicate_keys,
        to_hex(checksum(ROW(source, email, npi, first_seen_day, last_seen_day,
            observed_day_count, observation_count, undated_observation_count,
            invalid_day_observation_count, source_tables, source_feeds,

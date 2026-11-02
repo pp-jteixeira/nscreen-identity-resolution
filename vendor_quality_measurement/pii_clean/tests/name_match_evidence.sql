@@ -8,7 +8,7 @@ WITH checked AS (
                 WHEN any_match(name_match_evidence, x -> x.vendor_name_matches_registry_name = false) THEN false END AS explained_vendor_match
     FROM {{ ref(var('metric_model')) }}
 )
-SELECT source, metric_row_id
+SELECT source, link_id
 FROM checked
 WHERE name_match_evidence IS NULL OR cardinality(name_match_evidence) = 0
    OR cardinality(name_match_evidence) <> cardinality(array_distinct(name_match_evidence))

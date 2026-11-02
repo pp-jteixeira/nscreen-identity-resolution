@@ -1,14 +1,12 @@
 # PII Clean table dependencies
 
-**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](name_match_evidence.md) for recovery and validation details.
-
-Source and runner inspection: **November 1, 2026**. The direct-dependency table was checked against all rendered models, including macro expansion.
+The direct-dependency table is checked against all rendered models, including macro expansion.
 
 Scope: `vendor_quality_measurement/pii_clean` only. Arrows run from input to consumer. The first two diagrams and dependency table describe logical model inputs. Runtime candidates, stored execution inputs and recovery paths are described separately. The map excludes `pii_clean_v2`, synthetic fixtures, retired cleanup targets and downstream ad hoc queries.
 
 **20 external tables feed 26 project relations:** 13 staging views, 11 intermediate models, one seed view and one final table. Physically, these are **24 views and two stored tables**: `int_pii__metrics` and `pii_clean`. Every staging view has a path to the final model. Medscape opt-outs restrict intermediate eligibility before metrics.
 
-The seven-vendor contract defines **128 core fields**, including four stored name-explanation fields verified in core. Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **30 cookie fields**, using a default three-day window. The final contract has **158 fields**; the original complete publication had **154** before the name-evidence upgrade. Cookie sources have no edge into the vendor models.
+The seven-vendor contract defines **134 core fields** at link grain, one row per source/email/NPI, including four stored name-explanation fields. Each vendor model groups raw rows into versions, unfolds email positions and collapses them to links before the shared [link metric chain](../macros/link_metrics.sql). Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **31 cookie fields**, using a default three-day window. The final contract has **165 fields**. Cookie sources have no edge into the vendor models.
 
 Model labels below omit `iceberg.jteixeira_ipa.pii__`. The final table is `iceberg.jteixeira_ipa.pii_clean`. External labels retain full names. `nicknames` is a generated view, sourced from `seeds/nicknames.csv`.
 
@@ -86,7 +84,7 @@ flowchart LR
   core --> cookies --> final
 ```
 
-`models/intermediate/int_pii__metrics.sql` defines the `UNION ALL` of seven vendor outputs. This stored union is the boundary between attribution and cookie processing. The final SQL model reads `int_cookie__metrics`, whose source-scoped cookie branches are combined with `UNION ALL`. The custom runner renders one branch per source and appends the enriched outputs into the final table. Both use the same enrichment logic and record grain.
+`models/intermediate/int_pii__metrics.sql` defines the `UNION ALL` of seven vendor outputs. This stored union is the boundary between attribution and cookie processing. The final SQL model reads `int_cookie__metrics`, whose source-scoped cookie branches are combined with `UNION ALL`. The custom runner renders one branch per source and appends the enriched outputs into the final table. Both use the same enrichment logic and link grain.
 
 ## Shared reference lineage
 
@@ -129,7 +127,7 @@ flowchart LR
 | `iceberg.crossscreen.nscreen_geo_daily_ua` | Same-day UID geography. |
 | `iceberg.jteixeira_ipa.tmp_zip3_to_state` | ZIP3-to-state lookup. |
 
-The cookie macros also read Iceberg `$partitions` metadata for mapping/geo date coverage. These metadata relations belong to the listed base tables and are not additional independent inputs. Core reference transformations remain inside vendor CTEs. Stored name explanations reuse the existing registry-name join and are aggregated within each metric row; they add no dependencies or output rows. Cookie and geography transformations run in the separate downstream model over stored core metrics. [Workflow](cookie_stage.md).
+The cookie macros also read Iceberg `$partitions` metadata for mapping/geo date coverage. These metadata relations belong to the listed base tables and are not additional independent inputs. Core reference transformations remain inside vendor CTEs. Stored name explanations reuse the shared registry-name join and are aggregated to one row per link; they add no dependencies or output rows. Cookie and geography transformations run in the separate downstream model over stored core metrics. [Workflow](cookie_stage.md).
 
 ## Runtime materialization and recovery
 
@@ -137,12 +135,12 @@ The candidate is an optional physical table used by the default core build. It i
 
 ```mermaid
 flowchart LR
-  vendors["Seven vendor outputs: 128 fields"]
+  vendors["Seven vendor outputs: 134 fields"]
   candidate[("Default: pii_clean_candidate_<id>")]
   core[("pii__int_pii__metrics")]
   cookie["Rendered int_cookie__metrics source branches"]
   feeds["Mapping + geography + ZIP3"]
-  final[("pii_clean: 158 fields")]
+  final[("pii_clean: 165 fields")]
   vendors -->|default build| candidate
   candidate -->|validate then copy| core
   vendors -->|core --direct: vendor batches| core
@@ -161,23 +159,16 @@ Optional warehouse execution inputs are outside the 26 model relations:
 
 | Execution input | Producer and consumer |
 |---|---|
-| 77-field location input | A vendor model rendered with `defer_quality_enrichments` writes a stored input. `quality_from_stored_records()` attaches freshness, presence/overlap stability, NPI identity and vendor professional evidence. |
-| 108-field history input | A vendor model rendered with `defer_sequential_history`, or the preceding quality step, writes a stored input. `history_from_stored_records()` attaches sequence and registration fields before writing the 128-field core. |
-| `iceberg.jteixeira_ipa.pii_medscape_versions_<id>` | `build_medscape_batches.py --materialize-records` groups eligible exact raw records after cumulative opt-outs. The same Medscape metric model reads this input in sixteen disjoint email-hash batches and appends full core rows. Metadata and shared reference dependencies remain. |
-| Existing core/final snapshots for name evidence | `publish_name_evidence.py --publish` reconstructs name comparisons from stored `source_name_values` and a pinned NPI reference. It validates existing name indicators, writes four additions into core, then attaches them to the preserved final records. It checks every original field and avoids raw vendor-history and cookie scans. This is an upgrade path, not an additional model or table. |
-| Previously validated final snapshot | Recovery requires all 128 current core fields and verified source counts, unique keys and all-field checksums. The historical 154-field publication contains only 124 core fields and cannot resume the new contract without rebuilding name evidence. Historical cookie fields are not copied. |
+| Location input | A vendor model rendered with `defer_quality_enrichments` writes a stored input. `quality_from_stored_records()` attaches freshness, presence/overlap stability, NPI identity and vendor professional evidence. |
+| History input | A vendor model rendered with `defer_sequential_history`, or the preceding quality step, writes a stored input. `history_from_stored_records()` attaches sequence and registration fields before writing the 134-field core. |
+| `iceberg.jteixeira_ipa.pii_medscape_versions_<id>` | `build_medscape_batches.py --materialize-records` groups eligible raw rows into versions after cumulative opt-outs. The same Medscape metric model reads this input in sixteen disjoint email-hash batches, collapses versions to links and appends full core rows. Shared reference dependencies remain. |
+| `iceberg.jteixeira_ipa.pii_medscape_prof_meta_<id>` | `build_medscape_batches.py --materialize-records` groups Medscape professional metadata by NPI, day and GUID once; the batches read it instead of the metadata view. |
 
-The first two inputs split plans that exceed the stage limit. They are not cookie intermediates. The Medscape input reduces repeated raw-feed scans while preserving all dates, NPIs and GUIDs for each email. Runtime tables are additional materializations, not additional business metrics. Their exact names and validation evidence belong in the [build recovery record](build_recovery.md).
-
-## Original core/cookie publication
-
-The original October 31 publication contained **75,656,369 records** across seven sources. Core snapshot `2198246156417274278` has 124 fields; final snapshot `8811920360682490090` has 154 fields. All core fields, counts and keys were preserved. Six source populations were recovered from a validated publication, and Medscape was rebuilt with email batches and the optional exact-record input. The logical diagram therefore does not imply that every upstream source was freshly rebuilt in this publication.
-
-Cookie evaluation used October 28–30, with October 30 absent from mapping and geography inputs at that evaluation. Missing dates remain explicitly flagged. Shared references were not all snapshot-pinned across Medscape batches. These are dated publication facts, not a live warehouse inventory. [Execution and preservation evidence](build_recovery.md#final-publication-checks).
+The first two inputs split plans that exceed the stage limit. They are not cookie intermediates. The Medscape inputs reduce repeated raw-feed scans while preserving all dates, NPIs and GUIDs for each email. Runtime tables are additional materializations, not additional business metrics. Their use and validation are described in [build recovery](build_recovery.md).
 
 ## Exact direct dependencies
 
-All 83 direct dependencies below were checked against parsed Trino SQL rendered from the 25 SQL models and the nickname seed. This includes macro-expanded and dynamically generated `ref()` calls. Only SQL table references count as dependencies; table names stored as provenance strings do not add direct edges. Model-input labels use the project prefix defined above. External names are fully qualified.
+All 83 direct dependencies below are checked against parsed Trino SQL rendered from the 25 SQL models and the nickname seed. This includes macro-expanded and dynamically generated `ref()` calls. Only SQL table references count as dependencies; table names stored as provenance strings do not add direct edges. Model-input labels use the project prefix defined above. External names are fully qualified.
 
 | Model / view | Direct inputs |
 |---|---|
@@ -210,8 +201,8 @@ All 83 direct dependencies below were checked against parsed Trino SQL rendered 
 
 ## Boundaries and verification
 
-- `stg_medscape__optout` excludes all matching cleaned NPIs in Medscape intermediate eligibility. All retained opt-out deliveries contribute without date alignment. Staging remains unchanged. QuantumMedica and Medscape metadata now feed vendor specialty/profession evidence using exact delivery-day joins.
-- The logical diagrams describe current model definitions. Runtime alternatives and the dated publication checkpoint are separate. This review did not query deployed view definitions or revalidate warehouse data.
-- All 20 declared source tables are referenced by at least one model. All 26 project relations and all 83 direct dependencies match the rendered definitions. Each source and project relation can reach `pii_clean`. No warehouse rows were queried or exported during this review.
+- `stg_medscape__optout` excludes all matching cleaned NPIs in Medscape intermediate eligibility. All retained opt-out deliveries contribute without date alignment. Staging remains unchanged. QuantumMedica and Medscape metadata feed vendor specialty/profession evidence using exact delivery-day joins.
+- The logical diagrams describe current model definitions. Runtime alternatives are separate. This map does not query deployed view definitions or warehouse data.
+- All 20 declared source tables are referenced by at least one model. All 26 project relations and all 83 direct dependencies match the rendered definitions. Each source and project relation can reach `pii_clean`.
 
 Sources: [source declarations](../models/sources.yml), [staging](../models/staging/), [intermediate](../models/intermediate/), [final model](../models/final/pii_clean.sql), [shared macros](../macros/), [runner](../tools/pipeline.py).

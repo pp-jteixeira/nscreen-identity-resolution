@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""State normalization, observation timing, unknowns and final UNION ALL fidelity."""
+"""Link state overlap, observation timing, unknowns and final UNION ALL fidelity."""
 import json
 import unittest
 import pipeline as p
@@ -28,16 +28,23 @@ def dated_fixture(debug=False):
  return inlined('int_medscape__metrics',variables={'debug':debug},fixtures={
      'stg_medscape__global':source_values('stg_medscape__global',rows)})
 
+# A link compares all its recognized states with every peer sharing a conflict day.
+LINK_EXPECTED={'same':{'1':True,'2':True},'different':{'1':False,'2':False},'missing':{'1':None,'2':None},
+ 'invalid':{'1':None,'2':None},'reassigned':{'1':None,'2':None},'gap':{'1':None,'2':None},
+ 'changed':{'1':True,'2':True},'match_missing':{'1':True,'2':True,'3':None},
+ 'mismatch_missing':{'1':None,'2':None,'3':None},'unknown_date':{'1':None,'2':None},
+ 'foreign':{'1':None,'2':None}}
+
 def check_dated(rows):
- expected={(case,npi,state):flag for case,vs in CASES.items() for npi,day,state,flag in vs}
- expected.update({('foreign','1','CA'):None,('foreign','2','CA'):None})
- assert len(rows)==len(expected)
- assert len({r['metric_row_id'] for r in rows})==len(rows)
+ assert len(rows)==sum(len(v) for v in LINK_EXPECTED.values())
+ assert len({r['link_id'] for r in rows})==len(rows)
  for r in rows:
-  raw=json.loads(r['record_payload']);key=(r['email'].split('@')[0],r['npi'],raw['state'])
-  assert r['conflicting_npis_share_state'] is expected[key],(key,r['conflicting_npis_share_state'])
+  key=(r['email'].split('@')[0],r['npi'])
+  assert r['conflicting_npis_share_state'] is LINK_EXPECTED[key[0]][key[1]],(key,r['conflicting_npis_share_state'])
   assert bool(r['conflicting_npi_state_comparisons']) == (r['has_conflict_linkage'] is True)
-  if key==('foreign','2','CA'):assert r['source_state_values']==[]
+  if key==('foreign','2'):assert r['source_state_values']==[]
+  if key==('changed','1'):
+   assert r['source_state_values']==['CA','NY'] and r['source_state_values_latest']==['CA']
 
 def undated_fixture():
  return inlined('int_endato__metrics',fixtures={'stg_endato__pii':source_values('stg_endato__pii',[
@@ -89,10 +96,10 @@ class ConflictingStateTests(unittest.TestCase):
   self.assertEqual(check(sql),[])
   projection=', '.join('false AS '+c if c=='conflicting_npis_share_state' else c for c in fields)
   self.assertTrue(check(f'SELECT {projection} FROM ({sql})'))
-  expected={r['metric_row_id']:r for r in rows}
+  expected={r['link_id']:r for r in rows}
   for row in execute(dated_fixture(debug=True)):
    for c in ['source_state_values','conflicting_npis_share_state','conflicting_npi_state_comparisons']:
-    self.assertEqual(row[c],expected[row['metric_row_id']][c])
+    self.assertEqual(row[c],expected[row['link_id']][c])
  def test_final_is_exact_union_including_extra_attributes_and_duplicates(self):
   inputs={f'int_{s}__metrics':f"(SELECT '{s}' AS source, 'same' AS email, '1' AS npi, 'raw-{s}' AS vendor_attribute, true AS custom_metric FROM (VALUES (1),(1)) AS copies(x))" for s in p.SOURCES}
   rows=execute(p.read_model(p.CORE_MODEL,ref_overrides=inputs))

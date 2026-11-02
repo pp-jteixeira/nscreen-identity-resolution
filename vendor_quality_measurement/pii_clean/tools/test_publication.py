@@ -50,9 +50,9 @@ class PublicationTests(unittest.TestCase):
                         or failure == 'candidate_schema' and 'candidate_' in sql
                         or failure in ('published_schema', 'resume_schema') and sql == 'DESCRIBE ' + p.relation(p.CORE_MODEL)):
                     return [{'Column': 'source', 'Type': 'bigint'}]
-                return [{'Column': 'source', 'Type': 'varchar'}, {'Column': 'metric_row_id', 'Type': 'varchar'}]
+                return [{'Column': 'source', 'Type': 'varchar'}, {'Column': 'link_id', 'Type': 'varchar'}]
             self.assertNotRegex(sql, r'pii__int_(?:'+'|'.join(p.SOURCES)+r')__metrics', 'Validation must not recompute vendor views')
-            if 'count(DISTINCT ROW(source, metric_row_id))' in sql and 'evidence_checksum' not in sql:
+            if 'count(DISTINCT ROW(source, link_id))' in sql and 'evidence_checksum' not in sql:
                 return [{'source': source, 'metric_rows': 1,
                          'duplicate_keys': 1 if failure == 'resume_duplicates' else 0}
                         for source in ('healthlink', 'quantummedica')]

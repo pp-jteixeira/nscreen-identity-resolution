@@ -19,7 +19,7 @@ def fixture():
         'source': "CASE WHEN row_id = 2 THEN 'drdb' ELSE 'endato' END",
         'email': "CASE WHEN row_id = 4 THEN 'other@example.test' ELSE 'team@example.test' END",
         'npi': "CASE WHEN row_id = 2 THEN '1000000002' ELSE '1000000001' END",
-        'metric_row_id': 'cast(row_id AS varchar)',
+        'link_id': 'cast(row_id AS varchar)',
         'computed_at': "TIMESTAMP '2020-01-01 12:34:56'",
         'last_seen_day': "DATE '2020-01-01'",
         'link_freshness_as_of_day': "DATE '2020-01-03'",
@@ -59,12 +59,12 @@ def fixture():
 
 class EmailLookupTests(unittest.TestCase):
     def test_unpublished_fields_stay_out_of_saved_lookup(self):
-        self.assertEqual(len(model_columns()), 158)
+        self.assertEqual(len(model_columns()), 165)
         # Publication metadata must also filter fields in the fixed base list.
         columns = [dict(c, meta={'published': c['name'] != 'name_match_evidence'})
                    for c in model_columns()]
         with patch('render_email_lookup.model_columns', return_value=columns):
-            self.assertEqual(len(published_columns()), 157)
+            self.assertEqual(len(published_columns()), 164)
             self.assertNotIn('r.name_match_evidence', render_lookup())
             self.assertIn('r.vendor_registry_match_classes', render_lookup())
 
@@ -76,14 +76,14 @@ class EmailLookupTests(unittest.TestCase):
         stored, sql = fixture()
         rows = execute(sql)
         self.assertEqual(len(rows), 3)
-        self.assertEqual(len({(r['source'], r['metric_row_id']) for r in rows}), 3)
-        before = {r['metric_row_id']: r for r in execute(stored) if r['email'] == 'team@example.test'}
+        self.assertEqual(len({(r['source'], r['link_id']) for r in rows}), 3)
+        before = {r['link_id']: r for r in execute(stored) if r['email'] == 'team@example.test'}
         for row in rows:
             for name in published_columns():
-                self.assertEqual(row[name], before[row['metric_row_id']][name], name)
+                self.assertEqual(row[name], before[row['link_id']][name], name)
             self.assertEqual(row['name'], 'ALICE SMITH; BOB JONES')
             self.assertEqual(row['state'], 'NY; CA')
-            expected = 1 if row['metric_row_id'] == '1' else 0
+            expected = 1 if row['link_id'] == '1' else 0
             for name in ('name_mismatch_count', 'shared_name_count', 'unknown_name_match_count'):
                 self.assertEqual(row[name], expected)
             self.assertEqual(row['name_comparison_count'], 3 * expected)

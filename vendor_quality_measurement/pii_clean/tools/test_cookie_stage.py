@@ -23,7 +23,7 @@ class CookieStageTests(unittest.TestCase):
             self.assertNotIn('liveintent_idsync',sql)
             self.assertNotIn('nscreen_geo_daily_ua',sql)
         rows=execute(inlined('int_medscape__metrics'))
-        self.assertEqual(len(rows[0]),128)
+        self.assertEqual(len(rows[0]),134)
         self.assertFalse(any(c.startswith('cookie_') for c in rows[0]))
 
     def test_downstream_model_computes_real_values_and_preserves_core(self):
@@ -34,20 +34,21 @@ class CookieStageTests(unittest.TestCase):
         base=inlined('int_medscape__metrics',fixtures={
             'stg_medscape__global':source_values('stg_medscape__global',data),
             'facility_locations':overrides[('bq_bi__analytics_prod','npi_facility_locations_with_ids')]},variables=variables)
-        original={r['metric_row_id']:r for r in execute(base)}
+        original={r['link_id']:r for r in execute(base)}
         sql=p.read_model('int_cookie__metrics',variables=variables,
                          ref_overrides={p.CORE_MODEL:'('+base+')'},source_overrides=overrides)
         rows=execute(sql)
-        self.assertEqual(len(rows),3)
+        # The two agree@ name versions share one link.
+        self.assertEqual(len(rows),2)
         for row in rows:
-            self.assertEqual(len(row),158)
+            self.assertEqual(len(row),165)
             self.assertEqual(row['cookie_count'],1)
             self.assertEqual(row['cookie_location_status'],'observed')
             self.assertEqual(row['cookie_location_window_days'],3)
             self.assertEqual(row['cookie_facility_state_evidence'],'corroborated')
             self.assertEqual(row['cookie_vendor_state_evidence'],'corroborated' if row['email']=='agree@example.test' else 'not_observed')
             self.assertEqual({k:v for k,v in row.items() if not k.startswith('cookie_') and k!='computed_at'},
-                             {k:v for k,v in original[row['metric_row_id']].items() if k!='computed_at'})
+                             {k:v for k,v in original[row['link_id']].items() if k!='computed_at'})
         self.assertNotIn('not_evaluated',sql)
 
     def test_model_dependencies_follow_core_cookie_final_order(self):
@@ -57,7 +58,7 @@ class CookieStageTests(unittest.TestCase):
         self.assertEqual(set(dependencies),{'int_cookie__metrics'})
         self.assertNotIn('int_cookie__metrics',p.source_plan('medscape'))
         fields=[(k,'varchar') for k in p.render_sql('{{ metric_columns() | join(",") }}').split(',')]
-        self.assertEqual(len(p.publication_schema(fields)),158)
+        self.assertEqual(len(p.publication_schema(fields)),165)
         for bad in [fields[:-1],fields+[('unexpected','varchar')]]:
             with self.assertRaises(ValueError):p.publication_schema(bad)
 
@@ -81,7 +82,7 @@ class CookieStageTests(unittest.TestCase):
             sql=p.read_model('int_cookie__metrics',variables={**variables,'cookie_sources':[source]},
                              ref_overrides={p.CORE_MODEL:core},source_overrides=overrides)
             scoped.extend(execute(sql))
-        keyed=lambda rows:{(r['source'],r['metric_row_id']):r for r in rows}
+        keyed=lambda rows:{(r['source'],r['link_id']):r for r in rows}
         self.assertEqual(keyed(scoped),keyed(execute(combined)))
         self.assertEqual(len(scoped),2)
         self.assertEqual({r['cookie_count'] for r in scoped},{1})

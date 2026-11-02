@@ -163,7 +163,7 @@ class NameMatchingTests(unittest.TestCase):
         self.assertEqual(len(row['name_match_evidence']), 1)
 
     def test_stored_evidence_integrity_rejects_corruption(self):
-        query = "SELECT 'fixture' AS source, npi AS metric_row_id, * FROM (" + fixture_sql() + ')'
+        query = "SELECT 'fixture' AS source, npi AS link_id, * FROM (" + fixture_sql() + ')'
         template = (pipeline.ROOT / 'tests/name_match_evidence.sql').read_text()
         def check(sql):
             return execute(pipeline.render_sql(template, {'metric_model': pipeline.CORE_MODEL},

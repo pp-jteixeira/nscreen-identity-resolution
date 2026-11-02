@@ -1,4 +1,4 @@
--- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 4233051104478921549.
+-- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean.
 -- Reference evidence and evaluation dates come from the stored publication.
 SELECT source,
        CASE WHEN grouping(cookie_location_status) = 0 THEN 'location_status'
@@ -6,7 +6,7 @@ SELECT source,
             WHEN grouping(cookie_facility_state_evidence) = 0 THEN 'facility_state'
             ELSE 'totals' END AS section,
        cookie_location_status, cookie_vendor_state_evidence, cookie_facility_state_evidence,
-       count(*) AS metric_rows, count(DISTINCT metric_row_id) AS unique_metric_rows,
+       count(*) AS metric_rows, count(DISTINCT link_id) AS unique_metric_rows,
        count(DISTINCT ROW(email, npi)) AS distinct_links, count(DISTINCT email) AS distinct_emails,
        count_if(cookie_count IS NULL OR cookie_count < 0
    OR cookie_mapped_uid_days < cookie_count
@@ -42,7 +42,7 @@ SELECT source,
            ELSE 'mixed_state_evidence' END) AS invariant_failures,
        count(DISTINCT IF(cookie_primary_state_tied_count > 0, email, NULL)) AS emails_with_tied_uids,
        count(DISTINCT IF(cookie_primary_state_multistate_count > 0, email, NULL)) AS emails_with_multistate_uids
-FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 4233051104478921549
+FROM iceberg.jteixeira_ipa.pii_clean
 GROUP BY GROUPING SETS ((source), (source,cookie_location_status),
     (source,cookie_vendor_state_evidence), (source,cookie_facility_state_evidence))
 ORDER BY source, section, cookie_location_status, cookie_vendor_state_evidence, cookie_facility_state_evidence

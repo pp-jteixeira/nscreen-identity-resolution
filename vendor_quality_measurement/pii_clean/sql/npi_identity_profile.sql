@@ -1,4 +1,4 @@
--- Each vendor/NPI contributes once to identifier counts and carries its retained record count.
+-- Each vendor/NPI contributes once to identifier counts and carries its link count.
 WITH measured AS (/* EVALUATED_SQL */), npis AS (
     SELECT source, npi, npi_identity_as_of_day, npi_structure_reason, npi_entity_type,
            npi_entity_type_reason, count(*) AS metric_rows

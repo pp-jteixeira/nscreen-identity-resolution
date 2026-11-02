@@ -73,13 +73,13 @@ SELECT m.source, count(DISTINCT ROW(m.email, m.npi)) AS distinct_links,
 FROM {p.relation(p.FINAL_MODEL)} m LEFT JOIN specialty_reference f ON m.npi = f.npi
 GROUP BY m.source ORDER BY m.source''')
         # No-conflict records cannot have an applicable outcome. Evaluate windows
-        # only for the established conflict subset; preserve its exact record grain.
+        # only for the established conflict subset; preserve its link grain.
         metrics = p.render_sql("{{ specialty_consistency_metrics('saved_records') }}")
         candidate = f'''WITH saved_records AS (
     SELECT * FROM {p.relation(p.FINAL_MODEL)} WHERE has_conflict_linkage
 ), evaluated AS ({metrics}) SELECT * FROM evaluated'''
         run('outcomes', f'''WITH measured AS ({candidate})
-SELECT source, count(*) AS conflict_rows, count(DISTINCT metric_row_id) AS distinct_record_keys,
+SELECT source, count(*) AS conflict_rows, count(DISTINCT link_id) AS distinct_record_keys,
        count_if(conflicting_npis_share_nppes_specialty) AS shared_specialty_rows,
        count_if(conflicting_npis_share_nppes_specialty = false) AS different_specialty_rows,
        count_if(conflicting_npis_share_nppes_specialty IS NULL) AS unknown_specialty_rows,
@@ -94,9 +94,9 @@ FROM measured GROUP BY source ORDER BY source''')
         if failures:
             raise ValueError(f'Population check failed: {failures}')
         run('examples', f'''WITH measured AS ({candidate}), ranked AS (
-    SELECT source, metric_row_id, email, npi, observed_days, conflict_days,
+    SELECT source, link_id, email, npi, observed_days, conflict_days,
            specialty_code_values, conflicting_npis_share_nppes_specialty, conflicting_npi_specialty_comparisons,
-           row_number() OVER (PARTITION BY source, conflicting_npis_share_nppes_specialty ORDER BY metric_row_id) AS sample_rank
+           row_number() OVER (PARTITION BY source, conflicting_npis_share_nppes_specialty ORDER BY link_id) AS sample_rank
     FROM measured
 )
 SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, conflicting_npis_share_nppes_specialty, sample_rank''')

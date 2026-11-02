@@ -35,7 +35,7 @@ class MedscapeBatchTests(unittest.TestCase):
             assembled.extend(execute(inlined('int_medscape__metrics', fixtures={**fixtures, stage: filtered},
                 variables={**variables, 'source_latest_observed_day': '2026-01-20'})))
         def keyed(rows):
-            return {r['metric_row_id']: {k: v for k, v in r.items() if k != 'computed_at'} for r in rows}
+            return {r['link_id']: {k: v for k, v in r.items() if k != 'computed_at'} for r in rows}
         self.assertEqual(keyed(assembled), keyed(direct))
         self.assertEqual(len(assembled), len(direct))
         abc = next(r for r in assembled if r['email'] == 'abc@test' and r['npi'] == '1')
@@ -94,7 +94,7 @@ class MedscapeBatchTests(unittest.TestCase):
         cached = execute(inlined('int_medscape__metrics', fixtures=fixtures,
             variables={'medscape_versioned_records': '(' + versions + ')'}))
         def keyed(rows):
-            return {r['metric_row_id']: {k: v for k, v in r.items() if k != 'computed_at'} for r in rows}
+            return {r['link_id']: {k: v for k, v in r.items() if k != 'computed_at'} for r in rows}
         self.assertEqual(keyed(direct), keyed(cached))
 
 

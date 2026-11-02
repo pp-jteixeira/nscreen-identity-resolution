@@ -1,4 +1,4 @@
--- One observation per source/email for sequence totals, independently of record multiplicity.
+-- One observation per source/email for sequence totals, independently of link multiplicity.
 WITH records AS (/* EVALUATED_SQL */), emails AS (
     SELECT source, email, max(n_versions_observed) AS versions, max(n_swaps) AS swaps, max(n_flipbacks) AS flipbacks,
            bool_or(stability_history_sufficient) AS sufficient, bool_or(sequence_has_undated_observations) AS undated

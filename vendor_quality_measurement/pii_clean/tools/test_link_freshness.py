@@ -20,14 +20,14 @@ def fixture_sql(as_of='2026-10-30'):
         ('unknown', 'x@example.test', '1', 'unknown', CAST(NULL AS date)),
         ('future', 'x@example.test', '1', 'future', DATE '2026-11-01'),
         ('future', 'y@example.test', '2', 'past-in-future-feed', DATE '2026-10-10')
-    ) AS t(source, email, npi, metric_row_id, last_seen_day)"""
+    ) AS t(source, email, npi, link_id, last_seen_day)"""
     return p.render_sql("WITH records AS (" + records + "), evaluated AS ("
                         "{{ link_freshness_records('records') }}) SELECT * FROM evaluated",
                         {'link_freshness_as_of_day': as_of})
 
 
 def check_fixture(rows):
-    by_id = {r['metric_row_id']: r for r in rows}
+    by_id = {r['link_id']: r for r in rows}
     assert len(rows) == len(by_id) == 10
     for key in ('old', 'recent', 'repeat-position', 'undated-same-link'):
         r = by_id[key]
@@ -52,7 +52,7 @@ class LinkFreshnessTests(unittest.TestCase):
         check_fixture(execute(fixture_sql()))
 
     def test_evaluation_date_only_changes_age_and_future_eligibility(self):
-        rows = {r['metric_row_id']: r for r in execute(fixture_sql('2026-11-02'))}
+        rows = {r['link_id']: r for r in execute(fixture_sql('2026-11-02'))}
         self.assertEqual(rows['old']['source_age_days'], 5)
         self.assertEqual(rows['lagging']['link_lag_days'], 18)
         self.assertEqual(rows['future']['source_age_days'], 1)
@@ -81,10 +81,8 @@ class LinkFreshnessTests(unittest.TestCase):
 
     def test_statistics_use_links_not_repeated_records(self):
         documented = (p.ROOT / 'sql/statistics/20_link_freshness.sql').read_text()
-        # Documentation pins its measured snapshot; live profiles use the current table.
-        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
-                                 p.relation(p.FINAL_MODEL), documented)
-        self.assertEqual(pins, 1)
+        # The statistics query is the live profile against the current table.
+        unpinned = documented
         self.assertEqual(p.render_profile('link_freshness_profile.sql') + '\n',
                          unpinned)
         profile = p.render_profile('link_freshness_profile.sql').replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')')

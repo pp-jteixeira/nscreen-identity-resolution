@@ -153,7 +153,7 @@ WITH expanded AS (
     FROM kinds
 )
 {% if detail %}
-SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
+SELECT {% if record_grain %}link_id, {% endif %}email, npi,
        first_name AS source_first_name, last_name AS source_last_name,
        registry_first_name, registry_last_name,
        first_set AS source_first_name_variants,
@@ -179,7 +179,7 @@ FROM evaluated
     ) AS {{ name_match_evidence_row_type() }}) AS comparison
     FROM evaluated
 ), summarized AS (
-SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
+SELECT {% if record_grain %}link_id, {% endif %}email, npi,
        bool_or(source_match) AS email_matches_source_name,
        bool_or(registry_match) AS email_matches_registry_name,
        bool_or(vendor_registry_match) AS vendor_name_matches_registry_name,
@@ -193,7 +193,7 @@ SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
            FILTER (WHERE source_name_usable)), CAST(ARRAY[] AS {{ source_name_array_type() }})) AS source_name_values
        {% endif %}
 FROM comparison_evidence
-GROUP BY {% if record_grain %}metric_row_id, {% endif %}email, npi
+GROUP BY {% if record_grain %}link_id, {% endif %}email, npi
 ), retained AS (
     SELECT *,
            -- Explain usable vendor names. When none exist, keep unknown comparisons.
@@ -201,7 +201,7 @@ GROUP BY {% if record_grain %}metric_row_id, {% endif %}email, npi
                 ELSE all_name_match_evidence END AS unsorted_name_match_evidence
     FROM summarized
 )
-SELECT {% if record_grain %}metric_row_id, {% endif %}email, npi,
+SELECT {% if record_grain %}link_id, {% endif %}email, npi,
        email_matches_source_name, email_matches_registry_name, vendor_name_matches_registry_name,
        source_name_usable, registry_name_usable, registry_npi_present,
        {% if include_source_names %}source_name_values,{% endif %}
@@ -226,10 +226,10 @@ SELECT m.*,
        c.comparison_email_matches_registry_name,
        c.comparison_vendor_name_matches_registry_name,
        to_hex(sha256(to_utf8(json_format(CAST(ROW(
-           m.source, m.metric_row_id, c.source_first_name, c.source_last_name,
+           m.source, m.link_id, c.source_first_name, c.source_last_name,
            c.registry_first_name, c.registry_last_name) AS json))))) AS debug_comparison_id,
        CAST(current_timestamp AS timestamp(6) with time zone) AS debug_built_at,
        'name_matching_debug_records_v1' AS debug_definition
 FROM {{ metric_relation }} m
-LEFT JOIN {{ comparison_relation }} c ON m.metric_row_id = c.metric_row_id
+LEFT JOIN {{ comparison_relation }} c ON m.link_id = c.link_id
 {%- endmacro %}

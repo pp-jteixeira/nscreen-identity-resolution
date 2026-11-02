@@ -52,7 +52,7 @@ def dated_fixture(debug=False):
 def check_dated(rows):
     expected = {(case, npi): flag for case, values in CASES.items() for npi, _, flag in values}
     assert len(rows) == len(expected), (len(rows), len(expected))
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
+    assert len({r['link_id'] for r in rows}) == len(rows)
     for row in rows:
         key = (row['email'].split('@')[0], row['npi'])
         assert row['conflicting_npis_share_nppes_specialty'] is expected[key], (key, row['conflicting_npis_share_nppes_specialty'])
@@ -109,11 +109,11 @@ class ConflictingSpecialtyTests(unittest.TestCase):
         self.assertTrue(check(f'SELECT {projection} FROM ({sql})'))
 
     def test_debug_preserves_specialty_fields(self):
-        rows = {r['metric_row_id']: r for r in execute(dated_fixture())}
+        rows = {r['link_id']: r for r in execute(dated_fixture())}
         for row in execute(dated_fixture(debug=True)):
             for field in ('specialty_code_values', 'conflicting_npis_share_nppes_specialty',
                           'conflicting_npi_specialty_comparisons', 'specialty_definition_version'):
-                self.assertEqual(row[field], rows[row['metric_row_id']][field])
+                self.assertEqual(row[field], rows[row['link_id']][field])
 
 
 if __name__ == '__main__':

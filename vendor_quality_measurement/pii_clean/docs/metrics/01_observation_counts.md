@@ -1,12 +1,12 @@
 # Observation counts
 
-**Principle:** repeated identical records measure repetition, not accuracy. Email–NPI deduplication follows metrics and indicators.
+**Principle:** repeated identical deliveries measure repetition, not accuracy. Each metric row is one link: a vendor, an email and an NPI.
 
-**Where:** `iceberg.jteixeira_ipa.pii__int_<vendor>__metrics`, keyed by `source`, `metric_row_id`. Each row represents one exact raw source record and one email position.
+**Where:** `iceberg.jteixeira_ipa.pii__int_<vendor>__metrics` and `iceberg.jteixeira_ipa.pii_clean`, keyed by `source`, `link_id`. `link_id` is the SHA256 of source, email and NPI and is unique. Each link merges every source record version that reports this email for this NPI.
 
 ## How it is computed
 
-Within each input table, group raw rows only when every original column except `day` agrees. Parse delivery days with `try_cast(day AS date)`; sources without a day use null. Before unfolding email positions, calculate:
+**Versions.** Within each input table, group raw rows only when every identity column agrees; `day` and the schema's volatile fields are ignored. Medscape's volatile fields (raw `email_address` spelling, `huid`, `ip`, `payer_status`, `practice_setting`, `source`, `validated`) are kept as sorted distinct arrays and never split a version. Each version has a `record_id`: the SHA256 of its source table and identity payload. Parse delivery days with `try_cast(day AS date)`; sources without a day use null. For each version:
 
 ```sql
 count(*) AS observation_count,
@@ -17,61 +17,28 @@ count_if(vendor_day IS NULL) AS undated_observation_count,
 count_if(invalid_vendor_day) AS invalid_day_observation_count
 ```
 
-`invalid_vendor_day` means a supplied day cannot be parsed. `observed_days` stores sorted unique valid dates, or an empty array. Date bounds and `observed_day_count` stay null when no valid date exists. Changes to other raw fields produce separate records.
+`invalid_vendor_day` means a supplied day cannot be parsed.
 
-Counts repeat across a record's email positions. Their sum measures email-position observations, not raw rows or independent confirmations. `record_id` identifies the source record; `metric_row_id` also includes email position. `record_payload` retains raw values except `day` for inspection.
+**Links.** Unfold each version's email positions, then collapse to one row per `source`, `email`, `npi`. The [implementation](../../macros/record_versions.sql) derives the link history:
+
+- `observed_days`: sorted unique valid dates across all versions, or an empty array. `observed_day_count`, `first_seen_day` and `last_seen_day` come from these dates and stay null when no valid date exists.
+- `observation_count`, `undated_observation_count`, `invalid_day_observation_count`: summed over versions.
+- `record_count` and `record_ids`: the number of merged versions and their sorted `record_id` values.
+- `latest_record_id`: the version with the unique greatest `last_seen_day`, or the only version. It is null when the link has several undated versions or when the greatest `last_seen_day` is tied.
+- `email_origins`: sorted source columns or array positions where the email appeared, across versions.
+- `attribute_versions`: one entry per version, ordered by `first_seen_day`, `last_seen_day`, `record_id`, with `record_id`, first and last seen day, observed day count, observation count, email origins and the JSON identity payload `record_payload`. Volatile fields appear as arrays inside the payload. Name or address changes over time are visible here.
+- `source_tables` and `source_feeds`: contributing input tables and feed labels.
+
+A version that lists the same email in several positions counts once for the link. Observation totals measure raw source-row observations of the link's versions, not independent confirmations.
 
 ## Real examples
 
-Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
+No examples have been executed against this definition yet.
 
-[Executed example SQL](../../sql/examples/01_observation_counts.sql):
-
-```sql
-WITH selected AS (
-    SELECT *
-    FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
-    WHERE (source = 'endato' AND metric_row_id IN (
-        '174DF23ED50299325123B7660ECB3AA68FEDD02FA7345B47D575396DEAF0419A'))
-       OR (source = 'healthlink' AND metric_row_id IN (
-        '39C2F78FA687F1D8257987C722B350B90A42B9D83BDCB5B4C32B9E8D2EC80905'))
-       OR (source = 'medscape' AND metric_row_id IN (
-        '1D343DCA154DC149F0A4E90D7B8561D297C4AECDD3C3E710080DF56062E864CE'))
-)
-SELECT m.source,
-       m.email,
-       m.npi,
-       m.observation_count,
-       m.observed_day_count,
-       m.first_seen_day,
-       m.last_seen_day,
-       m.undated_observation_count
-FROM selected m
-ORDER BY m.source, m.metric_row_id
-```
-
-| source | email | npi | observation_count | observed_day_count | first_seen_day | last_seen_day | undated_observation_count |
-|---|---|---|---|---|---|---|---|
-| endato | arnie.hicks@gmail.com | 1124164199 | 1 | NULL | NULL | NULL | 1 |
-| healthlink | joshhagen@live.com | 1205185006 | 215 | 215 | 2026-03-02 | 2026-10-02 | 0 |
-| medscape | jonathan.weinkle@gmail.com | 1598891004 | 1 | 1 | 2025-08-07 | 2025-08-07 | 0 |
-
-**What differentiates these cases:** The repeated HealthLink record spans many distinct dates. A single dated Medscape observation has a day count of one, while a single undated Endato observation has NULL date bounds and day count. Observation count cannot substitute for date coverage, and repetition is not independent confirmation.
+Cases worth contrasting: a dated link with many observed days, a dated link observed once, an undated link with null date bounds and day count, and a link with several versions where `attribute_versions` shows changed attributes. A link without a single latest version shows null `latest_record_id`.
 
 ## Statistics by source
 
-Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
+No measurements exist yet for this definition. [Statistics SQL](../../sql/statistics/01_observation_counts.sql) reports, per source, metric rows (links), summed observations, repeated links (`observation_count > 1`) and exact weighted nearest-rank median, P95 and maximum observation counts.
 
-[Executed statistics SQL](../../sql/statistics/01_observation_counts.sql)
-
-| Source | Metric records | Email-position observations | Repeated records, n (%) | Median / P95 / max |
-|---|---|---|---|---|
-| HealthLink | 11,156,016 | 1,494,099,995 | 7,219,502 (64.713980%) | 216 / 245 / 245 |
-| QuantumMedica | 1,705,723 | 18,701,175 | 1,704,636 (99.936273%) | 11 / 11 / 11 |
-| Medscape | 47,164,366 | 298,710,643 | 26,863,983 (56.958219%) | 2 / 29 / 326 |
-| Endato | 5,427,459 | 5,427,459 | 0 (0.000000%) | 1 / 1 / 1 |
-| RocketReach | 4,864,145 | 4,864,145 | 0 (0.000000%) | 1 / 1 / 1 |
-| DRDB | 1,115,415 | 1,115,415 | 0 (0.000000%) | 1 / 1 / 1 |
-| Haymarket | 4,223,245 | 4,223,245 | 0 (0.000000%) | 1 / 1 / 1 |
-
-Repeated means `observation_count > 1`. Quantiles use exact weighted nearest ranks across metric records. Observation totals repeat across email positions and are not raw input-row counts. Repeated deliveries are not independent confirmations.
+Repeated deliveries are not independent confirmations. Counts across vendors can overlap and must not be added.

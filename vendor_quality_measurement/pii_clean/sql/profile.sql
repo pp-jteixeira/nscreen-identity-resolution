@@ -3,8 +3,7 @@ WITH evidence AS (
 )
 SELECT source,
        count(*) AS metric_rows,
-       count(DISTINCT record_id) AS distinct_source_records,
-       count(DISTINCT ROW(email, npi)) AS distinct_links,
+       sum(record_count) AS link_versions,
        count(DISTINCT email) AS distinct_emails,
        count(DISTINCT npi) AS distinct_npis,
        sum(observation_count) AS observations,

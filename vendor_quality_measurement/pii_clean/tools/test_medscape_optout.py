@@ -28,7 +28,7 @@ def fixture_sql(debug=False):
 def check_filtered(rows):
     assert len(rows) == 2
     assert {row['npi'] for row in rows} == {'2', '3'}
-    assert len({row['metric_row_id'] for row in rows}) == 2
+    assert len({row['link_id'] for row in rows}) == 2
     kept = next(row for row in rows if row['npi'] == '2')
     assert kept['observation_count'] == 2
     assert kept['observed_day_count'] == 2

@@ -12,13 +12,13 @@ def fixture_sql(rows, day='2026-01-03', minimum=3):
     for i, row in enumerate(rows):
         source, email, npi, days, guid = row[:5]
         missing = row[5] if len(row) > 5 else 0
-        values.append('(' + ','.join([literal(source), literal(email), literal(npi), literal(str(i)),
-            literal(json.dumps({'guid': guid})),
-            'cast(ARRAY[' + ','.join("DATE '" + d + "'" for d in days) + '] AS array(date))', str(missing)]) + ')')
-    records = 'SELECT * FROM (VALUES ' + ','.join(values) + ') AS t(source,email,npi,metric_row_id,record_payload,observed_days,undated_observation_count)'
+        observed = 'cast(ARRAY[' + ','.join("DATE '" + d + "'" for d in days) + '] AS array(date))'
+        values.append('(' + ','.join([literal(source), literal(email), literal(npi), literal(str(i)), observed, str(missing),
+            'ARRAY[CAST(ROW(' + literal(guid) + ', ' + observed + ') AS row(guid varchar, days array(date)))]']) + ')')
+    records = 'SELECT * FROM (VALUES ' + ','.join(values) + ') AS t(source,email,npi,link_id,observed_days,undated_observation_count,guid_days)'
     return p.render_sql("WITH records AS (" + records + "), sequence AS ("
         "{{ sequential_history_records('records', 'records') }}), evaluated AS ("
-        "{{ registration_supersession_records('sequence', 'medscape', 'records') }}) SELECT * FROM evaluated ORDER BY cast(metric_row_id AS bigint)",
+        "{{ registration_supersession_records('sequence', 'medscape', 'records') }}) SELECT * FROM evaluated ORDER BY cast(link_id AS bigint)",
         {'sequence_as_of_day': day, 'stability_min_versions': minimum})
 
 
@@ -123,7 +123,7 @@ class SequentialHistoryTests(unittest.TestCase):
         report = p.render_profile('registration_supersession_profile.sql').replace(p.relation(p.FINAL_MODEL), '(' + sql + ')')
         self.assertEqual(execute(report)[0]['registration_links'], 3)
 
-    def test_medscape_eligibility_and_payload_guid_in_complete_model(self):
+    def test_medscape_eligibility_and_registration_guid_in_complete_model(self):
         data = [{'npi': n, 'day': day, 'guid': 'g', 'email_address': 'abc@test'}
                 for n, day in [('1', '2026-01-01'), ('2', '2026-01-02'), ('1', '2026-01-03')]]
         rows = execute(inlined('int_medscape__metrics', fixtures={'stg_medscape__global': source_values('stg_medscape__global', data)},
@@ -136,9 +136,9 @@ class SequentialHistoryTests(unittest.TestCase):
     def test_materialized_base_matches_direct_metrics_and_order(self):
         for source in ['medscape', 'healthlink', 'endato']:
             model = 'int_' + source + '__metrics'
-            direct = {r['metric_row_id']: r for r in execute(inlined(model))}
+            direct = {r['link_id']: r for r in execute(inlined(model))}
             base = inlined(model, variables={'defer_sequential_history': True})
-            staged = {r['metric_row_id']: r for r in execute(p.history_from_stored_records('(' + base + ')', source))}
+            staged = {r['link_id']: r for r in execute(p.history_from_stored_records('(' + base + ')', source))}
             self.assertEqual(direct.keys(), staged.keys())
             for key in direct:
                 self.assertEqual(list(direct[key]), list(staged[key]))
@@ -148,14 +148,14 @@ class SequentialHistoryTests(unittest.TestCase):
     def test_materialized_core_matches_quality_and_history(self):
         for source in ['medscape', 'healthlink', 'endato']:
             model = 'int_' + source + '__metrics'
-            direct = {r['metric_row_id']: r for r in execute(inlined(model))}
+            direct = {r['link_id']: r for r in execute(inlined(model))}
             core = inlined(model, variables={'defer_quality_enrichments': True})
             quality = p.quality_from_stored_records('(' + core + ')', source)
             for name in ['stg_medscape__meta', 'stg_healthlink__hcp', 'stg_quantummedica__hcpmeta']:
                 quality = quality.replace(p.relation(name), '(' + inlined(name) + ')')
             quality = quality.replace('FROM iceberg.npi.nppes_npidata_latest',
                 "FROM (SELECT CAST(NULL AS bigint) AS npi, CAST(NULL AS varchar) AS entity_type_code WHERE false)")
-            staged = {r['metric_row_id']: r for r in execute(p.history_from_stored_records('(' + quality + ')', source))}
+            staged = {r['link_id']: r for r in execute(p.history_from_stored_records('(' + quality + ')', source))}
             self.assertEqual(direct.keys(), staged.keys())
             for key in direct:
                 self.assertEqual(list(direct[key]), list(staged[key]))

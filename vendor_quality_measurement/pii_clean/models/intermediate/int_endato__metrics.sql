@@ -1,118 +1,21 @@
--- One row per exact source record and email position. Link deduplication is deferred.
+-- One row per source/email/NPI link.
 WITH pii_versions AS (
 -- Exact raw source content, excluding only delivery day.
 {{ record_versions('stg_endato__pii') }}
 ),
 email_candidates AS (
 SELECT CAST('endato' AS varchar) AS source, u.email AS email, v.npi_clean AS npi,
-       v.record_id, v.record_payload, u.email_ordinal AS email_ordinal,
+       v.record_id, v.record_payload,
        {{ email_candidate_origin('endato', 'v', 'u.email_ordinal') }} AS email_origin,
        v.first_seen_day, v.last_seen_day, v.observed_day_count, v.observed_days,
        v.observation_count, v.undated_observation_count, v.invalid_day_observation_count,
        CAST(ARRAY['iceberg.thirdparty.endato_pii'] AS array(varchar)) AS source_tables,
        filter(ARRAY[CAST(NULL AS varchar)], x -> x IS NOT NULL) AS source_feeds,
-       {{ norm_name('v.person_first_name_clean') }} AS first_name, {{ norm_name('v.person_last_name_clean') }} AS last_name
+       {{ norm_name('v.person_first_name_clean') }} AS first_name, {{ norm_name('v.person_last_name_clean') }} AS last_name,
+       {{ state_values_from_payload('endato', 'v.record_payload') }} AS state_values,
+       CAST(NULL AS varchar) AS guid, CAST(ARRAY[] AS array(varchar)) AS specialty_values
 FROM pii_versions v
 LEFT JOIN UNNEST({{ email_candidates('endato', 'v') }}) WITH ORDINALITY AS u(email, email_ordinal) ON true
 WHERE u.email IS NOT NULL AND u.email <> '' AND v.npi_clean IS NOT NULL AND v.npi_clean <> ''
 ),
-metric_records AS (
-SELECT *, to_hex(sha256(to_utf8(record_id || chr(0) || cast(email_ordinal AS varchar)))) AS metric_row_id
-FROM email_candidates
-),
-email_npi_counts AS (
--- Count reported NPIs within this vendor, across all retained records.
-SELECT source, email, count(DISTINCT npi) AS email_npi_count
-FROM metric_records
-GROUP BY source, email
-),
-email_linkage AS (
--- This source has no delivery days. Multiple NPIs cannot establish reassignment.
-SELECT source, email, email_npi_count,
-       CAST(ARRAY[] AS array(date)) AS conflict_days,
-       CASE WHEN email_npi_count = 1 THEN false
-            ELSE CAST(NULL AS boolean) END AS has_been_reassigned
-FROM email_npi_counts
-),
-name_inputs AS (
--- Preserve each source record and email position before name comparisons.
-SELECT metric_row_id, email, npi, first_name, last_name
-FROM metric_records
-),
-name_metrics AS (
-{{ link_name_metrics(none, record_grain=true, input_relation='name_inputs', include_source_names=true) }}
-),
-metric_base AS (
--- One output per exact source record and email position. link deduplication is deferred.
-SELECT m.source, m.email, m.npi,
-       m.first_seen_day, m.last_seen_day, m.observed_day_count,
-       m.observation_count, m.undated_observation_count, m.invalid_day_observation_count,
-       m.source_tables, m.source_feeds,
-       cast(current_timestamp AS timestamp(6) with time zone) AS computed_at,
-       'exact_records_v1' AS definition_version,
-       {{ email_format_valid('m.email') }} AS email_format_valid,
-       {{ email_role_account('m.email') }} AS email_role_account,
-       {{ email_domain_class('m.email') }} AS email_domain_class,
-       n.email_matches_source_name, n.email_matches_registry_name,
-       n.vendor_name_matches_registry_name,
-       n.name_match_evidence, n.vendor_registry_match_classes, n.name_match_evaluated_at, n.name_match_definition_version,
-       n.source_name_usable, n.registry_name_usable, n.registry_npi_present,
-       m.record_id, m.metric_row_id, m.email_ordinal, m.email_origin, m.record_payload,
-       e.email_npi_count,
-       e.email_npi_count > 1 AS email_has_multiple_npis,
-       e.has_been_reassigned,
-       -- Compare all current undated records within this vendor.
-       e.email_npi_count > 1 AS has_conflict_linkage,
-       m.observed_days, array_sort(array_intersect(m.observed_days, e.conflict_days)) AS conflict_days,
-       n.source_name_values,
-       {{ state_values_from_payload('endato', 'm.record_payload') }} AS source_state_values
-FROM metric_records m
-LEFT JOIN name_metrics n ON m.metric_row_id = n.metric_row_id
-LEFT JOIN email_linkage e ON m.source = e.source AND m.email = e.email
-),
-facility_enriched AS (
-{{ facility_enriched_records('metric_base') }}
-),
-specialty_enriched AS (
-{{ specialty_enriched_records('facility_enriched') }}
-),
-relationship_metrics AS (
-{{ name_consistency_metrics('specialty_enriched', facility=true, specialty=true) }}
-),
-registry_metrics AS (
-{{ registry_status_records('relationship_metrics') }}
-),
-location_metrics AS (
-{{ vendor_facility_records('registry_metrics') }}
-),
-freshness_metrics AS (
-{{ link_freshness_records('location_metrics', 'metric_records') }}
-),
-stability_inputs AS (
-SELECT m.source, m.email, m.npi, m.observed_days, m.undated_observation_count,
-       array_intersect(m.observed_days, e.conflict_days) AS conflict_days
-FROM metric_records m LEFT JOIN email_linkage e ON m.source = e.source AND m.email = e.email
-),
-stability_metrics AS (
-{{ link_stability_records('freshness_metrics', 'stability_inputs') }}
-),
-identity_metrics AS (
-{{ npi_identity_records('stability_metrics', 'metric_records') }}
-),
-professional_metrics AS (
-{{ vendor_professional_records('identity_metrics', 'endato', 'metric_records', derive_conflicts=true) }}
-),
-sequence_metrics AS (
-{{ sequential_history_records('professional_metrics', 'metric_records', 'endato', undated_flag='m.link_stability_has_undated_observations') }}
-),
-metrics AS (
-{{ registration_supersession_records('sequence_metrics', 'endato', 'metric_records') }}
-)
-{% if var('debug', false) %}
-, comparisons AS (
-{{ link_name_metrics(none, detail=true, record_grain=true, input_relation='name_inputs', include_source_names=true) }}
-)
-{{ debug_name_rows('metrics', 'comparisons') }}
-{% else %}
-SELECT * FROM {% if var('defer_quality_enrichments', false) %}location_metrics{% elif var('defer_sequential_history', false) %}professional_metrics{% else %}metrics{% endif %}
-{% endif %}
+{{ link_metrics('endato') }}

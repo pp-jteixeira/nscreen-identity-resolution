@@ -39,15 +39,15 @@ def fixture_sql():
     npis = [c[0] for c in CASES] + ['missing-code', 'bad-code', 'partial-code', 'absent', '1234567893']
     values = ', '.join('(' + str(i) + ', ' + literal(n) + ')' for i, n in enumerate(npis))
     return p.render_sql("WITH records AS (SELECT *, 'fixture' AS source, 'preserved' AS raw_value FROM (VALUES " + values +
-                        ") AS t(metric_row_id, npi)), evaluated AS ({{ npi_identity_records('records') }}) SELECT * FROM evaluated",
+                        ") AS t(link_id, npi)), evaluated AS ({{ npi_identity_records('records') }}) SELECT * FROM evaluated",
                         {'npi_identity_as_of_day': '2026-10-30'}, source_overrides={
                             ('iceberg__npi', 'nppes_npidata_latest'): reference_fixture()})
 
 
 def check_fixture(rows):
     assert len(rows) == len(CASES) + 5
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
-    by_id = {r['metric_row_id']: r for r in rows}
+    assert len({r['link_id'] for r in rows}) == len(rows)
+    by_id = {r['link_id']: r for r in rows}
     for i, (npi, fmt, checksum, reason) in enumerate(CASES):
         r = by_id[i]
         assert r['npi'] == npi and r['raw_value'] == 'preserved'
@@ -95,10 +95,8 @@ class NpiIdentityTests(unittest.TestCase):
     def test_statistics_distinguish_records_and_identifiers(self):
         profile = p.render_profile('npi_identity_profile.sql')
         documented = (p.ROOT / 'sql/statistics/22_npi_identity.sql').read_text()
-        # Documentation pins its measured snapshot; live profiles use the current table.
-        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
-                                 p.relation(p.FINAL_MODEL), documented)
-        self.assertEqual(pins, 1)
+        # The statistics query is the live profile against the current table.
+        unpinned = documented
         self.assertEqual(profile + '\n', unpinned)
         rows = execute(profile.replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')'))
         for dimension in ('structure', 'entity_type', 'entity_reason'):

@@ -7,4 +7,4 @@ SELECT
 {{ var('lookup_output_projection') }}
 FROM {{ ref('pii_clean') }} r
 WHERE lower(trim(r.email)) = (SELECT input_email FROM params)
-ORDER BY r.source, r.npi, r.last_seen_day DESC NULLS LAST, r.metric_row_id
+ORDER BY r.source, r.npi, r.link_id

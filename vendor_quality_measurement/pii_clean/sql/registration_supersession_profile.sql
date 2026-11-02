@@ -1,4 +1,4 @@
--- Registration/link counts differ from record counts and from email/NPI link counts.
+-- Registration counts differ from email/NPI link counts.
 WITH records AS (/* EVALUATED_SQL */), links AS (
     SELECT DISTINCT source, email, registration_guid, npi, registration_link_status
     FROM records WHERE source = 'medscape'

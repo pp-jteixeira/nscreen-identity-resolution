@@ -53,16 +53,17 @@ class LayerContractTests(unittest.TestCase):
                   'source_feeds', 'computed_at', 'definition_version', 'email_format_valid',
                   'email_role_account', 'email_domain_class', *pipeline.NAME_METRICS,
                   'source_name_usable', 'registry_name_usable', 'registry_npi_present',
-                  'record_id', 'email_ordinal', 'email_origin', 'record_payload',
+                  'record_count', 'record_ids', 'latest_record_id', 'email_origins', 'attribute_versions',
                   'email_npi_count', 'email_has_multiple_npis',
                   'has_been_reassigned', 'has_conflict_linkage', 'observed_days', 'conflict_days']
-        overrides = {f'int_{s}__metrics': f"(SELECT '{s}' AS source, 'same@example.test' AS email, npi, metric_row_id, "
+        overrides = {f'int_{s}__metrics': f"(SELECT '{s}' AS source, 'same@example.test' AS email, npi, link_id, "
                      + ', '.join(f'NULL AS {c}' for c in fields)
                      + ', CAST(ARRAY[] AS array(row(first_name varchar, last_name varchar, first_variants array(varchar)))) AS source_name_values'
-                     + " FROM (VALUES ('older_npi', 'record_1'), ('older_npi', 'record_2'), ('newer_npi', 'record_3')) AS records(npi, metric_row_id))" for s in pipeline.SOURCES}
+                     + " FROM (VALUES ('older_npi', 'link_1'), ('newer_npi', 'link_2')) AS links(npi, link_id))" for s in pipeline.SOURCES}
         rows = execute(pipeline.read_model('int_pii__metrics', ref_overrides=overrides))
-        self.assertEqual(len(rows), 21)
-        self.assertEqual(len({(r['source'], r['metric_row_id']) for r in rows}), 21)
+        # The union keeps every vendor link; the same email and NPI stay apart across sources.
+        self.assertEqual(len(rows), 14)
+        self.assertEqual(len({(r['source'], r['link_id']) for r in rows}), 14)
         self.assertEqual(len({(r['source'], r['email'], r['npi']) for r in rows}), 14)
         self.assertTrue(all(r[m] is None for r in rows for m in pipeline.NAME_METRICS))
         config = yaml.safe_load((pipeline.PROJECT / 'dbt_project.yml').read_text())

@@ -18,11 +18,17 @@ def fixture_sql(context=False, window_days=7, evaluation_day='2026-10-29'):
              ('nogeo', '1', ['NY']), ('invalidtokens', '1', ['NY']), ('unknownzip', '1', ['NY']),
              ('ambiguousfacility', '3', ['NY']), ('missingstate', '4', ['NY']),
              ('missinglocation', '5', ['NY']), ('norank1', '6', ['NY']), ('padding', '1', ['NY'])]
+    # Latest-version states equal all states except: mixed ends on CA, padding has no single latest version.
+    latest = {'mixed': ['CA'], 'padding': None}
+    def states_sql(states):
+        if states is None:
+            return 'cast(NULL AS array(varchar))'
+        return 'cast(ARRAY[' + ', '.join(literal(s) for s in states) + '] AS array(varchar))'
     records = ', '.join('(' + ', '.join([literal(name + '@example.test'), literal(npi), literal(name),
-                                       'cast(ARRAY[' + ', '.join(literal(s) for s in states) + '] AS array(varchar))']) + ')'
+                                       states_sql(states), states_sql(latest.get(name, states))]) + ')'
                         for name, npi, states in cases)
-    records += ", ('agree@example.test', '1', 'second-position', ARRAY['NY'])"
-    records = '(SELECT *, \'preserved\' AS raw_attribute FROM (VALUES ' + records + ') AS t(email,npi,metric_row_id,source_state_values))'
+    records += ", ('agree@example.test', '1', 'second-position', ARRAY['NY'], ARRAY['NY'])"
+    records = '(SELECT *, \'preserved\' AS raw_attribute FROM (VALUES ' + records + ') AS t(email,npi,link_id,source_state_values,source_state_values_latest))'
     facility = values(['npi_facility_provider_npi', 'state_code', 'location', 'npi_facility_rank'], [
         ('1', 'New York', 'POINT(1 1)', '1'), ('1', 'NY', 'POINT(1 1)', '1'),
         ('3', 'NY', 'POINT(1 1)', '1'), ('3', 'CA', 'POINT(1 1)', '1'),
@@ -65,8 +71,8 @@ def fixture_sql(context=False, window_days=7, evaluation_day='2026-10-29'):
 
 
 def check_fixture(rows):
-    assert len(rows) == 18 and len({r['metric_row_id'] for r in rows}) == 18
-    keyed = {r['metric_row_id']: r for r in rows}
+    assert len(rows) == 18 and len({r['link_id'] for r in rows}) == 18
+    keyed = {r['link_id']: r for r in rows}
     for r in rows:
         assert r['raw_attribute'] == 'preserved'
         assert r['cookie_mapping_available_days'] == 3 and r['cookie_location_available_days'] == 3
@@ -77,13 +83,18 @@ def check_fixture(rows):
     assert a['cookie_state_values'] == ['NY'] and a['cookie_uid_types'] == ['mobile', 'web']
     assert a['cookie_vendor_state_evidence'] == a['cookie_facility_state_evidence'] == 'corroborated'
     for field in a:
-        if field != 'metric_row_id':
+        if field != 'link_id':
             assert a[field] == keyed['second-position'][field], field
     assert keyed['disagree']['vendor_state_evidence'] == 'not_corroborated'
     assert keyed['disagree']['cookie_vendor_state_evidence'] == 'not_observed'
     assert keyed['disagree']['cookie_facility_state_evidence'] == 'corroborated'
     assert keyed['mixed']['vendor_state_evidence'] == 'mixed_vendor_states'
     assert keyed['mixed']['vendor_state_corroborated'] is None
+    assert keyed['mixed']['vendor_state_evidence_latest'] == 'not_corroborated'
+    assert keyed['mixed']['vendor_state_corroborated_latest'] is False
+    assert keyed['agree']['vendor_state_corroborated_latest'] is True
+    assert keyed['padding']['vendor_state_evidence_latest'] is None
+    assert keyed['padding']['cookie_vendor_state_evidence_latest'] is None
     assert keyed['nostate']['vendor_state_evidence'] == 'unknown_vendor_state'
     for name in ['unmapped', 'invalidtokens']:
         assert keyed[name]['cookie_location_status'] == 'no_mapping'
@@ -132,7 +143,7 @@ class LocationEvidenceTests(unittest.TestCase):
             self.assertEqual(row['cookie_mapping_available_days'],3)
             self.assertEqual(row['cookie_location_available_days'],3)
             self.assertEqual(row['cookie_mapping_missing_days'],[])
-        agree=next(r for r in rows if r['metric_row_id']=='agree')
+        agree=next(r for r in rows if r['link_id']=='agree')
         self.assertEqual(agree['cookie_count'],1)
         default = execute(p.render_sql("SELECT {{ cookie_window_start() }} AS start_day, {{ cookie_window_end() }} AS end_day, {{ cookie_window_days() }} AS days",{'location_evidence_day':'2026-10-25'}))[0]
         self.assertEqual(default['days'],3)
@@ -142,7 +153,7 @@ class LocationEvidenceTests(unittest.TestCase):
         fields = None
         for source in p.SOURCES:
             rows = execute(inlined(f'int_{source}__metrics'))
-            self.assertEqual(len(rows), len({r['metric_row_id'] for r in rows}))
+            self.assertEqual(len(rows), len({r['link_id'] for r in rows}))
             if fields is not None:
                 self.assertEqual(list(rows[0]), fields)
             fields = list(rows[0])

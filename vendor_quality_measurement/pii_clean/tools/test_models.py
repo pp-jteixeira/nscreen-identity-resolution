@@ -38,6 +38,12 @@ class SQL(str):
     pass
 
 
+def with_link_helpers(relation):
+    # Published rows omit the link helpers that metric macros carry internally.
+    return ('(SELECT *, CAST(ARRAY[] AS array(row(guid varchar, days array(date)))) AS guid_days, '
+            'CAST(ARRAY[] AS array(varchar)) AS specialty_values FROM ' + relation + ')')
+
+
 def literal(value):
     if isinstance(value, SQL):
         return str(value)
@@ -137,6 +143,13 @@ def execute(sql, setup_sql=None):
             window = node.copy()
             window.set('this', sqlglot.exp.ArrayAgg(this=node.this.expressions[0].copy()))
             return sqlglot.parse_one('json_format(cast(array_distinct(flatten(' + window.sql(dialect='trino') + ')) AS json))', read='trino').transform(translate_match)
+        alias = node.args.get('alias') if isinstance(node, sqlglot.exp.Unnest) else None
+        if alias is not None and len(alias.columns) > 1 and len(node.expressions) == 1 and not node.args.get('offset'):
+            # Trino expands an array of rows into one column per field; DuckDB yields one struct column.
+            expr = node.expressions[0].copy().transform(translate_match).sql(dialect='trino')
+            fields = ', '.join(f'u.entry.{c.name} AS {c.name}' for c in alias.columns)
+            return sqlglot.parse_one(f'SELECT * FROM (SELECT {fields} FROM UNNEST({expr}) AS u(entry)) AS {alias.name}',
+                                     read='trino').args['from'].this
         if isinstance(node, sqlglot.exp.Anonymous) and node.name.lower() == 'any_match':
             args = ', '.join(arg.copy().transform(translate_match).sql(dialect='trino') for arg in node.expressions)
             return sqlglot.parse_one('trino_any_match(transform(' + args + '))', read='trino')
@@ -252,17 +265,22 @@ class ModelFixtures(unittest.TestCase):
                 self.assertEqual(rows[3][raw_npi], ' ')
                 self.assertIsNone(rows[3]['npi_clean'])
 
-    def test_intermediate_preserves_positions_and_historical_attributions(self):
+    def test_intermediate_collapses_links_and_keeps_history(self):
         sources = [self.source] if self.source else pipeline.SOURCES
         for source in sources:
             with self.subTest(source=source):
                 rows = execute(inlined(f'int_{source}__metrics'))
                 self.assertTrue(all(r['email'] and r['npi'] for r in rows))
-                self.assertEqual(len({r['metric_row_id'] for r in rows}), len(rows))
-                expected_links = 6 if source in ('quantummedica', 'endato', 'rocketreach') else (4 if source == 'drdb' else 2)
+                self.assertEqual(len({r['link_id'] for r in rows}), len(rows))
+                self.assertEqual(len({(r['email'], r['npi']) for r in rows}), len(rows))
+                expected_links = 4 if source in ('quantummedica', 'endato', 'rocketreach') else 2
                 self.assertEqual(len(rows), expected_links)
                 row = next(r for r in rows if r['email'] == 'alex@example.test' and r['npi'] == '123')
-                self.assertEqual(row['observation_count'], 2)
+                # Repeated email positions and DRDB's two tables merge into one link.
+                self.assertEqual(row['record_count'], 2 if source == 'drdb' else 1)
+                self.assertEqual(len(row['email_origins']), 2 if source in ('quantummedica', 'endato', 'rocketreach', 'drdb') else 1)
+                self.assertEqual(len(row['attribute_versions']), row['record_count'])
+                self.assertEqual(row['observation_count'], 4 if source == 'drdb' else 2)
                 self.assertTrue(row['email_format_valid'])
                 self.assertFalse(row['email_role_account'])
                 self.assertEqual(row['email_domain_class'], 'custom')

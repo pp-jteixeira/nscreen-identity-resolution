@@ -19,6 +19,8 @@ PROJECT = ROOT
 SCHEMA = 'iceberg.jteixeira_ipa'
 FINAL_MODEL = 'pii_clean'
 CORE_MODEL = 'int_pii__metrics'
+# Link helpers carried by deferred outputs for GUID-keyed and record-label evidence; never published.
+HELPER_COLUMNS = ('guid_days', 'specialty_values')
 PENDING_BATCH_COMMENT = 'pii_clean: incomplete Medscape email batches'
 SOURCES = ('healthlink', 'quantummedica', 'medscape', 'endato', 'rocketreach', 'drdb', 'haymarket')
 NAME_CONSISTENCY_METRICS = ('email_name_count', 'email_npi_has_name_conflict')
@@ -217,7 +219,7 @@ def create_source(source):
 
 
 def validate_record_schemas(db, sources=SOURCES):
-    """Refuse to silently omit new raw columns from exact-record identity."""
+    """Refuse to silently omit new raw columns from version identity."""
     schemas = json.loads((PROJECT / 'models/record_schemas.json').read_text())
     for name, definition in schemas.items():
         if not any(name.startswith(f'stg_{s}__') for s in sources):
@@ -243,7 +245,7 @@ def evidence_snapshot_sql(table, columns, include_computed_at=False):
     # computed_at is query time in views; all substantive fields must agree.
     fields = ', '.join(c for c in columns if include_computed_at or c != 'computed_at')
     return f'''SELECT source, count(*) AS metric_rows,
-       count(*) - count(DISTINCT ROW(source, metric_row_id)) AS duplicate_keys,
+       count(*) - count(DISTINCT ROW(source, link_id)) AS duplicate_keys,
        to_hex(checksum(ROW({fields}))) AS evidence_checksum
 FROM {table} GROUP BY source ORDER BY source'''
 
@@ -355,7 +357,7 @@ def build_core(db, preservation=None, vendor_batches=False, history_inputs=None,
         if target_schema != expected_schema:
             raise ValueError('Resume target differs from the current metric contract')
         existing = query(db, f'''SELECT source, count(*) AS metric_rows,
-            count(*) - count(DISTINCT ROW(source, metric_row_id)) AS duplicate_keys
+            count(*) - count(DISTINCT ROW(source, link_id)) AS duplicate_keys
             FROM {candidate} GROUP BY source ORDER BY source''')
         if any(r['source'] not in SOURCES or r['metric_rows'] < 1 or r['duplicate_keys'] for r in existing):
             raise ValueError('Resume target contains invalid source coverage or duplicate keys')
@@ -377,8 +379,9 @@ def build_core(db, preservation=None, vendor_batches=False, history_inputs=None,
                                  if not name.startswith(('sequence_', 'registration_'))
                                  and name not in ('n_versions_observed', 'n_npis_window', 'n_npi_changes',
                                                   'n_swaps', 'n_flipbacks', 'stability_history_sufficient')]
-                base_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + base_table)]
-                if base_schema != expected_base:
+                base_schema = [(r['Column'], r['Type']) for r in query(db, 'DESCRIBE ' + base_table)
+                               if r['Column'] not in HELPER_COLUMNS]
+                if sorted(base_schema) != sorted(expected_base):
                     raise ValueError(f'{source}: retained history-input schema differs from the base contract')
                 coverage = query(db, f'SELECT source, count(*) AS metric_rows FROM {base_table} GROUP BY source')
                 if len(coverage) != 1 or coverage[0]['source'] != source or coverage[0]['metric_rows'] < 1:
@@ -511,10 +514,10 @@ def current_snapshot(db, table):
                      'ORDER BY made_current_at DESC LIMIT 1')[0]['snapshot_id'])
 
 
-def build_final(db, replace_name_backfill=False):
+def build_final(db):
     """Enrich sources independently, then combine their stored final records."""
     from cookie_publication import build_by_source
-    return build_by_source(db, sys.modules[__name__], replace_name_backfill=replace_name_backfill)
+    return build_by_source(db, sys.modules[__name__])
 
 
 def stage_input(name):
@@ -548,7 +551,7 @@ def test_source(db, source):
             FROM ({versions_sql})'''
         checked = query(db, sql)[0]
         if checked['raw_rows'] != checked['represented_rows'] or checked['duplicate_record_ids']:
-            raise ValueError(f'{stage}: exact-record preservation failed: {checked}')
+            raise ValueError(f'{stage}: version preservation failed: {checked}')
         print(f'PASS {stage}: raw copies preserved; record IDs unique', flush=True)
     variables = {'metric_model': f'int_{source}__metrics'}
     for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
@@ -581,7 +584,7 @@ def report(db, source):
     md = f'''# {source}: email-format metric
 
 **Relation:** `{table}`. **Measured:** {data['measured_at_utc']}.
-One row per `source`, `metric_row_id`: an exact source record and email position. Input: `email`; indicator: `email_format_valid`.
+One row per `source`, `link_id`: a source/email/NPI link. Input: `email`; indicator: `email_format_valid`.
 
 The indicator checks `email` against `^[a-z0-9._%+-]+@[a-z0-9.-]+[.][a-z]{{2,}}$`. For example, `alex+work@example.com` passes; `o'neil@example.com` fails. This does not establish deliverability or ownership. Counts are exact; percentages use this source's metric rows with nonempty email and NPI. Missing-key input records remain in staging but do not enter these metric-row counts.
 
@@ -702,8 +705,6 @@ def main():
     parser.add_argument('--vendor-batches', action='store_true', help='Skip the combined core plan and validate vendor batches')
     parser.add_argument('--direct', action='store_true', help='Rebuild the development table directly by vendor, then validate all rows')
     parser.add_argument('--resume', action='store_true', help='With --direct, retain completed source batches after validating their schema and unique keys')
-    parser.add_argument('--replace-name-backfill', action='store_true',
-                        help='For final/cookies, replace an interrupted name-only backfill using its verified core')
     args = parser.parse_args()
     if args.vendor_batches and args.command not in ('build', 'core'):
         parser.error('--vendor-batches is only available for build and core')
@@ -711,8 +712,6 @@ def main():
         parser.error('--direct is only available for build and core')
     if args.resume and not args.direct:
         parser.error('--resume requires --direct')
-    if args.replace_name_backfill and args.command not in ('final', 'cookies'):
-        parser.error('--replace-name-backfill is only available for final and cookies')
     if args.command == 'render':
         if not args.model or args.source:
             parser.error('render requires --model and does not use --source')
@@ -728,7 +727,7 @@ def main():
         if args.command in ('build', 'core'):
             build_core(db, vendor_batches=args.vendor_batches, direct=args.direct, resume_direct=args.resume)
         if args.command in ('build', 'final', 'cookies'):
-            build_final(db, replace_name_backfill=args.replace_name_backfill)
+            build_final(db)
         return
     if not args.source or args.model:
         parser.error('source, test and report require --source and do not use --model')

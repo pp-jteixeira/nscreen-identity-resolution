@@ -1,4 +1,4 @@
--- Outcomes apply to exact record/email-position rows, not deduplicated links.
+-- Outcomes apply to source/email/NPI links.
 WITH measured AS (/* EVALUATED_SQL */)
 SELECT source, count(*) AS metric_rows,
        count(DISTINCT email) AS distinct_emails,

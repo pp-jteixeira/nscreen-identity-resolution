@@ -1,113 +1,96 @@
 # PII Clean
 
-**Published and verified, October 31, 2026:** final snapshot `4233051104478921549` contains 75,656,369 records across seven sources and 158 fields. Source-scoped cookie enrichment preserved all 128 fields from core snapshot `3003274000539755025`, including stored name explanations. Both cookie inputs cover October 28–30 with all three days present. See [stored name evidence](docs/name_match_evidence.md) for recovery and validation details.
+PII Clean evaluates vendor-reported email–NPI links across all retained source history. The output `iceberg.jteixeira_ipa.pii_clean` has one row per link: a source, a cleaned email and a reported NPI, keyed by `link_id`. Metrics and indicators precede any cross-vendor deduplication. Scoring remains unimplemented.
 
-PII Clean evaluates vendor records across all retained source history. Metrics and indicators precede email–NPI deduplication. Scoring remains unimplemented.
+[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [26 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. No full build of this definition has been published or measured yet.
 
-[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. All [26 metric pages](docs/metrics/README.md) contain real examples and population statistics refreshed October 31, 2026; their SQL identifies the verified snapshot used for each measurement.
-
-**Pre-upgrade publication, verified October 31, 2026:** `iceberg.jteixeira_ipa.pii_clean` contained **75,656,369 records across all seven sources**, with 154 stored fields, at snapshot `8811920360682490090`. That core had 124 fields. Its thirty cookie fields cover October 28–30 and record October 30 as missing at evaluation. These historical values remain readable through the snapshot; the current source-batch refresh recomputes cookies from newer pinned inputs. All core values, keys and counts were preserved through the original enrichment, and cookie integrity checks passed. See [build evidence and recovery](docs/build_recovery.md).
-
-The earlier October 30 stability publication had 114 columns and 75,564,265 metric rows. It preserved all 108 previous fields and rows, including stored freshness dates and `computed_at`. These are historical checkpoints; earlier measurements retain their extraction dates.
-
-| Output | Columns | Availability |
+| Output | Columns | Contents |
 |---|---:|---|
-| Canonical `iceberg.jteixeira_ipa.pii_clean` | 158 | Complete seven-source publication, with stored name explanations and freshly computed cookies. |
-| Vendor metric views | 128 | Core attributes, metrics and stored name explanations. Cookie processing runs separately downstream. |
-| Stored core and vendor model contract | 128 | Core is complete with all four name-explanation fields and verified population statistics. |
-| Complete email lookup | 164 | All 158 stored fields plus six display/comparison helpers. |
+| Canonical `iceberg.jteixeira_ipa.pii_clean` | 165 | 134 core fields plus 31 cookie fields, with stored name explanations. |
+| Vendor metric views | 134 | Core attributes, metrics and stored name explanations. Cookie processing runs separately downstream. |
+| Stored core `pii__int_pii__metrics` | 134 | Union of the seven vendor outputs. |
+| Complete email lookup | 171 | All 165 stored fields plus six display/comparison helpers. |
 
 | Layer | Responsibility |
 |---|---|
 | [Staging](models/staging/README.md) | Preserve every raw row and column; add cleaned helpers. |
-| [Intermediate](models/intermediate/README.md) | Combine otherwise-identical raw records across days, unfold email positions, attach reference evidence and compute metrics. |
-| [Final](models/final/README.md) | Store cookie-enriched output from materialized core in `iceberg.jteixeira_ipa.pii_clean`, preserving record grain. |
+| [Intermediate](models/intermediate/README.md) | Group raw rows into versions, unfold email positions, collapse to links, attach reference evidence and compute metrics. |
+| [Final](models/final/README.md) | Store cookie-enriched output from materialized core in `iceberg.jteixeira_ipa.pii_clean`, preserving link grain. |
 
-The local NPPES specialty flag is `conflicting_npis_share_nppes_specialty`. Current views and the canonical table use the renamed flag. The historical 114-field snapshot used `conflicting_npis_share_specialty`. Updated specialty reports and debug queries require the renamed schema. Historical statistics/example SQL retains the original field name for reproducibility.
+The local NPPES specialty flag is `conflicting_npis_share_nppes_specialty`.
 
 ## Independent cookie enrichment
 
-Vendor models define 128 core fields, including four stored name-explanation fields. Their union is stored in `int_pii__metrics`. The downstream `int_cookie__metrics` filters and enriches each source independently over three completed days, then combines the 158-field outputs. The runner writes source batches separately and reuses pinned inputs on resume. The verified 128-field core is the preservation baseline for cookie refreshes. `tools/pipeline.py cookies` republishes cookie enrichment from stored core. [Architecture, commands and validation](docs/cookie_stage.md). Core publication never scans raw cookie mappings or geo observations.
+Vendor models define 134 core fields, including four stored name-explanation fields. Their union is stored in `int_pii__metrics`. The downstream `int_cookie__metrics` filters and enriches each source independently over three completed days, then combines the 165-field outputs. The runner writes source batches separately and reuses pinned inputs on resume. Stored core is the preservation baseline for cookie refreshes. `tools/pipeline.py cookies` republishes cookie enrichment from stored core. [Architecture, commands and validation](docs/cookie_stage.md). Core publication never scans raw cookie mappings or geo observations.
 
 ## Stored name explanations
 
-[Name explanations](docs/name_match_evidence.md) retain distinct normalized name comparisons, component match kinds and all aggregate classes within each source record. Matching rules and the three nullable booleans are unchanged. Comparisons reuse the existing name join and aggregate before returning to record grain. No new model, source join, score or cross-vendor vote is introduced.
+[Name explanations](docs/name_match_evidence.md) retain distinct normalized name comparisons, component match kinds and all aggregate classes for each link, across every usable vendor name of its versions. The three nullable booleans aggregate those comparisons. Comparisons reuse the shared name join and aggregate to link grain. No score or cross-vendor vote is introduced.
 
-All four name-explanation fields are published and verified in core and final output. The complete email lookup includes them. Source-scoped cookie publication preserved every core field and recomputed cookies from pinned inputs. Existing dated statistics retain their original snapshot provenance.
+## What one row means
 
-## What one metric row means
+One row represents one source/email/NPI link. Its key is `link_id`, the SHA256 of source, email and NPI. A reported link is evidence, not proof of ownership.
 
-One row represents one exact source record and one email position. Its key is `source`, `metric_row_id`. Multiple rows can report the same email–NPI link. A reported link is evidence, not proof of ownership.
+Each vendor model first groups raw rows into **versions**. Raw rows form one version when every identity field agrees except `day` and the schema's volatile fields. Volatile fields are listed under `volatile` in [record_schemas.json](models/record_schemas.json); Medscape declares `email_address` (raw spelling), `huid`, `ip`, `payer_status`, `practice_setting`, `source` and `validated`. They never split a version and are kept as sorted distinct arrays inside the version payload. Changes to names, addresses, identifiers, other timestamps or other non-volatile fields produce separate versions. Identical rows combine across nonconsecutive dates. No latest-partition selection applies.
 
-Raw rows combine only when every original column except `day` agrees. Changes to names, addresses, feeds, identifiers, raw casing/whitespace, arrays or other timestamps produce separate records. Different source tables also stay separate. Identical records can combine across nonconsecutive dates. No latest-partition selection applies.
+Versions are unfolded by email position, then every version reporting the same source, email and NPI is merged into one link.
 
 | Column | Meaning |
 |---|---|
-| `record_id` | SHA256 of source-table identity and raw record payload excluding `day`. |
-| `record_payload` | JSON text containing every raw identity field except `day`. Top-level timestamps, dates and decimals are serialized as strings. |
-| `email_ordinal`, `email_origin` | Original email position and source field/token/array location. Duplicate email positions remain separate. |
-| `metric_row_id` | SHA256 of `record_id` and email position. |
-| `observed_days`, `conflict_days` | Exact source dates for the record and the subset with same-day NPI conflicts. Empty for undated vendors. |
-| `first_seen_day`, `last_seen_day`, `observed_day_count`, `observation_count` | History of that exact raw record; see [observation counts](docs/metrics/01_observation_counts.md). |
+| `link_id` | SHA256 of source, email and NPI. Unique. |
+| `record_count`, `record_ids` | Number of merged versions and their sorted `record_id` values. A `record_id` is the SHA256 of the source table and one version's identity payload. |
+| `latest_record_id` | Version with the unique greatest `last_seen_day`, or the only version. NULL when several undated versions exist or the greatest day is tied. |
+| `email_origins` | Sorted source columns or array positions where the email appeared across versions. |
+| `attribute_versions` | One entry per version: record ID, first/last seen day, observed day count, observation count, email origins and JSON identity payload. Name and address changes over time are visible here. |
+| `observed_days`, `conflict_days` | Exact source dates of the link and the subset with same-day NPI conflicts. Empty for undated vendors. |
+| `first_seen_day`, `last_seen_day`, `observed_day_count`, `observation_count` | History across all versions of the link; see [observation counts](docs/metrics/01_observation_counts.md). |
 
-**Illustrative example:** JOHN SMITH and JANE JONES share an email/NPI in different deliveries. Both records remain, with separate name indicators. An unchanged JOHN SMITH record repeated on two dates combines and records two observations.
+Indicators that depend on one record's own attributes are published twice. The unsuffixed column uses all versions of the link: `email_matches_source_name` and `vendor_name_matches_registry_name` are true when any usable vendor name matches, and `source_state_values` is the union of recognized states. The `_latest` columns (`email_matches_source_name_latest`, `vendor_name_matches_registry_name_latest`, `source_state_values_latest`, `vendor_state_evidence_latest`, `vendor_state_corroborated_latest`, `cookie_vendor_state_evidence_latest`) use only the latest version and are NULL without one.
 
-Names normally come from the exact email-bearing record. HealthLink uses its separate HCP reference by NPI; registry comparisons also join by NPI. These reference joins use readable name variants without historical date alignment. Neither reference comparison merges source records.
+**Illustrative example:** JOHN SMITH and JANE JONES appear for the same email/NPI in different deliveries. The link keeps both versions in `attribute_versions`; the all-version name indicators consider both names, and the `_latest` indicators use the most recently seen version. An unchanged JOHN SMITH row repeated on two dates is one version with two observations.
 
-Only nonempty cleaned email/NPI keys enter metric outputs. Medscape additionally excludes every NPI present in the cumulative opt-out feed before computing intermediate metrics. [Opt-out policy and validation](docs/medscape_optout.md) describe the published exclusion. Missing-key records remain in staging. Malformed nonempty values remain available for indicators. Endato attributes returned person-email slots; provider-input email fields are excluded. RocketReach uses its array plus recommended/current fields; QuantumMedica unfolds pipe-separated values. DRDB retains both input tables separately. See the [source map](docs/00_source_map.md).
+Vendor names come from the email-bearing versions. HealthLink uses its separate HCP reference by NPI, so its `_latest` columns equal the all-version columns; registry comparisons also join by NPI. These reference joins use readable name variants without historical date alignment.
+
+Only nonempty cleaned email/NPI keys enter metric outputs. Medscape additionally excludes every NPI present in the cumulative opt-out feed before computing intermediate metrics. [Opt-out policy and validation](docs/medscape_optout.md) describe the exclusion. Missing-key records remain in staging. Malformed nonempty values remain available for indicators. Endato attributes returned person-email slots; provider-input email fields are excluded. RocketReach uses its array plus recommended/current fields; QuantumMedica unfolds pipe-separated values. DRDB merges both input tables at link grain. See the [source map](docs/00_source_map.md).
 
 ## Vendor specialty and profession metrics
 
-[Vendor specialty overlap](docs/metrics/23_conflicting_npis_share_vendor_specialty.md) and [vendor profession overlap](docs/metrics/24_conflicting_npis_share_vendor_profession.md) compare exact normalized vendor labels between conflicting NPIs. Metadata joins use the same delivery day and NPI, plus Medscape registration `guid`. HealthLink and DRDB contribute specialty fields; only QuantumMedica and Medscape expose supported profession fields. All eight fields are published across the complete seven-source population. Native Medscape integrity checks passed, and the six recovered vendors preserved every previously validated core field. [Build evidence](docs/build_recovery.md).
+[Vendor specialty overlap](docs/metrics/23_conflicting_npis_share_vendor_specialty.md) and [vendor profession overlap](docs/metrics/24_conflicting_npis_share_vendor_profession.md) compare exact normalized vendor labels between conflicting NPIs. Metadata joins use the same delivery day and NPI; Medscape also joins by registration `guid`, using each GUID's own days. HealthLink and DRDB contribute specialty fields; DRDB uses the raw `specialty` labels of all versions. Only QuantumMedica and Medscape expose supported profession fields.
 
-## Published metric implementations
+## Metric implementations
 
-[Facility overlap](docs/metrics/15_conflicting_npis_share_facility.md) is published in vendor views and the final table, with current examples and statistics measured from the October 31 snapshot. The [measurement summary](results/conflicting_facilities_summary.md) gives coverage, outcomes, examples and validation. Full publication and integrity checks passed on October 29, 2026.
+[Facility overlap](docs/metrics/15_conflicting_npis_share_facility.md) compares retained facility NPIs between conflicting NPIs.
 
-[NPPES specialty overlap](docs/metrics/16_conflicting_npis_share_specialty.md) uses exact recognized NPPES taxonomy codes across all fifteen slots, with no broad-label fallback. Its five evidence columns were published under the original flag name `conflicting_npis_share_specialty`. Current views and the canonical table use `conflicting_npis_share_nppes_specialty`. Vendor specialty/profession comparisons are separate metrics. See [coverage, outcomes and validation](results/conflicting_specialties_summary.md).
+[NPPES specialty overlap](docs/metrics/16_conflicting_npis_share_specialty.md) uses exact recognized NPPES taxonomy codes across all fifteen slots, with no broad-label fallback. Vendor specialty/profession comparisons are separate metrics.
 
-[NPI registry status](docs/metrics/17_npi_registry_status.md) adds current NPPES lifecycle evidence, preserving deactivation/reactivation dates, replacement values and uncertainty reasons. Its eleven evidence/status columns are published and passed native integrity checks. It does not rewrite links or infer activity on historical vendor dates. See [per-vendor counts and validation](results/registry_status_summary.md).
+[NPI registry status](docs/metrics/17_npi_registry_status.md) adds current NPPES lifecycle evidence, preserving deactivation/reactivation dates, replacement values and uncertainty reasons. It does not rewrite links or infer activity on historical vendor dates.
 
-[Vendor/facility state](docs/metrics/18_vendor_facility_state.md) and [cookie-location evidence](docs/metrics/19_cookie_location_evidence.md) are published with eleven and thirty descriptive fields respectively, without filtering records or assigning scores. Current metric pages contain October 31 examples and population statistics from the complete publication. Current stored cookie fields use October 28–30, with all three days available in both inputs and no missing-date flags. The standalone statistical checks use the stored window length and passed native execution.
+[Vendor/facility state](docs/metrics/18_vendor_facility_state.md) and [cookie-location evidence](docs/metrics/19_cookie_location_evidence.md) are descriptive fields, without filtering links or assigning scores. Vendor/facility state has all-version and `_latest` forms.
 
-[Link freshness](docs/metrics/20_link_freshness.md) separates vendor source age from link lag. Its five published columns use retained vendor observation dates, with no thresholds or scoring. Missing dates stay unknown. The October 30 publication preserved every existing field, row and stored evidence date.
+[Link freshness](docs/metrics/20_link_freshness.md) separates vendor source age from link lag, using retained vendor observation dates, with no thresholds or scoring. Missing dates stay unknown.
 
 [Link stability](docs/metrics/21_link_stability.md) publishes distinct email/link/conflict day counts, presence and overlap fractions, and an incomplete-date flag. It measures dated history without adding thresholds or scores. One-day histories and undated peers remain visible.
 
-[NPI validity and entity type](docs/metrics/22_npi_identity.md) has twelve fields in vendor views and the complete 158-field publication. Native core integrity checks passed. The metric page contains real examples and population statistics pinned to the complete pre-upgrade publication, whose core values were preserved.
+[NPI validity and entity type](docs/metrics/22_npi_identity.md) adds structural checks and registry entity-type consensus.
 
 ## Sequential history and registration supersession
 
 [Sequential history](docs/metrics/25_sequential_history.md) adds source/email delivery-version counts, set changes, swaps, flip-backs and ordered daily cumulative evidence. It reads all retained eligible observations through `sequence_as_of_day`, default Europe/Paris today. HealthLink and QuantumMedica collapse consecutive repeated delivery content. Daily evidence never uses later NPI observations. Unknown dates stay explicit.
 
-[Medscape registration supersession](docs/metrics/26_registration_supersession.md) compares observations within source/GUID/email. It preserves older claims, flags ambiguous latest NPIs and treats missing chronology as unknown. These fields are published for Medscape; other vendors receive `not_applicable`. Existing presence/overlap and conflict definitions remain unchanged. Complete Medscape core measurements found 109,120 superseded registration links and 3,551,648 latest-observed links. Real examples and exact stored-field queries appear in the metric pages.
+[Medscape registration supersession](docs/metrics/26_registration_supersession.md) is evaluated per link and registration GUID, using that GUID's own days; each link reports its most recently observed GUID. It preserves older claims, flags ambiguous latest NPIs and treats missing chronology as unknown. Other vendors receive `not_applicable`.
 
-## Validation and measurements
+## Validation
 
-Intermediate contains [eleven SQL models](models/intermediate/README.md): seven vendor pipelines, two shared name lookups, the stored core union and downstream cookie enrichment. Staging and final remain separate. Legacy helper views are outside the managed build graph.
+Intermediate contains [eleven SQL models](models/intermediate/README.md): seven vendor pipelines, two shared name lookups, the stored core union and downstream cookie enrichment. Staging and final remain separate.
 
-The following counts were queried from complete canonical snapshot `8811920360682490090` on October 31, 2026. It contains 75,656,369 records and 26,730,958 distinct source/email/NPI links. Medscape uses newer pinned source inputs; the six recovered vendors preserve their earlier values. Email counts overlap across vendors. See [build evidence](docs/build_recovery.md).
-
-| Vendor | Metric rows | Distinct email–NPI links | Distinct emails |
-|---|---:|---:|---:|
-| HealthLink | 11,156,016 | 7,688,451 | 7,688,331 |
-| QuantumMedica | 1,705,723 | 1,705,723 | 1,705,695 |
-| Medscape | 47,164,366 | 3,659,659 | 3,550,359 |
-| Endato | 5,427,459 | 5,427,459 | 5,324,318 |
-| RocketReach | 4,864,145 | 3,199,535 | 3,163,679 |
-| DRDB | 1,115,415 | 826,886 | 819,454 |
-| Haymarket | 4,223,245 | 4,223,245 | 4,223,245 |
-
-The historical October 30 stability publication contained 75,564,265 records and 26,730,605 source/email/NPI links. Its earlier October 29 full build matched every vendor's substantive-column checksum to the then-current 103-column final table, excluding query-time `computed_at`. The October 31 core-to-final preservation check includes `computed_at` and every other core field. All sixteen rebuilt Medscape core checks and final cookie checks passed.
-
-Measured counts and SQL (historical output, not retained: `results/conflicting_states_measurements.json`) · Native validation and preservation (historical output, not retained: `results/conflicting_states_native_validation.json`) · Local tests (historical output, not retained: `results/conflicting_states_local_tests.txt`) · Final publication (historical output, not retained: `results/final_build.json`)
+Email counts overlap across vendors and must not be summed as globally distinct emails.
 
 ## Run and test
 
 From this directory, using the repository `.venv` and PulsePoint Trino connection:
 
 ```bash
-# Build all normal views and the final table
+# Build all normal views, stored core and the final table
 ../../.venv/bin/python tools/pipeline.py build
 
 # Compute cookies and publish the final table from stored core
@@ -141,23 +124,21 @@ From this directory, using the repository `.venv` and PulsePoint Trino connectio
 ../../.venv/bin/python tools/pipeline.py report --source all --metric npi_identity
 ```
 
-Use `--source all` to apply source, test or report to every vendor separately. The `report` command reads `iceberg.jteixeira_ipa.pii_clean` filtered to the requested vendor. Reports use stored evidence and evaluation dates, so changes to raw data or model code appear only after publication. Report metadata records the published relation and vendor. Source and candidate validation continue to inspect their respective build inputs. Source commands recreate selected staging/intermediate views and shared name dependencies; they do not refresh the published final table. `build` recreates source dependencies, builds stored core, then publishes cookie-enriched `pii_clean`. `final` reads stored core.
+Use `--source all` to apply source, test or report to every vendor separately. The `report` command reads `iceberg.jteixeira_ipa.pii_clean` filtered to the requested vendor. Reports use stored evidence and evaluation dates, so changes to raw data or model code appear only after publication. Report `metric_rows` are table rows, that is, links. Source and candidate validation continue to inspect their respective build inputs. Source commands recreate selected staging/intermediate views and shared name dependencies; they do not refresh the published final table. `build` recreates source dependencies, builds stored core, then publishes cookie-enriched `pii_clean`. `final` reads stored core.
 
-Core builds can use a validated candidate or write directly with `core --direct`. Stage-limit fallback materializes narrow execution inputs before attaching later metrics. The local core contract contains 128 fields and requires all seven sources, unique keys and seventeen integrity checks, including stored name-evidence consistency. `final` then computes cookies source by source from stored core, combining enriched batches into final output. It pins cookie inputs and coverage, verifies all 128 core fields including `computed_at`, and checks cookie invariants before completion. Interrupted cookie batches resume automatically after validation. Source snapshots are not pinned by ordinary core builds. Checkpoints are printed without saving local result files.
+Core builds can use a validated candidate or write directly with `core --direct`. Stage-limit fallback materializes narrow execution inputs before attaching later metrics. The local core contract contains 134 fields and requires all seven sources, unique `link_id` keys and seventeen integrity checks, including stored name-evidence consistency. `final` then computes cookies source by source from stored core, combining enriched batches into final output. It pins cookie inputs and coverage, verifies all 134 core fields including `computed_at`, and checks cookie invariants before completion. Interrupted cookie batches resume automatically after validation. Source snapshots are not pinned by ordinary core builds. Checkpoints are printed without saving local result files.
 
-The October 31 recovery verified all sixteen Medscape email batches against pinned raw key/history checksums. All sixteen native core integrity checks passed for the rebuilt Medscape population. The six recovered vendors matched all 124 previously validated fields, including `computed_at`. Final enrichment preserved the complete core population and passed cookie integrity checks.
+`test --source <vendor>` runs the local suites, then checks in the warehouse that staging preserves raw row counts, that versions represent every raw row with unique record IDs, and that the vendor model passes all integrity queries. Local tests cover synthetic execution and publication control flow. Local fixtures run translated SQL in DuckDB; they do not replace Trino checks. Install local test dependencies from [requirements-dev.txt](requirements-dev.txt). The runner renders Jinja; dbt itself is not the execution engine, and Spark has not been tested.
 
-Current validation covers core/cookie separation, three-day boundaries, email-batch equivalence, sequential history, registration supersession and publication failure handling. Latest suite and warehouse outcomes are recorded in the [execution checkpoint](docs/build_recovery.md). The earlier lookup checkpoint (historical output, not retained: `results/email_lookup_full_local_tests.txt`) passed 58 tests. Historical metric-specific checkpoints report their smaller suite sizes in the documentation; result logs are not retained. Local tests cover synthetic execution and publication control flow. Separate warehouse checks cover live raw-versus-staging row counts and intermediate integrity. Local fixtures run translated SQL in DuckDB; they do not replace Trino checks. Install local test dependencies from [requirements-dev.txt](requirements-dev.txt). The runner renders Jinja; dbt itself is not the execution engine, and Spark has not been tested.
-
-All 21 profile SQL files remain templates for reusable validation. `tools/pipeline.py` supplies published rows through `render_profile(filename, source=None)` and renders any metric macros. A specific `source` restricts the input before aggregation; omitting it profiles all vendors. Existing `report` commands use this renderer. For the general observation profile, render SQL from the project directory:
+Profile SQL files are templates for reusable validation. `tools/pipeline.py` supplies published rows through `render_profile(filename, source=None)` and renders any metric macros. A specific `source` restricts the input before aggregation; omitting it profiles all vendors. Existing `report` commands use this renderer. For the general observation profile, render SQL from the project directory:
 
 ```bash
 PYTHONPATH=tools ../../.venv/bin/python -c 'import pipeline; print(pipeline.render_profile("profile.sql"))'
 ```
 
-The facility debug query directly unnests stored peer comparisons from `pii_clean`; it does not rebuild facility reference joins. On October 29, 2026, all 15 profiles passed native validation for the all-vendor input and full execution for Endato, including source-scope and reported integrity checks. The facility debug query passed native validation and a 100-row execution check. SQL, query metadata and check outcomes are historical output, not retained: `results/published_profiles_validation_20261029.json`; the execution artifact is no longer retained.
+The facility debug query directly unnests stored peer comparisons from `pii_clean`; it does not rebuild facility reference joins.
 
-Report commands for the published metrics are:
+Report commands for the remaining metrics are:
 
 ```bash
 ../../.venv/bin/python tools/pipeline.py report --source all --metric conflicting_npis_share_facility
@@ -167,17 +148,19 @@ Report commands for the published metrics are:
 ../../.venv/bin/python tools/pipeline.py report --source all --metric npi_registry_status
 ../../.venv/bin/python tools/pipeline.py report --source all --metric vendor_state_evidence
 ../../.venv/bin/python tools/pipeline.py report --source all --metric cookie_location_status
+../../.venv/bin/python tools/pipeline.py report --source all --metric sequential_history
+../../.venv/bin/python tools/pipeline.py report --source all --metric registration_supersession
 ```
 
-The [complete single-email lookup](docs/email_lookup.md) selects 158 model fields and six helpers from the complete seven-source canonical table. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
+The [complete single-email lookup](docs/email_lookup.md) selects all 165 model fields and six helpers from the canonical table. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
 
 ## Documentation
 
-Historical execution outputs and validation logs are not retained locally or in Git. References labelled **historical output, not retained** identify the original extraction provenance only. Dated findings remain in Markdown, and SQL sources remain available for reruns. Reports and measurement tools display results on stdout. Notebook outputs must be cleared before saving. The nickname reference seed is a model dependency, not an exported dataset. Changing warehouse references means a later query may not reproduce a dated measurement.
+Execution outputs and validation logs are not retained locally or in Git. Selected findings belong in Markdown, and SQL sources remain available for reruns. Reports and measurement tools display results on stdout. Notebook outputs must be cleared before saving. The nickname reference seed is a model dependency, not an exported dataset.
 
-Email investigation: [Email lookup query and metric reference](docs/email_lookup.md). Enter one email to inspect names, states, NPIs, history and quality indicators per source record.
+Email investigation: [Email lookup query and metric reference](docs/email_lookup.md). Enter one email to inspect names, states, NPIs, history, versions and quality indicators per link.
 
-Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 158 stored columns, live Trino types, nested evidence structures, null handling and record/link counting rules. Schema and complete publication verified October 31, 2026.
+Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 165 stored columns, types, nested evidence structures, null handling and link counting rules.
 
 1. [Source map](docs/00_source_map.md): input tables, name joins and date limitations.
 2. [Metrics](docs/metrics/README.md): definitions, examples and source statistics.
@@ -189,6 +172,6 @@ See [project instructions](INSTRUCTIONS.md) and [model details](models/README.md
 
 `core --direct` writes source batches directly into `iceberg.jteixeira_ipa.pii__int_pii__metrics`, avoiding a separate complete core candidate and copy. The core remains partial until all sources finish. `--resume` retains existing source batches after schema and key checks and assumes those sources are complete.
 
-Medscape recovery uses `tools/build_medscape_batches.py` to bound transaction sizes. Each normalized email stays entirely within one of sixteen hash buckets. Expected raw keys and observation-history checksums determine whether a bucket is complete before it can be skipped. Do not use source-level resume as proof that partial email batches are complete. [Recovery details](docs/build_recovery.md).
+Medscape builds can use `tools/build_medscape_batches.py` to bound transaction sizes. Each normalized email stays entirely within one of sixteen hash buckets. Expected link keys and observation-history checksums determine whether a bucket is complete before it can be skipped. Do not use source-level resume as proof that partial email batches are complete. [Recovery details](docs/build_recovery.md).
 
 The final table is built from actual cookie-enriched core output. No pending cookie columns are added to core. [Cookie workflow](docs/cookie_stage.md).

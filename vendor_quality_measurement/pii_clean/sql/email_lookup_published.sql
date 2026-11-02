@@ -13,7 +13,7 @@ SELECT
     t.first_seen_day,
     t.last_seen_day,
     -- ----------------------------------
-    -- Observation metrics for this exact record
+    -- Observation metrics for this link
     t.observation_count,
     t.observed_day_count,
     t.undated_observation_count,
@@ -53,8 +53,8 @@ SELECT
         AS unknown_name_match_count,
     -- ----------------------------------
     -- Record identifier for further inspection
-    t.metric_row_id
+    t.link_id
 FROM iceberg.jteixeira_ipa.pii_clean t
 CROSS JOIN params p
 WHERE lower(trim(t.email)) = p.input_email
-ORDER BY t.source, t.npi, t.last_seen_day DESC NULLS LAST, t.metric_row_id
+ORDER BY t.source, t.npi, t.last_seen_day DESC NULLS LAST, t.link_id

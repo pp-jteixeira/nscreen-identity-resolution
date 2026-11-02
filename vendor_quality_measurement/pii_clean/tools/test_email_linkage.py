@@ -17,9 +17,11 @@ def multiplicity_fixture():
 
 
 def check_multiplicity(rows):
-    assert len(rows) == 4
-    assert len({r['metric_row_id'] for r in rows}) == 4
-    assert sorted(r['observation_count'] for r in rows) == [1, 1, 1, 3]
+    # NPI 123 holds two versions (the name change) in one link. Blank NPIs are dropped.
+    assert len(rows) == 3
+    assert len({r['link_id'] for r in rows}) == 3
+    assert sorted(r['observation_count'] for r in rows) == [1, 1, 4]
+    assert next(r for r in rows if r['npi'] == '123')['record_count'] == 2
     assert all(r['email_npi_count'] == 3 and r['email_has_multiple_npis'] is True for r in rows)
 
 
@@ -55,7 +57,10 @@ def drdb_feeds_fixture():
 
 
 def check_drdb_feeds(rows):
-    assert len(rows) == 3
+    # Both DRDB tables report NPI 123: one link with two versions.
+    assert len(rows) == 2
+    assert next(r for r in rows if r['npi'] == '123')['source_tables'] == [
+        'iceberg.thirdparty.drdb_npi', 'iceberg.thirdparty.npi_enrich_emails_hashlower']
     assert all(r['email_npi_count'] == 2 and r['email_has_multiple_npis'] is True for r in rows)
     assert all(r['has_conflict_linkage'] is True and r['has_been_reassigned'] is None for r in rows)
 
@@ -100,7 +105,7 @@ def check_history(rows):
         assert set(str(d)[:10] for d in row['conflict_days']).issubset(expected_days)
         if expected_conflict is True:
             assert row['conflict_days']
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
+    assert len({r['link_id'] for r in rows}) == len(rows)
 
 
 FIXTURES = {'multiplicity': (multiplicity_fixture, check_multiplicity),
@@ -117,7 +122,7 @@ class EmailLinkageTests(unittest.TestCase):
 
     def test_repeated_email_slots_do_not_inflate_count(self):
         rows = execute(quantum_fixture())
-        self.assertEqual(len(rows), 2)
+        self.assertEqual(len(rows), 1)
         self.assertTrue(all(r['email_npi_count'] == 1 for r in rows))
 
     def test_population_checks_reject_corrupted_metrics(self):

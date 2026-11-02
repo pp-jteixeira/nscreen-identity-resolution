@@ -39,8 +39,6 @@ def coverage_sql(coverage):
 
 
 def checkpoint(ddl):
-    if 'pii_clean: name evidence batches' in ddl:
-        raise ValueError('Name-evidence publication is incomplete. Resume its publisher first')
     if PREFIX not in ddl:
         return None
     match = re.search("COMMENT '([^']*)'", ddl)
@@ -71,7 +69,7 @@ def require_preserved(actual, baseline):
         raise ValueError('Cookie publication changed core values, keys or counts')
 
 
-def build_by_source(db, p, replace_name_backfill=False):
+def build_by_source(db, p):
     p.require_completed_batches(db)
     core, target = p.relation(p.CORE_MODEL), p.relation(p.FINAL_MODEL)
     schema = lambda table: [(r['Column'], r['Type']) for r in p.query(db, 'DESCRIBE ' + table)]
@@ -84,13 +82,9 @@ def build_by_source(db, p, replace_name_backfill=False):
         if 'TABLE_NOT_FOUND' not in str(exc):
             raise
         ddl = None
-    name_backfill = (re.search(r'pii_clean: name evidence batches core=(\d+) final=(\d+)', ddl)
-                     if ddl and replace_name_backfill else None)
-    state = checkpoint(ddl) if ddl and not name_backfill else None
+    state = checkpoint(ddl) if ddl else None
     head = p.current_snapshot(db, target) if ddl else None
     current_core = p.current_snapshot(db, core)
-    if name_backfill and name_backfill[1] != current_core:
-        raise ValueError('Core changed since the name-evidence backfill')
     resumed = state is not None
     if resumed and str(state['core_snapshot']) != current_core:
         raise ValueError('Core changed since the interrupted cookie publication')

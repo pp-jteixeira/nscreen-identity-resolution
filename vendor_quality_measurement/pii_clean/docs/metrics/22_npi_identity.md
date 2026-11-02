@@ -4,7 +4,7 @@ This metric checks identifier structure and reports whether NPPES identifies an 
 
 ## How it is computed
 
-The [macro](../../macros/npi_identity.sql) evaluates distinct `npi` values, then joins back without changing any source record or email position. The check applies to the main stored `npi`, not replacement, facility or peer identifiers. The stored value is not repaired, padded, stripped of punctuation or replaced. Upstream staging already trims vendor NPI text and preserves the original in `record_payload`.
+The [macro](../../macros/npi_identity.sql) evaluates distinct `npi` values, then joins back to each source/email/NPI link without changing the link grain. The check applies to the main stored `npi`, not replacement, facility or peer identifiers. The stored value is not repaired, padded, stripped of punctuation or replaced. Upstream staging already trims vendor NPI text and preserves the original in each version's `record_payload` inside `attribute_versions`.
 
 | Field | Rule |
 |---|---|
@@ -23,59 +23,14 @@ Registry evidence comes from `iceberg.npi.nppes_npidata_latest`, grouped by trim
 
 ## Real examples
 
-Executed October 31, 2026, against canonical snapshot `8811920360682490090`. These selected cases explain outcomes; they do not measure prevalence.
+No executed examples exist yet for this definition.
 
-[Executed example SQL](../../sql/examples/22_npi_identity.sql):
-
-```sql
-SELECT source, npi,
-       npi_format_valid AS format_ok,
-       npi_checksum_valid AS checksum_ok,
-       npi_structure_reason AS structure_reason,
-       npi_entity_type AS entity_type,
-       npi_entity_type_reason AS entity_reason,
-       transform(npi_entity_type_evidence, x -> x.entity_type_code) AS registry_codes,
-       npi_identity_as_of_day AS as_of_day
-FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090
-WHERE source = 'medscape'
-  AND metric_row_id IN (
-      '00042DFD2EA561D524FBCDA83E5B6BC990D5A9A812A530BBE3DFA0C549A284FE',
-      '000000292E237796D17BEC9BB60DA00A81701AF9AE2B875BF008FEE8FE171D10',
-      '00011E630C888A9F3B6D0B056B07877D4F6847B35C6A1A1DED8BE1516B56C4FD',
-      '00000287D1459B8F05DA2E13092907BD3F5B2BE2772508A8112DE2F7D2D892B9',
-      '002A106AB3246FFBA17BBB57755220C0FFD4B992583B69D5611A67AF8626D015',
-      '00023ACB680E3BFCF0763E28CA1A0F80603DBC1A05F3FD95150280A8600F2216',
-      '000C0DBF773B88D71F427DE968BA87E92010E239DA17BEABDE6301FF15245212'
-  )
-ORDER BY source, npi_structure_reason, npi_entity_type_reason, npi
-```
-
-| source | npi | format_ok | checksum_ok | structure_reason | entity_type | entity_reason | registry_codes | as_of_day |
-|---|---|---|---|---|---|---|---|---|
-| medscape | 1487194295 | true | false | checksum_failure | unknown | not_found | [] | 2026-10-30 |
-| medscape | 12345 | false | NULL | malformed | unknown | not_found | [] | 2026-10-30 |
-| medscape | 9919111017 | false | false | unsupported_prefix | unknown | not_found | [] | 2026-10-30 |
-| medscape | 1235680307 | true | true | valid | unknown | missing_entity_type | [NULL] | 2026-10-30 |
-| medscape | 2011017805 | true | true | valid | unknown | not_found | [] | 2026-10-30 |
-| medscape | 1578866182 | true | true | valid | organization | registry_consensus | [2] | 2026-10-30 |
-| medscape | 1871571513 | true | true | valid | individual | registry_consensus | [1] | 2026-10-30 |
-
-**What differentiates these cases:** `12345` cannot receive a checksum result, while `1487194295` has the right format but fails its checksum. `9919111017` fails both checks; the reason reports the unsupported prefix first. `2011017805` passes structure but has no NPPES match. `1235680307` has a registry match with a missing type code. Both the individual and organization examples begin with 1, showing that the first digit does not encode entity type.
+**What differentiates outcomes:** a malformed value such as `12345` cannot receive a checksum result, while a ten-digit value with an allowed prefix can still fail its checksum. A value that fails both the prefix and checksum rules reports the unsupported prefix first. A structurally valid NPI can still have no NPPES match, or a registry match with a missing type code. Individual and organization NPIs can both begin with 1, so the first digit does not encode entity type.
 
 ## Statistics by source
 
-Measured **October 31, 2026** from `iceberg.jteixeira_ipa.pii_clean` snapshot `8811920360682490090`. These are exact published-population counts across retained eligible history, not a sample. Stored evaluation dates remain unchanged.
+No measurements exist yet for this definition.
 
-[Executed statistics SQL](../../sql/statistics/22_npi_identity.sql)
-
-| Source | Stored evaluation day | Distinct NPIs | Structurally valid, n (%) | Individual, n (%) | Organization, n (%) | Unknown type, n (%) |
-|---|---|---|---|---|---|---|
-| HealthLink | 2026-10-30 | 3,453,960 | 3,453,960 (100.000000%) | 3,444,877 (99.737026%) | 0 (0.000000%) | 9,083 (0.262974%) |
-| QuantumMedica | 2026-10-30 | 1,022,015 | 1,022,014 (99.999902%) | 1,017,306 (99.539244%) | 0 (0.000000%) | 4,709 (0.460756%) |
-| Medscape | 2026-10-30 | 2,190,514 | 2,180,123 (99.525636%) | 2,097,536 (95.755425%) | 7,197 (0.328553%) | 85,781 (3.916022%) |
-| Endato | 2026-10-30 | 1,194,462 | 1,194,462 (100.000000%) | 1,152,638 (96.498507%) | 214 (0.017916%) | 41,610 (3.483577%) |
-| RocketReach | 2026-10-30 | 593,028 | 593,028 (100.000000%) | 579,639 (97.742265%) | 72 (0.012141%) | 13,317 (2.245594%) |
-| DRDB | 2026-10-30 | 580,189 | 580,187 (99.999655%) | 547,524 (94.369938%) | 1,195 (0.205967%) | 31,470 (5.424095%) |
-| Haymarket | 2026-10-30 | 1,712,938 | 1,709,361 (99.791177%) | 1,627,068 (94.986976%) | 907 (0.052950%) | 84,963 (4.960074%) |
+[Statistics SQL](../../sql/statistics/22_npi_identity.sql)
 
 Percentages use distinct NPIs within each source and stored evaluation day. Structure, entity type and entity-reason distributions are separate and must not be summed. Source populations overlap. Mathematical validity does not prove issuance; missing registry evidence is not a conclusion about a provider’s existence.

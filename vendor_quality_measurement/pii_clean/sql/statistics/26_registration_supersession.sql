@@ -1,5 +1,5 @@
--- Registration/link counts differ from record counts and from email/NPI link counts.
-WITH records AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), links AS (
+-- Registration counts differ from email/NPI link counts.
+WITH records AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), links AS (
     SELECT DISTINCT source, email, registration_guid, npi, registration_link_status
     FROM records WHERE source = 'medscape'
 )

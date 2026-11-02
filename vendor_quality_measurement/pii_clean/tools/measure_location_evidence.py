@@ -73,7 +73,7 @@ def main():
             candidate = f'WITH saved_records AS (SELECT * FROM {p.relation(p.FINAL_MODEL)}), evaluated AS ({metrics}) SELECT * FROM evaluated'
             query = f'''WITH measured AS ({candidate})
 SELECT source, vendor_state_evidence, facility_reference_status,
-       count(*) AS metric_rows, count(DISTINCT metric_row_id) AS unique_metric_rows,
+       count(*) AS metric_rows, count(DISTINCT link_id) AS unique_metric_rows,
        count(DISTINCT ROW(email, npi)) AS distinct_links,
        count_if({invariant('vendor_facility_state')}) AS invariant_failures
 FROM measured GROUP BY source, vendor_state_evidence, facility_reference_status ORDER BY 1, 2, 3'''
@@ -93,7 +93,7 @@ SELECT source,
             WHEN grouping(cookie_facility_state_evidence) = 0 THEN 'facility_state'
             ELSE 'totals' END AS section,
        cookie_location_status, cookie_vendor_state_evidence, cookie_facility_state_evidence,
-       count(*) AS metric_rows, count(DISTINCT metric_row_id) AS unique_metric_rows,
+       count(*) AS metric_rows, count(DISTINCT link_id) AS unique_metric_rows,
        count(DISTINCT ROW(email, npi)) AS distinct_links, count(DISTINCT email) AS distinct_emails,
        count_if({invariant('cookie_location')}) AS invariant_failures,
        count(DISTINCT IF(cookie_primary_state_tied_count > 0, email, NULL)) AS emails_with_tied_uids,

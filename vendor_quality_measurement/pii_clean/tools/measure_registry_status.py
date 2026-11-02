@@ -80,11 +80,11 @@ FROM {p.relation(p.FINAL_MODEL)} GROUP BY source ORDER BY source''')
         if failures:
             raise ValueError(f'Population invariant failures: {failures}')
         run('examples', f'''WITH measured AS ({candidate}), ranked AS (
-    SELECT source, metric_row_id, npi, npi_registry_status, npi_registry_status_reason,
+    SELECT source, link_id, npi, npi_registry_status, npi_registry_status_reason,
            npi_registry_replacement_npi, npi_registry_deactivation_date, npi_registry_reactivation_date,
            npi_registry_reference_row_count, npi_registry_variant_count, npi_registry_lifecycle_evidence,
            npi_registry_status_as_of_day,
-           row_number() OVER (PARTITION BY source, npi_registry_status ORDER BY metric_row_id) AS sample_rank
+           row_number() OVER (PARTITION BY source, npi_registry_status ORDER BY link_id) AS sample_rank
     FROM measured
 )
 SELECT * FROM ranked WHERE sample_rank <= 2 ORDER BY source, npi_registry_status, sample_rank''')

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Record-local names, temporal overlap and nullable cross-NPI comparisons."""
+"""Link names, temporal overlap and nullable cross-NPI comparisons."""
 import unittest
 
 import pipeline as p
-from test_models import execute, inlined
+from test_models import execute, inlined, with_link_helpers
 from test_record_grain import source_values
 
 
-# Each observation: NPI, day, first, last, expected flag for that exact record.
+# Each observation: NPI, day, first and last name. LINK_EXPECTED holds each link's flag.
 CASES = {
     'nickname': [('1', '01', 'ROBERT', 'SMITH', True), ('2', '01', 'BOB', 'SMITH', True)],
     'surname_token': [('1', '01', 'JOHN', 'SMITH-JONES', True), ('2', '01', 'JOHN', 'SMITH', True)],
@@ -28,7 +28,18 @@ CASES = {
                              ('3', '01', None, None, None)],
     'unknown_dates': [('1', None, 'JOHN', 'SMITH', None), ('2', None, 'JOHN', 'SMITH', None)],
 }
-# NPI 2's otherwise-identical changed_name rows combine; its day-2 match wins.
+# A link compares all its usable names with every peer sharing a conflict day.
+LINK_EXPECTED = {
+    'nickname': {'1': True, '2': True}, 'surname_token': {'1': True, '2': True},
+    'different': {'1': False, '2': False}, 'missing': {'1': None, '2': None},
+    'partial': {'1': None, '2': None}, 'reassigned_only': {'1': None, '2': None},
+    'later_conflict': {'1': None, '2': False, '3': False},
+    'no_inferred_overlap': {'1': None, '2': None}, 'same_npi': {'1': None},
+    'changed_name': {'1': True, '2': True},
+    'match_and_missing': {'1': True, '2': True, '3': None},
+    'mismatch_and_missing': {'1': None, '2': None, '3': None},
+    'unknown_dates': {'1': None, '2': None},
+}
 
 
 def dated_fixture(debug=False):
@@ -41,18 +52,11 @@ def dated_fixture(debug=False):
 
 
 def check_dated(rows):
-    expected = {}
-    for case, observations in CASES.items():
-        for npi, _, first, last, flag in observations:
-            expected[(case, npi, first, last)] = flag
-    expected[('changed_name', '2', 'JANE', 'JONES')] = True
-    assert len(rows) == len(expected)
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
-    import json
+    assert len(rows) == sum(len(v) for v in LINK_EXPECTED.values())
+    assert len({r['link_id'] for r in rows}) == len(rows)
     for r in rows:
-        raw = json.loads(r['record_payload'])
-        key = (r['email'].split('@')[0], r['npi'], raw['first_name'], raw['last_name'])
-        assert r['conflicting_npis_share_name'] is expected[key], (key, r['conflicting_npis_share_name'])
+        key = (r['email'].split('@')[0], r['npi'])
+        assert r['conflicting_npis_share_name'] is LINK_EXPECTED[key[0]][key[1]], (key, r['conflicting_npis_share_name'])
         peers = r['conflicting_npi_name_comparisons']
         assert bool(peers) == (r['has_conflict_linkage'] is True), key
         for peer in peers:
@@ -91,7 +95,7 @@ def isolation_fixture():
     b = a.replace("CAST('medscape' AS varchar)", "CAST('haymarket' AS varchar)")
     b = b.replace("'JOHN'", "'TEMP'").replace("'JANE'", "'JOHN'").replace("'TEMP'", "'JANE'")
     b = b.replace("'SMITH'", "'TEMP'").replace("'JONES'", "'SMITH'").replace("'TEMP'", "'JONES'")
-    return p.render_sql("WITH records AS (SELECT * FROM (" + a + ") UNION ALL SELECT * FROM (" + b + ")), measured AS ({{ name_consistency_metrics('records') }}) SELECT * FROM measured")
+    return p.render_sql("WITH records AS (SELECT * FROM " + with_link_helpers('(' + a + ')') + " UNION ALL SELECT * FROM " + with_link_helpers('(' + b + ')') + "), measured AS ({{ name_consistency_metrics('records') }}) SELECT * FROM measured")
 
 
 def check_isolation(rows):
@@ -113,10 +117,10 @@ class ConflictingNamesTests(unittest.TestCase):
                 check(execute(make_sql()))
 
     def test_debug_preserves_results(self):
-        expected = {r['metric_row_id']:r for r in execute(dated_fixture())}
+        expected = {r['link_id']:r for r in execute(dated_fixture())}
         for r in execute(dated_fixture(debug=True)):
             for field in ('conflicting_npis_share_name', 'conflicting_npi_name_comparisons'):
-                self.assertEqual(r[field], expected[r['metric_row_id']][field])
+                self.assertEqual(r[field], expected[r['link_id']][field])
 
     def test_independent_check_rejects_corruption(self):
         correct = dated_fixture()

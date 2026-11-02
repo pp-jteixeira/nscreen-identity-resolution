@@ -1,5 +1,5 @@
--- One observation per source/email for sequence totals, independently of record multiplicity.
-WITH records AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean FOR VERSION AS OF 8811920360682490090), emails AS (
+-- One observation per source/email for sequence totals, independently of link multiplicity.
+WITH records AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), emails AS (
     SELECT source, email, max(n_versions_observed) AS versions, max(n_swaps) AS swaps, max(n_flipbacks) AS flipbacks,
            bool_or(stability_history_sufficient) AS sufficient, bool_or(sequence_has_undated_observations) AS undated
     FROM records GROUP BY source, email

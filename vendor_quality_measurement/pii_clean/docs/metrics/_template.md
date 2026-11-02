@@ -4,7 +4,7 @@
 
 **Principle:** explain the question in one or two sentences.
 
-**Where to find it:** give the full output table name (`catalog.schema.table`) and exact column names. Default key: `source`, `metric_row_id` (exact source record and email position). Email–NPI deduplication is deferred. Name the input tables and columns, or link a precise entry in the [source map](../00_source_map.md). Include join keys when needed. Distinguish stored columns from statistics calculated for this page.
+**Where to find it:** give the full output table name (`catalog.schema.table`) and exact column names. Default key: `source`, `link_id` (one source/email/NPI link). State whether the metric uses all versions of a link or only its latest version (`_latest` columns). Name the input tables and columns, or link a precise entry in the [source map](../00_source_map.md). Include join keys when needed. Distinguish stored columns from statistics calculated for this page.
 
 ## How it is computed
 
@@ -18,11 +18,11 @@ Explain helper values and zero/false/null behavior. Label simplified expressions
 
 ## Real examples: contrasting outcomes
 
-Before statistics, show a few real cases that distinguish outcomes or expose limitations. Name the query date, full source relation, row grain and retained snapshot/evaluation date. Select exact record keys when link histories can differ. Include `source` in both SQL and displayed results. Show stored cleaned identifiers unchanged: full `email` for email-only checks, `npi` for NPI-only checks, and both for email–NPI attribution or link-history metrics. Add only attributes that explain the outcome, such as compared names, peer NPIs, states, facilities, taxonomy codes or exact observation/conflict dates. Do not replace relevant identifiers with hashes, masked shapes, mailbox-only text or domain-only text. Keep exact record keys in the SQL rather than widening the result table with technical identifiers. Label display helpers.
+Before statistics, show a few real cases that distinguish outcomes or expose limitations. Name the query date, full source relation, row grain and retained snapshot/evaluation date. Select exact link keys (`link_id`). Include `source` in both SQL and displayed results. Show stored cleaned identifiers unchanged: full `email` for email-only checks, `npi` for NPI-only checks, and both for email–NPI attribution or link-history metrics. Add only attributes that explain the outcome, such as compared names, peer NPIs, states, facilities, taxonomy codes or exact observation/conflict dates. Do not replace relevant identifiers with hashes, masked shapes, mailbox-only text or domain-only text. Keep exact link keys in the SQL rather than widening the result table with technical identifiers. Label display helpers.
 
 For an unpublished metric, query its validated candidate and explicitly state that the examples are not yet from the canonical publication. Illustrative examples may supplement real cases but do not replace this section.
 
-Include the complete executed SELECT in a SQL fence, followed immediately by its small Markdown result table and a brief explanation of the differences. Save a matching runnable SQL copy under `sql/examples/`; do not save CSV, JSON, Parquet or other result dumps. Cover true/false/unknown or category differences when real cases exist. Never invent an unavailable outcome. Distinguish missing evidence from not applicable and note any current, unpinned reference joins.
+Include the complete executed SELECT in a SQL fence, followed immediately by its small Markdown result table and a brief explanation of the differences. Cover true/false/unknown or category differences when real cases exist. Never invent an unavailable outcome. Distinguish missing evidence from not applicable and note any current, unpinned reference joins.
 
 ## Statistics by source
 
@@ -32,7 +32,7 @@ Measured on: [date]. Source data period: [range, or source-specific ranges].
 
 | Source | Eligible metric rows | Measurable rows, n (%) | Result or distribution |
 |---|---:|---:|---|
-| [Every source] | [count] | [count and % of eligible metric rows] | [value] |
+| [Every source] | [count of links] | [count and % of eligible metric rows] | [value] |
 
 Use “not measured,” “not applicable” or “unknown” explicitly. Never replace unavailable statistics with zero. Name thresholds and label approximate statistics.
 

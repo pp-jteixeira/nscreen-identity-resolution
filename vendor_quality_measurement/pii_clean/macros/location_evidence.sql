@@ -28,11 +28,11 @@ SELECT npi, facility_rank1_rows, facility_rank1_state_count,
             ELSE 'usable' END AS facility_reference_status
 FROM grouped
 {%- endmacro %}
-{% macro vendor_facility_comparison() -%}
+{% macro vendor_facility_comparison(states='source_state_values') -%}
 CASE WHEN facility_reference_status <> 'usable' THEN 'unknown_facility'
-     WHEN cardinality(source_state_values) = 0 THEN 'unknown_vendor_state'
-     WHEN contains(source_state_values, facility_primary_state)
-          THEN CASE WHEN cardinality(source_state_values) = 1 THEN 'corroborated' ELSE 'mixed_vendor_states' END
+     WHEN cardinality({{ states }}) = 0 THEN 'unknown_vendor_state'
+     WHEN contains({{ states }}, facility_primary_state)
+          THEN CASE WHEN cardinality({{ states }}) = 1 THEN 'corroborated' ELSE 'mixed_vendor_states' END
      ELSE 'not_corroborated' END
 {%- endmacro %}
 {% macro vendor_facility_records(input_relation) -%}
@@ -45,12 +45,18 @@ WITH facility_reference AS ({{ facility_state_lookup() }}), enriched AS (
            coalesce(r.facility_rank1_missing_location_rows, cast(0 AS bigint)) AS facility_rank1_missing_location_rows
     FROM {{ input_relation }} m LEFT JOIN facility_reference r ON m.npi = r.npi
 ), compared AS (
-    SELECT *, {{ vendor_facility_comparison() }} AS vendor_state_evidence FROM enriched
+    SELECT *, {{ vendor_facility_comparison() }} AS vendor_state_evidence,
+           -- Latest-version states are null when the link has no single latest version.
+           CASE WHEN source_state_values_latest IS NOT NULL
+                THEN {{ vendor_facility_comparison('source_state_values_latest') }} END AS vendor_state_evidence_latest
+    FROM enriched
 )
 SELECT *, CASE vendor_state_evidence WHEN 'corroborated' THEN true WHEN 'not_corroborated' THEN false END
               AS vendor_state_corroborated,
+       CASE vendor_state_evidence_latest WHEN 'corroborated' THEN true WHEN 'not_corroborated' THEN false END
+              AS vendor_state_corroborated_latest,
        {{ location_evaluation_day() }} AS location_evaluation_day,
        'bq_bi.analytics_prod.npi_facility_locations_with_ids' AS location_reference_table,
-       'record_vendor_facility_state_v1' AS location_evidence_version
+       'link_vendor_facility_state_v1' AS location_evidence_version
 FROM compared
 {%- endmacro %}

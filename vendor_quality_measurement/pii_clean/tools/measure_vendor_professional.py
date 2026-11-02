@@ -9,12 +9,8 @@ from test_vendor_professional import check_same_day, same_day_fixture
 
 
 def measurement_sql(source):
-    # Existing stored attribution context avoids recomputing unrelated metrics.
-    records = (f"SELECT source, email, npi, metric_row_id, record_payload, observed_days, conflict_days, has_conflict_linkage, source_tables "
-               f"FROM {p.relation(p.FINAL_MODEL)} WHERE source = '{source}'")
-    evaluated = p.render_sql("WITH professional_input AS (" + records + "), professional_output AS ("
-                            + "{{ vendor_professional_records('professional_input', '" + source
-                            + "', 'professional_input') }}) SELECT * FROM professional_output")
+    # Profile the stored vendor-label evidence of one source.
+    evaluated = f"SELECT * FROM {p.relation(p.FINAL_MODEL)} WHERE source = '{source}'"
     template = (p.ROOT / 'sql/vendor_professional_profile.sql').read_text()
     return p.render_sql(template.replace('/* EVALUATED_SQL */', evaluated))
 

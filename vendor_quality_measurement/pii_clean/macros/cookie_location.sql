@@ -125,6 +125,8 @@ coverage AS ({% if var('cookie_coverage_relation', '') %}SELECT * FROM {{ var('c
     FROM joined
 )
 SELECT *, {{ cookie_state_comparison('source_state_values') }} AS cookie_vendor_state_evidence,
+       CASE WHEN source_state_values_latest IS NOT NULL
+            THEN {{ cookie_state_comparison('source_state_values_latest') }} END AS cookie_vendor_state_evidence_latest,
        {{ cookie_state_comparison("filter(ARRAY[facility_primary_state], s -> s IS NOT NULL)") }} AS cookie_facility_state_evidence,
        {{ cookie_window_start() }} AS cookie_location_window_start,
        {{ cookie_window_end() }} AS cookie_location_window_end,

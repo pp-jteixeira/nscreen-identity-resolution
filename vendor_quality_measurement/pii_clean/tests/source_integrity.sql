@@ -1,7 +1,13 @@
 -- Return failed checks. Calculate all totals in one pass over the metric view.
 WITH totals AS (
-    SELECT count(*) - count(DISTINCT ROW(source, metric_row_id)) AS duplicate_keys,
-           count_if(source IS NULL OR email IS NULL OR npi IS NULL OR email = '' OR npi = '' OR metric_row_id IS NULL OR record_id IS NULL OR record_payload IS NULL OR email_ordinal IS NULL OR email_ordinal < 1 OR email_origin IS NULL) AS empty_keys,
+    SELECT count(*) - count(DISTINCT ROW(source, email, npi)) + count(*) - count(DISTINCT ROW(source, link_id)) AS duplicate_keys,
+           count_if(source IS NULL OR email IS NULL OR npi IS NULL OR email = '' OR npi = '' OR link_id IS NULL) AS empty_keys,
+           count_if(record_count IS NULL OR record_count < 1 OR cardinality(record_ids) <> record_count
+               OR cardinality(array_distinct(record_ids)) <> record_count
+               OR cardinality(attribute_versions) <> record_count OR cardinality(email_origins) < 1
+               OR (latest_record_id IS NOT NULL AND NOT contains(record_ids, latest_record_id))
+               OR (record_count = 1 AND latest_record_id IS NULL)
+               OR ((latest_record_id IS NULL) <> (source_state_values_latest IS NULL) AND source <> 'healthlink')) AS version_mismatch,
            count_if(first_seen_day > last_seen_day) AS reversed_dates,
            count_if(observation_count < 1 OR undated_observation_count > observation_count
                OR invalid_day_observation_count > undated_observation_count
@@ -41,6 +47,7 @@ FROM totals
 CROSS JOIN UNNEST(ARRAY[
     ROW('duplicate_keys', duplicate_keys),
     ROW('empty_keys', empty_keys),
+    ROW('version_mismatch', version_mismatch),
     ROW('reversed_dates', reversed_dates),
     ROW('invalid_counts', invalid_counts),
     ROW('inconsistent_dates', inconsistent_dates),

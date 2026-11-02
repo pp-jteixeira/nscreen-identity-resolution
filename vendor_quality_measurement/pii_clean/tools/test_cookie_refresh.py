@@ -19,7 +19,7 @@ def state():
 
 
 class CookiePublicationTests(unittest.TestCase):
-    def run_publication(self, failure=None, resume=False, replace_name_backfill=False):
+    def run_publication(self, failure=None, resume=False):
         writes = []
         rendered = []
         baseline = [{'source':s, 'metric_rows':1, 'duplicate_keys':0, 'evidence_checksum':s} for s in p.SOURCES]
@@ -30,8 +30,7 @@ class CookiePublicationTests(unittest.TestCase):
             if sql.startswith('SHOW CREATE TABLE'):
                 if p.relation(p.CORE_MODEL) in sql:
                     return [{'Create Table':p.PENDING_BATCH_COMMENT if failure == 'pending_core' else 'core'}]
-                comment = ('pii_clean: name evidence batches core=100 final=500' if failure == 'pending_names'
-                           else c.PREFIX+json.dumps(state()) if resume else 'complete')
+                comment = c.PREFIX+json.dumps(state()) if resume else 'complete'
                 return [{'Create Table':"COMMENT '"+comment+"'"}]
             if sql.startswith('DESCRIBE'):
                 return [{'Column':'source','Type':'varchar'}, {'Column':'computed_at','Type':'timestamp'}]
@@ -73,9 +72,9 @@ class CookiePublicationTests(unittest.TestCase):
              patch.object(p, 'explain_fragments', return_value=25), patch.object(p, 'run_write', side_effect=write), \
              patch.object(c.time, 'sleep'), \
              contextlib.redirect_stdout(io.StringIO()):
-            if failure and failure != 'lost_ack' and not (failure == 'pending_names' and replace_name_backfill):
-                with self.assertRaises((ValueError, RuntimeError)):p.build_final(Mock(), replace_name_backfill=replace_name_backfill)
-            else:p.build_final(Mock(), replace_name_backfill=replace_name_backfill)
+            if failure and failure != 'lost_ack':
+                with self.assertRaises((ValueError, RuntimeError)):p.build_final(Mock())
+            else:p.build_final(Mock())
         return writes, rendered, stored
 
     def test_enriches_each_source_before_combining_final_rows(self):
@@ -108,18 +107,12 @@ class CookiePublicationTests(unittest.TestCase):
         self.assertEqual(len(writes), 9)
 
     def test_rejects_incomplete_inputs_and_detects_bad_publication(self):
-        for failure in ('missing_core', 'pending_core', 'pending_names'):
+        for failure in ('missing_core', 'pending_core'):
             self.assertEqual(self.run_publication(failure)[0], [], failure)
         for failure in ('uncommitted', 'corrupt', 'cookie_integrity', 'concurrent_core'):
             writes, _, _ = self.run_publication(failure)
             self.assertEqual(len(writes), 6 if failure == 'uncommitted' else 1, failure)
             self.assertFalse(any('verified complete' in sql for sql in writes))
-
-    def test_explicit_switch_replaces_name_backfill_atomically(self):
-        writes, _, stored = self.run_publication('pending_names', replace_name_backfill=True)
-        self.assertEqual(len(stored), 7)
-        self.assertIn(c.PREFIX, writes[0])
-        self.assertFalse(any(sql.startswith('COMMENT') for sql in writes[:-1]))
 
     def test_checkpoint_preserves_inputs_and_rejects_bad_metadata(self):
         expected = state()

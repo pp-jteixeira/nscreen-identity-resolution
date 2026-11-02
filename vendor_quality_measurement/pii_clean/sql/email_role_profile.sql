@@ -1,4 +1,4 @@
--- Counts use record-level source outputs, with a separate distinct-email denominator.
+-- Counts use link-level source outputs, with a separate distinct-email denominator.
 WITH evaluated AS (
 /* EVALUATED_SQL */
 )

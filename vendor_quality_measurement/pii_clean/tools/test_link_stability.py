@@ -1,4 +1,4 @@
-"""Distinct dated history measures presence and overlap without changing record grain."""
+"""Distinct dated history measures presence and overlap without changing link grain."""
 import re
 import unittest
 
@@ -19,13 +19,13 @@ def fixture_sql():
         ('unknown', 'shared@test', 'A', 'unknown-a', CAST(ARRAY[] AS array(date)), CAST(ARRAY[] AS array(date)), 1),
         ('unknown', 'shared@test', 'B', 'unknown-b', CAST(ARRAY[] AS array(date)), CAST(ARRAY[] AS array(date)), 1),
         ('vendor', 'different@test', 'A', 'other-email', ARRAY[DATE '2021-01-01'], CAST(ARRAY[] AS array(date)), 0)
-    ) AS t(source, email, npi, metric_row_id, observed_days, conflict_days, undated_observation_count)"""
+    ) AS t(source, email, npi, link_id, observed_days, conflict_days, undated_observation_count)"""
     return p.render_sql("WITH records AS (" + records + "), evaluated AS ("
                         "{{ link_stability_records('records') }}) SELECT * FROM evaluated")
 
 
 def check_fixture(rows):
-    by_id = {r['metric_row_id']: r for r in rows}
+    by_id = {r['link_id']: r for r in rows}
     assert len(rows) == len(by_id) == 11
     for key in ('a1', 'a2', 'a-position'):
         r = by_id[key]
@@ -72,10 +72,8 @@ class LinkStabilityTests(unittest.TestCase):
 
     def test_population_counts_links_and_excludes_unknown_shares(self):
         documented = (p.ROOT / 'sql/statistics/21_link_stability.sql').read_text()
-        # Documentation pins its measured snapshot; live profiles use the current table.
-        unpinned, pins = re.subn(re.escape(p.relation(p.FINAL_MODEL)) + r' FOR VERSION AS OF [0-9]+\b',
-                                 p.relation(p.FINAL_MODEL), documented)
-        self.assertEqual(pins, 1)
+        # The statistics query is the live profile against the current table.
+        unpinned = documented
         self.assertEqual(p.render_profile('link_stability_profile.sql') + '\n',
                          unpinned)
         sql = p.render_profile('link_stability_profile.sql').replace(p.relation(p.FINAL_MODEL), '(' + fixture_sql() + ')')

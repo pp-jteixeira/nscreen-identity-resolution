@@ -80,9 +80,12 @@ LEFT JOIN sequence_summary s ON m.source = s.source AND m.email = s.email
 {% macro registration_supersession_records(input_relation, vendor, observation_relation='metric_records', inline=false) -%}
 {% if vendor == 'medscape' %}
 WITH registration_records AS (
-    SELECT {% if inline %}r.*{% else %}source, email, npi, metric_row_id, observed_days, undated_observation_count{% endif %},
-           {{ clean_text("json_extract_scalar(record_payload, '$.guid')") }} AS guid
+    -- One row per link and registration GUID, with that GUID's own observation days.
+    SELECT r.source, r.email, r.npi, r.link_id, r.undated_observation_count, g.guid AS guid,
+           array_sort(array_distinct(flatten(array_agg(g.days)))) AS observed_days
     FROM {{ input_relation if inline else observation_relation }} r
+    CROSS JOIN UNNEST(r.guid_days) AS g(guid, days)
+    GROUP BY r.source, r.email, r.npi, r.link_id, r.undated_observation_count, g.guid
 ), registration_windows AS (
     -- One registration history window. Repeated record variants cannot create extra events.
     SELECT r.*, array_distinct(array_agg(CAST(ROW(npi, filter(observed_days, d -> d <= {{ sequence_day() }}))
@@ -97,8 +100,15 @@ WITH registration_records AS (
     SELECT r.*, array_sort(array_distinct(transform(filter(history, h -> contains(h.days, r.latest_day)), h -> h.npi))) AS latest_npis,
            element_at(array_sort(filter(flatten(transform(history, h -> h.days)), d -> d > r.link_last_day)), 1) AS replaced_since
     FROM registration_dates r
+), registration_link AS (
+    -- A link reports its most recently observed registration GUID.
+    SELECT * FROM (
+        SELECT r.*, row_number() OVER (PARTITION BY r.source, r.link_id
+            ORDER BY r.link_last_day DESC NULLS LAST, r.guid NULLS LAST) AS guid_rank
+        FROM registration_context r
+    ) WHERE guid_rank = 1
 )
-SELECT {% if inline %}{% for field in metric_columns() if not field.startswith('registration_') %}r.{{ field }},{% endfor %}{% else %}m.*,{% endif %}
+SELECT {% if inline %}{% for field in metric_columns() if not field.startswith('registration_') %}m.{{ field }},{% endfor %}{% else %}m.*,{% endif %}
        r.guid AS registration_guid,
        CAST(CASE WHEN r.guid IS NULL OR r.latest_day IS NULL OR r.link_last_day IS NULL OR r.has_undated THEN 'unknown'
             WHEN cardinality(r.latest_npis) <> 1 THEN 'ambiguous_latest'
@@ -112,14 +122,10 @@ SELECT {% if inline %}{% for field in metric_columns() if not field.startswith('
                  AND NOT contains(r.latest_npis, r.npi) AND r.link_last_day IS NOT NULL THEN r.latest_npis
             ELSE CAST(ARRAY[] AS array(varchar)) END AS registration_superseded_by_npis,
        'registration_v1' AS registration_supersession_definition_version
-{% if inline %}
-FROM registration_context r
-{% else %}
 FROM {{ input_relation }} m
-JOIN registration_context r ON m.source = r.source AND m.metric_row_id = r.metric_row_id
-{% endif %}
+JOIN registration_link r ON m.source = r.source AND m.link_id = r.link_id
 {% else %}
-SELECT m.*, CAST(NULL AS varchar) AS registration_guid, CAST('not_applicable' AS varchar) AS registration_link_status,
+SELECT {% if inline %}{% for field in metric_columns() if not field.startswith('registration_') %}m.{{ field }}, {% endfor %}{% else %}m.*, {% endif %}CAST(NULL AS varchar) AS registration_guid, CAST('not_applicable' AS varchar) AS registration_link_status,
        CAST(NULL AS date) AS registration_latest_observed_day, CAST(ARRAY[] AS array(varchar)) AS registration_latest_npis,
        CAST(NULL AS date) AS registration_link_last_observed_day, CAST(NULL AS date) AS registration_superseded_since_day,
        CAST(ARRAY[] AS array(varchar)) AS registration_superseded_by_npis,

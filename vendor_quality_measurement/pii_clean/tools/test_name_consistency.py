@@ -2,7 +2,7 @@
 """Name history, fuzzy disagreement and vendor isolation fixtures."""
 import unittest
 import pipeline as p
-from test_models import execute, inlined
+from test_models import execute, inlined, with_link_helpers
 from test_record_grain import source_values
 
 
@@ -33,14 +33,15 @@ def history_fixture(debug=False):
 
 
 def check_history(rows):
-    assert len(rows) == sum(len(c[0]) for c in CASES.values())
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
+    links = {(case, npi) for case, (names, _, _) in CASES.items() for npi, _, _ in names}
+    assert len(rows) == len(links)
+    assert len({r['link_id'] for r in rows}) == len(rows)
     for row in rows:
         case = row['email'].split('@')[0]
         _, count, conflict = CASES[case]
         assert row['email_name_count'] == count, case
         assert row['email_npi_has_name_conflict'] is conflict, case
-    assert max(r['observation_count'] for r in rows) == 3
+    assert max(r['observation_count'] for r in rows) == 4
 
 
 def healthlink_fixture():
@@ -67,12 +68,12 @@ def vendor_isolation_fixture():
     b = a.replace("CAST('medscape' AS varchar)", "CAST('drdb' AS varchar)")
     # Both vendors retain the same keys and IDs, but use different source names.
     b = b.replace("'ROBERT'", "'ALICE'").replace("'BOB'", "'ALICIA'")
-    inputs = f'SELECT * FROM ({a}) UNION ALL SELECT * FROM ({b})'
+    inputs = f'SELECT * FROM {with_link_helpers("(" + a + ")")} UNION ALL SELECT * FROM {with_link_helpers("(" + b + ")")}'
     return p.render_sql("WITH records AS (" + inputs + "), measured AS ({{ name_consistency_metrics('records') }}) SELECT * FROM measured")
 
 
 def check_isolation(rows):
-    assert len(rows) == 2 * sum(len(c[0]) for c in CASES.values())
+    assert len(rows) == 2 * len({(case, npi) for case, (names, _, _) in CASES.items() for npi, _, _ in names})
     assert all(r['email_name_count'] == CASES[r['email'].split('@')[0]][1] for r in rows)
 
 
@@ -88,12 +89,12 @@ class NameConsistencyTests(unittest.TestCase):
                 check(execute(make_sql()))
 
     def test_debug_retains_metric_values(self):
-        expected = {r['metric_row_id']: r for r in execute(history_fixture())}
+        expected = {r['link_id']: r for r in execute(history_fixture())}
         rows = execute(history_fixture(debug=True))
         self.assertGreater(len(rows), len(expected))
         for row in rows:
             for column in ('email_name_count', 'email_npi_has_name_conflict'):
-                self.assertEqual(row[column], expected[row['metric_row_id']][column])
+                self.assertEqual(row[column], expected[row['link_id']][column])
 
 
 if __name__ == '__main__':

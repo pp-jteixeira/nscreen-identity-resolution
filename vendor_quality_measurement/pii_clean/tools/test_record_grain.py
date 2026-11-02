@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exact-record history and per-record indicators; also supplies native Trino fixtures."""
+"""Version merging, link history and all-version vs latest indicators; also supplies native Trino fixtures."""
 import json
 import unittest
 import pipeline as p
@@ -35,47 +35,55 @@ def quantum_fixture():
 
 
 def rocket_fixture():
-    base={'npi':'123','name':'JOHN SMITH','updated_at':SQL("TIMESTAMP '2026-01-01 12:00:00.123456'")}
+    base={'npi':'123','name':'JOHN SMITH','recommended_email':'jsmith@example.test',
+          'updated_at':SQL("TIMESTAMP '2026-01-01 12:00:00.123456'")}
     stage = 'stg_rocketreach__lookup'
-    staged = inlined(stage, fixtures={stage: source_values(stage,
+    return inlined('int_rocketreach__metrics', fixtures={stage: source_values(stage,
         [base, base, dict(base, updated_at=SQL("TIMESTAMP '2026-01-02 12:00:00.123456'"))])})
-    return p.render_sql("{{ record_versions('stg_rocketreach__lookup') }}",
-                        ref_overrides={stage: '(' + staged + ')'})
 
 
 def check_medscape(rows):
-    # Email case and source label are volatile: they merge into the base record. Name, street and GUID still split records.
-    assert len(rows)==4, len(rows)
-    assert len({r['record_id'] for r in rows})==4
-    assert len({r['metric_row_id'] for r in rows})==4
-    assert len({(r['email'],r['npi']) for r in rows})==1
-    repeated=next(r for r in rows if r['observation_count']==5)
-    assert str(repeated['first_seen_day'])[:10]=='2026-01-01'
-    assert str(repeated['last_seen_day'])[:10]=='2026-01-06'
-    assert repeated['observed_day_count']==4
-    merged=json.loads(repeated['record_payload'])
+    # All fixture rows share one email and NPI: one link holding four versions.
+    # Email case and source label are volatile and merge into the base version.
+    assert len(rows)==1, len(rows)
+    link=rows[0]
+    assert link['record_count']==4 and len(link['record_ids'])==4
+    versions=link['attribute_versions']
+    assert [v['record_id'] for v in versions]==sorted(link['record_ids'], key=lambda r: next(
+        (str(v['first_seen_day']), str(v['last_seen_day']), v['record_id']) for v in versions if v['record_id']==r))
+    assert link['observation_count']==8 and link['observed_day_count']==7
+    assert str(link['first_seen_day'])[:10]=='2026-01-01' and str(link['last_seen_day'])[:10]=='2026-01-07'
+    base=next(v for v in versions if v['observation_count']==5)
+    assert str(base['first_seen_day'])[:10]=='2026-01-01' and str(base['last_seen_day'])[:10]=='2026-01-06'
+    merged=json.loads(base['record_payload'])
     assert merged['source']==['feed_a','feed_b']
     assert merged['email_address']==['JSMITH@example.test','jsmith@example.test']
-    assert repeated['source_feeds']==['feed_a','feed_b']
-    changed=next(r for r in rows if json.loads(r['record_payload'])['first_name']=='JANE')
-    assert changed['email_matches_source_name'] is False
-    assert changed['vendor_name_matches_registry_name'] is False
-    assert all(r['email_matches_source_name'] is True for r in rows if r is not changed)
-    assert all('day' not in json.loads(r['record_payload']) for r in rows)
+    assert link['source_feeds']==['feed_a','feed_b']
+    assert all('day' not in json.loads(v['record_payload']) for v in versions)
+    # The GUID person_2 version is the only one seen on the last day.
+    latest=next(v for v in versions if v['record_id']==link['latest_record_id'])
+    assert json.loads(latest['record_payload'])['guid']=='person_2'
+    assert link['email_matches_source_name'] is True and link['email_matches_source_name_latest'] is True
+    assert link['vendor_name_matches_registry_name'] is True and link['vendor_name_matches_registry_name_latest'] is True
+    assert {n['first_name'] for n in link['source_name_values']}=={'JOHN','JANE'}
 
 
 def check_quantum(rows):
-    assert len(rows)==2
-    assert len({r['record_id'] for r in rows})==1
-    assert len({r['metric_row_id'] for r in rows})==2
-    assert {r['email_ordinal'] for r in rows}=={1,2}
-    assert all(r['observation_count']==2 for r in rows)
+    # The same email in two positions of one record is one link and one version.
+    assert len(rows)==1
+    assert rows[0]['record_count']==1
+    assert rows[0]['email_origins']==['email_token_1','email_token_2']
+    assert rows[0]['observation_count']==2
 
 
 def check_rocket(rows):
-    assert len(rows)==2
-    assert sorted(r['observation_count'] for r in rows)==[1,2]
-    assert len({json.loads(r['record_payload'])['updated_at'] for r in rows})==2
+    # Undated versions: two records merge into one link without a single latest version.
+    assert len(rows)==1
+    link=rows[0]
+    assert link['record_count']==2 and link['observation_count']==3
+    assert sorted(v['observation_count'] for v in link['attribute_versions'])==[1,2]
+    assert len({json.loads(v['record_payload'])['updated_at'] for v in link['attribute_versions']})==2
+    assert link['latest_record_id'] is None and link['source_state_values_latest'] is None
 
 
 FIXTURES={'changed_records':(medscape_fixture,check_medscape),
@@ -87,16 +95,18 @@ class RecordGrainTests(unittest.TestCase):
         for name,(sql,check) in FIXTURES.items():
             with self.subTest(case=name):check(execute(sql()))
 
-    def test_debug_comparisons_keep_changed_records_separate(self):
-        metrics = medscape_fixture()
-        sql = medscape_fixture(debug=True)
-        rows = execute(sql)
-        self.assertEqual(len(rows), 4)
-        self.assertEqual(len({r['debug_comparison_id'] for r in rows}), 4)
-        self.assertEqual(sum(r['comparison_vendor_name_matches_registry_name'] for r in rows), 3)
-        expected = {row['metric_row_id']: row for row in execute(metrics)}
-        for row in rows:
-            for metric in p.NAME_METRICS:
-                self.assertEqual(row['comparison_' + metric], expected[row['metric_row_id']][metric])
+    def test_debug_comparisons_cover_every_link_name(self):
+        metrics = {r['link_id']: r for r in execute(medscape_fixture())}
+        rows = execute(medscape_fixture(debug=True))
+        # One debug row per distinct vendor name of the link.
+        self.assertEqual(len(rows), 2)
+        self.assertEqual(len({r['debug_comparison_id'] for r in rows}), 2)
+        self.assertEqual(sum(r['comparison_vendor_name_matches_registry_name'] for r in rows), 1)
+        for metric in p.NAME_METRICS:
+            for link_id, link in metrics.items():
+                values = [r['comparison_' + metric] for r in rows if r['link_id'] == link_id]
+                expected = True if True in values else (False if False in values else None)
+                self.assertEqual(link[metric], expected, metric)
+
 
 if __name__=='__main__':unittest.main()

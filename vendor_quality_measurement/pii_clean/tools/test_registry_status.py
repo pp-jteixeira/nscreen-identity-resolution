@@ -40,7 +40,7 @@ def reference_fixture():
 def fixture_sql():
     records = '(SELECT * FROM (VALUES ' + ', '.join(
         '(' + literal(c[0]) + ', ' + literal('record-' + c[0]) + ')' for c in CASES) + \
-        ", ('absent', 'missing'), ('1000000001', 'second-email-position')) AS t(npi, metric_row_id))"
+        ", ('absent', 'missing'), ('1000000001', 'second-link')) AS t(npi, link_id))"
     return p.render_sql("WITH records AS (SELECT *, 'preserved' AS raw_attribute FROM " + records + "), "
                         "evaluated AS ({{ registry_status_records('records') }}) SELECT * FROM evaluated",
                         {'registry_status_as_of_day': '2026-10-29'}, source_overrides={
@@ -51,7 +51,7 @@ def check_fixture(rows):
     expected = {c[0]: c[5:] for c in CASES}
     expected['absent'] = ('not_found', 'no_nppes_record')
     assert len(rows) == len(CASES) + 2
-    assert len({r['metric_row_id'] for r in rows}) == len(rows)
+    assert len({r['link_id'] for r in rows}) == len(rows)
     for row in rows:
         assert (row['npi_registry_status'], row['npi_registry_status_reason']) == expected[row['npi']], row
         assert row['raw_attribute'] == 'preserved'
