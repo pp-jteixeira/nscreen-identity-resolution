@@ -105,16 +105,24 @@ def render_sql(text, variables=None, ref_overrides=None, dependencies=None, sour
         model = next(m for m in schema['models'] if m['name'] == FINAL_MODEL)
         return [c['name'] for c in model['columns'] if include_cookie or not c['name'].startswith('cookie_')]
 
-    def record_payload(name, alias):
+    def record_payload(name, alias, with_volatile=False):
+        # Identity payload: raw fields minus day and minus volatile fields. record_id hashes this form.
+        # with_volatile appends each volatile field as a JSON array built by record_versions.
+        schema = record_schema(name)
+        volatile = schema.get('volatile', [])
         parts = []
-        for field in record_schema(name)['columns']:
-            if field['name'] == 'day':
+        for field in schema['columns']:
+            if field['name'] == 'day' or field['name'] in volatile:
                 continue
             identifier = alias + '."' + field['name'].replace('"', '""') + '"'
             if field['type'].startswith(('timestamp', 'date', 'decimal')):
                 identifier = f'cast({identifier} AS varchar)'
             key = json.dumps(field['name'], ensure_ascii=False).replace("'", "''")
             parts.append("'" + key + ":' || coalesce(json_format(cast(" + identifier + " AS json)), 'null')")
+        if with_volatile:
+            for field in volatile:
+                key = json.dumps(field, ensure_ascii=False).replace("'", "''")
+                parts.append("'" + key + ":' || json_format(cast(" + alias + '."' + field + '_values" AS json))')
         return "'{' || array_join(ARRAY[" + ', '.join(parts) + "], ',') || '}'"
 
     macros = '\n'.join(p.read_text() for p in sorted((PROJECT / 'macros').glob('*.sql')))

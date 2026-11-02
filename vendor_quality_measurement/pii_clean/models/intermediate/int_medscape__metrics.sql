@@ -14,7 +14,7 @@ SELECT CAST('medscape' AS varchar) AS source, v.email_clean AS email, v.npi_clea
        v.first_seen_day, v.last_seen_day, v.observed_day_count, v.observed_days,
        v.observation_count, v.undated_observation_count, v.invalid_day_observation_count,
        CAST(ARRAY['iceberg.thirdparty.medscape_pii_global'] AS array(varchar)) AS source_tables,
-       filter(ARRAY[cast(v.source AS varchar)], x -> x IS NOT NULL) AS source_feeds,
+       v.source_values AS source_feeds,
        {{ norm_name('v.first_name_clean') }} AS first_name, {{ norm_name('v.last_name_clean') }} AS last_name
 FROM global_versions v
 WHERE v.email_clean IS NOT NULL AND v.email_clean <> '' AND v.npi_clean IS NOT NULL AND v.npi_clean <> ''

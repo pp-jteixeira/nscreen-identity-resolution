@@ -193,6 +193,21 @@
       "last_name_clean",
       "state_clean"
     ],
+    "volatile": [
+      "email_address",
+      "huid",
+      "ip",
+      "payer_status",
+      "practice_setting",
+      "source",
+      "validated"
+    ],
+    "volatile_lists": [
+      "ip"
+    ],
+    "group_helpers": [
+      "email_clean"
+    ],
     "table": "iceberg.thirdparty.medscape_pii_global"
   },
   "stg_endato__pii": {

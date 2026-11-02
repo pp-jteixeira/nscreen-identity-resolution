@@ -1,10 +1,22 @@
 {% macro record_versions(stage_model, exclude_npis_model=none) -%}
 {% set schema = record_schema(stage_model) %}
-{% set fields = schema.columns | rejectattr('name', 'equalto', 'day') | list %}
+{% set volatile = schema.get('volatile', []) %}
+{% set volatile_lists = schema.get('volatile_lists', []) %}
+{% set group_helpers = schema.get('group_helpers', []) %}
+{% set fields = schema.columns | rejectattr('name', 'equalto', 'day') | rejectattr('name', 'in', volatile) | list %}
+{# Volatile fields never define a record. They are kept as sorted distinct arrays named <field>_values. #}
 WITH grouped AS (
     SELECT
         {% for field in fields %}s."{{ field.name }}",{% endfor %}
-        {% for helper in schema.helpers %}arbitrary(s.{{ helper }}) AS {{ helper }},{% endfor %}
+        {% for helper in group_helpers %}s.{{ helper }},{% endfor %}
+        {% for helper in schema.helpers if helper not in group_helpers %}arbitrary(s.{{ helper }}) AS {{ helper }},{% endfor %}
+        {% for v in volatile %}
+        {% if v in volatile_lists %}
+        array_sort(array_distinct(flatten(array_agg(filter(transform(split(coalesce(CAST(s."{{ v }}" AS varchar), ''), ','), x -> nullif(trim(x), '')), x -> x IS NOT NULL))))) AS "{{ v }}_values",
+        {% else %}
+        coalesce(array_sort(array_agg(DISTINCT nullif(trim(CAST(s."{{ v }}" AS varchar)), '')) FILTER (WHERE nullif(trim(CAST(s."{{ v }}" AS varchar)), '') IS NOT NULL)), CAST(ARRAY[] AS array(varchar))) AS "{{ v }}_values",
+        {% endif %}
+        {% endfor %}
         coalesce(array_sort(array_agg(DISTINCT vendor_day) FILTER (WHERE vendor_day IS NOT NULL)), CAST(ARRAY[] AS array(date))) AS observed_days,
         min(vendor_day) AS first_seen_day,
         max(vendor_day) AS last_seen_day,
@@ -19,13 +31,21 @@ WITH grouped AS (
     {% endif %}
     {# npi_clean is deterministic from raw NPI. Including it preserves grain and permits NPI partition reuse. #}
     GROUP BY {% for field in fields %}s."{{ field.name }}"{% if not loop.last %}, {% endif %}{% endfor %}
+             {% for helper in group_helpers %}, s.{{ helper }}{% endfor %}
              {% if exclude_npis_model is not none %}, s.npi_clean{% endif %}
 ), serialized AS (
-    SELECT g.*, {{ record_payload(stage_model, 'g') }} AS record_payload
+    SELECT g.*, {{ record_payload(stage_model, 'g') }} AS identity_payload
     FROM grouped g
 )
-SELECT *, to_hex(sha256(to_utf8('{{ schema.table }}' || chr(0) || record_payload))) AS record_id
-FROM serialized
+SELECT
+    {% for field in fields %}s."{{ field.name }}",{% endfor %}
+    {% for helper in schema.helpers %}s.{{ helper }},{% endfor %}
+    {% for v in volatile %}s."{{ v }}_values",{% endfor %}
+    s.observed_days, s.first_seen_day, s.last_seen_day, s.observed_day_count, s.observation_count,
+    s.undated_observation_count, s.invalid_day_observation_count,
+    {{ record_payload(stage_model, 's', true) }} AS record_payload,
+    to_hex(sha256(to_utf8('{{ schema.table }}' || chr(0) || s.identity_payload{% for helper in group_helpers %} || chr(0) || coalesce(s.{{ helper }}, ''){% endfor %}))) AS record_id
+FROM serialized s
 {%- endmacro %}
 {% macro email_candidates(vendor, alias) -%}
 {% if vendor == 'quantummedica' %}
