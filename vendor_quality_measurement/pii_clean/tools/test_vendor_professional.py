@@ -162,6 +162,8 @@ class VendorProfessionalTests(unittest.TestCase):
             # The baseline intentionally lacks the new vendor fields. Use the
             # generic registration wrapper rather than its full-schema projection.
             before = before.replace(', inline=true)', ')')
+            projection = "SELECT {% for f in metric_columns() %}{{ f }}{% if not loop.last %}, {% endif %}{% endfor %} FROM metrics"
+            before = before.replace(projection, 'SELECT * FROM metrics')
             from unittest.mock import patch
             original = p.read_model
             def read(name, **kwargs):

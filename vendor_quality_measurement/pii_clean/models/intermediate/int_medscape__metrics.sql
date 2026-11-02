@@ -125,11 +125,12 @@ identity_metrics AS (
 professional_metrics AS (
 {{ vendor_professional_records('identity_metrics', 'medscape', 'metric_records', derive_conflicts=true) }}
 ),
-sequence_metrics AS (
-{{ sequential_history_records('professional_metrics', 'metric_records', 'medscape', undated_flag='m.link_stability_has_undated_observations') }}
+registration_metrics AS (
+-- Registration window runs on narrow rows. The wide per-email sequence evidence is attached last.
+{{ registration_supersession_records('professional_metrics', 'medscape', 'metric_records') }}
 ),
 metrics AS (
-{{ registration_supersession_records('sequence_metrics', 'medscape', 'metric_records', inline=true) }}
+{{ sequential_history_records('registration_metrics', 'metric_records', 'medscape', undated_flag='m.link_stability_has_undated_observations') }}
 )
 {% if var('debug', false) %}
 , comparisons AS (
@@ -137,5 +138,5 @@ metrics AS (
 )
 {{ debug_name_rows('metrics', 'comparisons') }}
 {% else %}
-SELECT * FROM {% if var('defer_quality_enrichments', false) %}location_metrics{% elif var('defer_sequential_history', false) %}professional_metrics{% else %}metrics{% endif %}
+{% if var('defer_quality_enrichments', false) %}SELECT * FROM location_metrics{% elif var('defer_sequential_history', false) %}SELECT * FROM professional_metrics{% else %}SELECT {% for f in metric_columns() %}{{ f }}{% if not loop.last %}, {% endif %}{% endfor %} FROM metrics{% endif %}
 {% endif %}

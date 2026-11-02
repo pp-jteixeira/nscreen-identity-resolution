@@ -46,6 +46,21 @@ def versioned_records_sql(stage, optout):
                                        'stg_medscape__optout': '(' + optout + ')'})
 
 
+def metadata_sql(meta):
+    # Same grouping as the professional_metadata CTE in macros/vendor_professional.sql, run once instead of once per batch.
+    return ("SELECT npi_clean AS npi, vendor_day AS evidence_day, nullif(trim(guid), '') AS guid, "
+            "array_sort(array_distinct(filter(flatten(array_agg(ARRAY[cast(primary_specialty AS varchar), "
+            "cast(secondary_specialty AS varchar), cast(tertiary_specialty AS varchar)])), v -> v IS NOT NULL))) AS raw_specialties, "
+            "array_sort(array_distinct(filter(array_agg(cast(profession AS varchar)), v -> v IS NOT NULL))) AS raw_professions "
+            "FROM (" + meta + ") WHERE npi_clean IS NOT NULL AND vendor_day IS NOT NULL "
+            "GROUP BY npi_clean, vendor_day, nullif(trim(guid), '')")
+
+
+def metadata_check_sql(select):
+    return ('SELECT count(*) AS records, to_hex(checksum(ROW(npi, evidence_day, guid, raw_specialties, raw_professions))) '
+            'AS checksum FROM (' + select + ')')
+
+
 def records_from_versions(relation):
     return ("SELECT to_hex(sha256(to_utf8(record_id || chr(0) || '1'))) AS metric_row_id, "
             'email_clean AS email, npi_clean AS npi, ' +
@@ -57,7 +72,7 @@ def expected_records_sql(stage, optout):
     return records_from_versions('(' + versioned_records_sql(stage, optout) + ')')
 
 
-def batch_select(stage, optout, meta, batch, latest_day, evaluation_day, versions_table=None):
+def batch_select(stage, optout, meta, batch, latest_day, evaluation_day, versions_table=None, metadata_table=None):
     if batch not in HEX or len(batch) != 1:
         raise ValueError('Expected one uppercase hexadecimal batch identifier')
     # Filter raw input before exact-record grouping. Every record/day for one
@@ -72,6 +87,10 @@ def batch_select(stage, optout, meta, batch, latest_day, evaluation_day, version
             raise ValueError('Versioned input must be a table in the build schema')
         variables['medscape_versioned_records'] = ('(SELECT * FROM ' + versions_table +
             ' WHERE ' + bucket_sql('email_clean') + " = '" + batch + "')")
+    if metadata_table is not None:
+        if not re.fullmatch(re.escape(p.SCHEMA) + r'\.[a-z][a-z0-9_]*', metadata_table):
+            raise ValueError('Metadata input must be a table in the build schema')
+        variables['medscape_professional_metadata'] = metadata_table
     return p.read_model('int_medscape__metrics', variables=variables,
                         ref_overrides={'stg_medscape__global': filtered,
                                        'stg_medscape__optout': '(' + optout + ')',
@@ -88,7 +107,8 @@ def main():
     parser.add_argument('--day', default=datetime.now(ZoneInfo('Europe/Paris')).date().isoformat())
     inputs = parser.add_mutually_exclusive_group()
     inputs.add_argument('--versioned-input', help='Reuse validated stored exact-record versions in the build schema')
-    inputs.add_argument('--materialize-records', action='store_true', help='Group eligible raw records once before metric batches')
+    inputs.add_argument('--materialize-records', action='store_true', help='Group eligible raw records and professional metadata once before metric batches')
+    parser.add_argument('--metadata-input', help='Reuse validated stored professional metadata in the build schema')
     args = parser.parse_args()
     if not re.fullmatch('[0-9A-F]+', args.batches) or len(set(args.batches)) != len(args.batches):
         parser.error('Use unique uppercase hexadecimal batch identifiers')
@@ -139,7 +159,18 @@ def main():
         if stored_expected != expected:
             raise ValueError('Versioned input differs from current pinned eligible source histories')
         emit('versioned_input_verified', table=args.versioned_input)
-    latest = run('SELECT max(last_seen_day) AS latest FROM (' + expected_select + ')')[0]['latest']
+    if args.materialize_records:
+        args.metadata_input = p.SCHEMA + '.pii_medscape_prof_meta_' + uuid.uuid4().hex[:12]
+        emit('metadata_input_start', table=args.metadata_input)
+        run('CREATE TABLE ' + args.metadata_input + " WITH (format='PARQUET') AS " + metadata_sql(meta))
+    if args.metadata_input:
+        if not re.fullmatch(re.escape(p.SCHEMA) + r'\.[a-z][a-z0-9_]*', args.metadata_input):
+            raise ValueError('Metadata input must be a table in the build schema')
+        stored_meta = run(metadata_check_sql('SELECT * FROM ' + args.metadata_input))
+        if stored_meta != run(metadata_check_sql(metadata_sql(meta))):
+            raise ValueError('Metadata input differs from current pinned Medscape metadata')
+        emit('metadata_input_verified', table=args.metadata_input)
+    latest =run('SELECT max(last_seen_day) AS latest FROM (' + expected_select + ')')[0]['latest']
     assert latest is not None, 'Cannot fix full-source freshness date without dated observations'
     emit('expected_population', records=sum(r['records'] for r in expected.values()),
          latest_day=latest, evaluation_day=args.day, batches=expected)
@@ -154,7 +185,7 @@ def main():
         if batch in actual:
             emit('batch_retained', **actual[batch])
             continue
-        select = batch_select(stage, optout, meta, batch, str(latest), args.day, args.versioned_input)
+        select = batch_select(stage, optout, meta, batch, str(latest), args.day, args.versioned_input, args.metadata_input)
         sql = 'INSERT INTO ' + target + '\n' + select
         emit('batch_start', batch=batch, expected=expected[batch],
              fragments=p.explain_fragments(db, sql, session_properties=PROPERTIES))

@@ -52,6 +52,22 @@ class MedscapeBatchTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             b.batch_select('s', 'o', 'm', "A'", '2026-01-20', '2026-02-01')
 
+    def test_stored_professional_metadata_replaces_per_batch_meta_grouping(self):
+        args = ('SELECT * FROM global_stage', 'SELECT * FROM optout_stage', 'SELECT * FROM meta_stage', 'A', '2026-01-20', '2026-02-01')
+        table = p.SCHEMA + '.pii_medscape_prof_meta_abc123'
+        plain = b.batch_select(*args)
+        stored = b.batch_select(*args, None, table)
+        self.assertIn('FROM meta_stage', plain)
+        self.assertNotIn('FROM meta_stage', stored)
+        self.assertIn('FROM ' + table, stored)
+        # The one-time grouping uses the same expressions as the per-batch CTE.
+        grouping = b.metadata_sql('SELECT * FROM meta_stage')
+        for expression in ("nullif(trim(guid), '')", 'cast(primary_specialty AS varchar)', 'cast(profession AS varchar)'):
+            self.assertIn(expression, grouping)
+            self.assertIn(expression, plain)
+        with self.assertRaises(ValueError):
+            b.batch_select(*args, None, 'other_schema.pii_medscape_prof_meta_abc123')
+
     def test_expected_history_matches_model_record_keys(self):
         data = source_values('stg_medscape__global', [
             dict(email_address='abc@test', npi='1', day='2026-01-01', guid='g'),

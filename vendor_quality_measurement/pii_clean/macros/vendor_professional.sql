@@ -48,6 +48,9 @@ professional_records AS (
 ),
 {% if dated_metadata %}
 professional_metadata AS (
+    {% if vendor == 'medscape' and var('medscape_professional_metadata', '') %}
+    SELECT npi, evidence_day, guid, raw_specialties, raw_professions FROM {{ var('medscape_professional_metadata') }}
+    {% else %}
     SELECT npi_clean AS npi, vendor_day AS evidence_day,
            {% if vendor == 'medscape' %}nullif(trim(guid), '') AS guid,{% endif %}
            array_sort(array_distinct(filter(flatten(array_agg(ARRAY[
@@ -59,6 +62,7 @@ professional_metadata AS (
     FROM {{ ref('stg_healthlink__hcp' if vendor == 'healthlink' else ('stg_quantummedica__hcpmeta' if vendor == 'quantummedica' else 'stg_medscape__meta')) }}
     WHERE npi_clean IS NOT NULL AND vendor_day IS NOT NULL
     GROUP BY npi_clean, vendor_day{% if vendor == 'medscape' %}, nullif(trim(guid), ''){% endif %}
+    {% endif %}
 ),
 {% endif %}
 professional_inputs AS (
