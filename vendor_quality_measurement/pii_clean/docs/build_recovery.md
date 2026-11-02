@@ -24,7 +24,7 @@ The core table must match the current 134-field schema. From `vendor_quality_mea
 ../../.venv/bin/python tools/build_medscape_batches.py --materialize-records
 ```
 
-`--day YYYY-MM-DD` fixes the evaluation day; the default is today in Europe/Paris. Repeat the command to resume after inspecting a failure. `--batches 0123` limits execution to selected hash buckets. The runner always checks expected source history before retaining committed buckets. It prints checkpoints and validation results without saving local result files.
+`--day YYYY-MM-DD` fixes the evaluation day; the default is today in America/New_York. Repeat the command to resume after inspecting a failure. `--batches 0123` limits execution to selected hash buckets. The runner always checks expected source history before retaining committed buckets. It prints checkpoints and validation results without saving local result files.
 
 After all sixteen Medscape buckets and the six other sources are complete, validate the stored core and publish final cookie enrichment:
 

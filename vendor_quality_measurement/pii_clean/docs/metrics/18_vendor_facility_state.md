@@ -28,7 +28,7 @@ Because the unsuffixed columns use the union, a link whose versions report diffe
 
 HealthLink states come from its retained HCP reference by NPI, so its `_latest` columns equal the all-version columns. Other vendors use the states of the link's email-bearing versions. QuantumMedica has no usable states, and Haymarket has no state field. Unknowns stay unknown.
 
-This mixed-source historical facility reference has no vendor-day alignment and can share vendor lineage. Agreement proves neither current attendance nor email ownership. Evaluation day defaults to Europe/Paris today; `location_evidence_day` fixes it.
+This mixed-source historical facility reference has no vendor-day alignment and can share vendor lineage. Agreement proves neither current attendance nor email ownership. Evaluation day defaults to America/New_York today; `location_evidence_day` fixes it.
 
 ## Real examples
 

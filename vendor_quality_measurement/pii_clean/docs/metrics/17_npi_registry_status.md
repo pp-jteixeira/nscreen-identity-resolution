@@ -25,7 +25,7 @@ try_cast(npi_deactivation_date AS date) AS deactivation_day
 
 Uncertainty checks precede replacement and chronology.
 
-Comparison date defaults to Europe/Paris today; `registry_status_as_of_day` fixes evaluation. No historical reconstruction or replacement redirects. Absent deactivation does not independently prove activity.
+Comparison date defaults to America/New_York today; `registry_status_as_of_day` fixes evaluation. No historical reconstruction or replacement redirects. Absent deactivation does not independently prove activity.
 
 ## Real examples
 

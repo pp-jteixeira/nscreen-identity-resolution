@@ -284,7 +284,7 @@ models:
     data_tests:
     - not_null
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests:
     - not_null
@@ -335,7 +335,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests:
     - not_null
   - name: location_reference_table
@@ -447,7 +447,7 @@ models:
     description: liveintent_primary_state_untied_v1; no scores or fractional votes.
     data_type: varchar
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests:
     - not_null
   - name: source_latest_observed_day
@@ -517,7 +517,7 @@ models:
     data_tests:
     - not_null
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests:
     - not_null
@@ -566,7 +566,7 @@ models:
     data_tests:
     - not_null
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.

@@ -159,7 +159,7 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 | `npi_registry_reference_row_count` | `bigint` | Number of readable NPPES records for this NPI, including duplicates; zero when unmatched. | Yes |
 | `npi_registry_variant_count` | `bigint` | Distinct trimmed lifecycle tuples. More than one yields unknown rather than choosing an arbitrary record. | Yes |
 | `npi_registry_lifecycle_evidence` | `array(row(...))` | Distinct original deactivation/reactivation strings, replacement NPI strings and reason codes. Empty without a reference match. | Yes |
-| `npi_registry_status_as_of_day` | `date` | Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not reconstruct historical registry versions. | Yes |
+| `npi_registry_status_as_of_day` | `date` | Date used to reject future events; America/New_York current date unless explicitly fixed. Does not reconstruct historical registry versions. | Yes |
 | `npi_registry_reference_table` | `varchar` | iceberg.npi.nppes_npidata_latest; separate from the registry-name lookup. | Yes |
 | `npi_registry_definition_version` | `varchar` | nppes_lifecycle_consensus_v1: normalized tuple agreement, date chronology and retained replacement evidence. | Yes |
 
@@ -179,7 +179,7 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 | `vendor_state_corroborated` | `boolean` | True only for a single matching vendor state, false for known disjoint states, null for mixed or unknown evidence. | — |
 | `vendor_state_evidence_latest` | `varchar` | `vendor_state_evidence` using `source_state_values_latest`. Null when the link has no single latest version. | — |
 | `vendor_state_corroborated_latest` | `boolean` | `vendor_state_corroborated` using `source_state_values_latest`. | — |
-| `location_evaluation_day` | `date` | Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction. | Yes |
+| `location_evaluation_day` | `date` | America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction. | Yes |
 | `location_reference_table` | `varchar` | bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used. | Yes |
 | `location_evidence_version` | `varchar` | link_vendor_facility_state_v1; link-grain descriptive comparison without scoring. | Yes |
 
@@ -227,7 +227,7 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 
 | Field | Trino type | Meaning / interpretation | Required |
 |---|---|---|---|
-| `link_freshness_as_of_day` | `date` | Evaluation day for stored link freshness, Europe/Paris today unless overridden. | Yes |
+| `link_freshness_as_of_day` | `date` | Evaluation day for stored link freshness, America/New_York today unless overridden. | Yes |
 | `source_latest_observed_day` | `date` | Latest valid parsed observation day among the eligible links of this vendor, including future dates. | — |
 | `link_last_observed_day` | `date` | Latest observation day of this source/email/NPI link. Null when undated. | — |
 | `source_age_days` | `bigint` | Days from source_latest_observed_day to evaluation day. Null for undated or future-dated source evidence. | — |
@@ -261,7 +261,7 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 | `npi_entity_type_evidence` | `array(row(...))` | Distinct raw NPPES entity type codes, including null evidence. Empty array when no reference record exists. | Yes |
 | `npi_entity_type_reference_row_count` | `bigint` | Number of NPPES reference rows for the identifier. Duplicate rows never multiply links. | Yes |
 | `npi_entity_type_variant_count` | `bigint` | Number of distinct trimmed entity-code variants, counting missing as a variant. | Yes |
-| `npi_identity_as_of_day` | `date` | Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence. | Yes |
+| `npi_identity_as_of_day` | `date` | America/New_York evaluation date for current registry evidence. Not the reference file delivery date or historical vendor-day evidence. | Yes |
 | `npi_identity_reference_table` | `varchar` | Registry relation used for entity type evidence. | Yes |
 | `npi_identity_definition_version` | `varchar` | Version of structural validation and entity-consensus rules. | Yes |
 
@@ -288,7 +288,7 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 
 | Field | Trino type | Meaning / interpretation | Required |
 |---|---|---|---|
-| `sequence_as_of_day` | `date` | Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris today. Daily evidence uses only observations through its own day. | — |
+| `sequence_as_of_day` | `date` | Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York today. Daily evidence uses only observations through its own day. | — |
 | `sequence_definition_version` | `varchar` | Sequence, delivery-version and cumulative-count rule version. | — |
 | `sequence_history_status` | `varchar` | dated_history, incomplete_dates or no_dated_history. Known-date counts do not infer missing observations. | — |
 | `sequence_has_undated_observations` | `boolean` | Any eligible link of this source/email has missing or invalid observation dates. | — |

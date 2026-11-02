@@ -111,7 +111,7 @@ def emit(event, **values):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--batches', default=HEX, help='Hexadecimal batches to build, default all 16')
-    parser.add_argument('--day', default=datetime.now(ZoneInfo('Europe/Paris')).date().isoformat())
+    parser.add_argument('--day', default=datetime.now(ZoneInfo('America/New_York')).date().isoformat())
     inputs = parser.add_mutually_exclusive_group()
     inputs.add_argument('--versioned-input', help='Reuse validated stored versions in the build schema')
     inputs.add_argument('--materialize-records', action='store_true', help='Group eligible raw records and professional metadata once before metric batches')

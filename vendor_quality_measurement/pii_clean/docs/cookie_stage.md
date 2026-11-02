@@ -35,7 +35,7 @@ For a core containing partial Medscape email batches, use `tools/build_medscape_
 
 ## Three completed days
 
-The default window is three completed calendar days in Europe/Paris: evaluation day minus three through evaluation day minus one, inclusive. Today's observations are excluded. Both LiveIntent mapping days and UID geography use this window. For an October 30 evaluation, the window is October 27–29.
+The default window is three completed calendar days in America/New_York: evaluation day minus three through evaluation day minus one, inclusive. Today's observations are excluded. Both LiveIntent mapping days and UID geography use this window. For an October 30 evaluation, the window is October 27–29.
 
 `cookie_location_window_days`, start/end dates, available-day counts and missing-day arrays describe the evaluated window on every output link. Integrity checks use the stored window length. This processing window does not establish raw-table retention.
 

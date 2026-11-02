@@ -284,7 +284,7 @@ models:
     data_tests: &id047
     - not_null
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: &id048
     - not_null
@@ -335,7 +335,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: &id057
     - not_null
   - name: location_reference_table
@@ -347,7 +347,7 @@ models:
     data_tests: &id059
     - not_null
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: &id060
     - not_null
   - name: source_latest_observed_day
@@ -417,7 +417,7 @@ models:
     data_tests: &id070
     - not_null
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: &id071
     - not_null
@@ -466,7 +466,7 @@ models:
     data_tests: &id079
     - not_null
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -740,7 +740,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -782,7 +782,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -791,7 +791,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -850,7 +850,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -890,7 +890,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -1164,7 +1164,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -1206,7 +1206,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -1215,7 +1215,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -1274,7 +1274,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -1314,7 +1314,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -1588,7 +1588,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -1630,7 +1630,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -1639,7 +1639,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -1698,7 +1698,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -1738,7 +1738,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -2012,7 +2012,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -2054,7 +2054,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -2063,7 +2063,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -2122,7 +2122,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -2162,7 +2162,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -2436,7 +2436,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -2478,7 +2478,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -2487,7 +2487,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -2546,7 +2546,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -2586,7 +2586,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -2860,7 +2860,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -2902,7 +2902,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -2911,7 +2911,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -2970,7 +2970,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -3010,7 +3010,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -3287,7 +3287,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -3329,7 +3329,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -3338,7 +3338,7 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -3397,7 +3397,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -3437,7 +3437,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.
@@ -3711,7 +3711,7 @@ models:
       Empty without a reference match.
     data_tests: *id047
   - name: npi_registry_status_as_of_day
-    description: Date used to reject future events; Europe/Paris current date unless explicitly fixed. Does not
+    description: Date used to reject future events; America/New_York current date unless explicitly fixed. Does not
       reconstruct historical registry versions.
     data_tests: *id048
   - name: npi_registry_reference_table
@@ -3753,7 +3753,7 @@ models:
   - name: vendor_state_corroborated_latest
     description: vendor_state_corroborated using source_state_values_latest.
   - name: location_evaluation_day
-    description: Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
+    description: America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction.
     data_tests: *id057
   - name: location_reference_table
     description: bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used.
@@ -3862,7 +3862,7 @@ models:
     description: liveintent_primary_state_untied_v1; no scores or fractional votes.
     data_type: varchar
   - name: link_freshness_as_of_day
-    description: Evaluation day for stored link freshness, Europe/Paris today unless overridden.
+    description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
   - name: source_latest_observed_day
     description: Latest valid parsed observation day among the eligible links of this vendor, including future dates.
@@ -3921,7 +3921,7 @@ models:
     description: Number of distinct trimmed entity-code variants, counting missing as a variant.
     data_tests: *id070
   - name: npi_identity_as_of_day
-    description: Europe/Paris evaluation date for current registry evidence. Not the reference file delivery date
+    description: America/New_York evaluation date for current registry evidence. Not the reference file delivery date
       or historical vendor-day evidence.
     data_tests: *id071
   - name: npi_identity_reference_table
@@ -3961,7 +3961,7 @@ models:
       shares_profession.
     data_tests: *id079
   - name: sequence_as_of_day
-    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to Europe/Paris
+    description: Inclusive evaluation cutoff for sequential history and registration supersession. Defaults to America/New_York
       today. Daily evidence uses only observations through its own day.
   - name: sequence_definition_version
     description: Sequence, delivery-version and cumulative-count rule version.

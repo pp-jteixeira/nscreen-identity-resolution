@@ -89,7 +89,7 @@ def build_by_source(db, p):
     if resumed and str(state['core_snapshot']) != current_core:
         raise ValueError('Core changed since the interrupted cookie publication')
     if not resumed:
-        day = datetime.now(ZoneInfo('Europe/Paris')).date().isoformat()
+        day = datetime.now(ZoneInfo('America/New_York')).date().isoformat()
         pins = {table:p.current_snapshot(db, table) for table in INPUTS.values()}
         coverage = p.query(db, p.render_sql('{{ cookie_source_coverage() }}', {'location_evidence_day':day}))[0]
         if any(p.current_snapshot(db, table) != pin for table, pin in pins.items()):

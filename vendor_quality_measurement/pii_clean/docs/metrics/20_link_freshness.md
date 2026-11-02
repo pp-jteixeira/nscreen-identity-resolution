@@ -10,7 +10,7 @@ Five columns are appended to each link in `iceberg.jteixeira_ipa.pii_clean`:
 
 | Column | Meaning |
 |---|---|
-| `link_freshness_as_of_day` | Evaluation date, defaulting to Europe/Paris today. The same-named rendering variable overrides it. |
+| `link_freshness_as_of_day` | Evaluation date, defaulting to America/New_York today. The same-named rendering variable overrides it. |
 | `source_latest_observed_day` | Latest retained observation date for this vendor. |
 | `link_last_observed_day` | Latest retained observation date for this source/email/NPI link. |
 | `source_age_days` | `date_diff('day', source_latest_observed_day, link_freshness_as_of_day)`. |

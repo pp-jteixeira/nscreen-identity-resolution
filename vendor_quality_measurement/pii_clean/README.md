@@ -75,7 +75,7 @@ Only nonempty cleaned email/NPI keys enter metric outputs. Medscape additionally
 
 ## Sequential history and registration supersession
 
-[Sequential history](docs/metrics/25_sequential_history.md) adds source/email delivery-version counts, set changes, swaps, flip-backs and ordered daily cumulative evidence. It reads all retained eligible observations through `sequence_as_of_day`, default Europe/Paris today. HealthLink and QuantumMedica collapse consecutive repeated delivery content. Daily evidence never uses later NPI observations. Unknown dates stay explicit.
+[Sequential history](docs/metrics/25_sequential_history.md) adds source/email delivery-version counts, set changes, swaps, flip-backs and ordered daily cumulative evidence. It reads all retained eligible observations through `sequence_as_of_day`, default America/New_York today. HealthLink and QuantumMedica collapse consecutive repeated delivery content. Daily evidence never uses later NPI observations. Unknown dates stay explicit.
 
 [Medscape registration supersession](docs/metrics/26_registration_supersession.md) is evaluated per link and registration GUID, using that GUID's own days; each link reports its most recently observed GUID. It preserves older claims, flags ambiguous latest NPIs and treats missing chronology as unknown. Other vendors receive `not_applicable`.
 

@@ -1,5 +1,5 @@
 {% macro sequence_day() -%}
-{% if var('sequence_as_of_day', '') %}DATE '{{ var('sequence_as_of_day') }}'{% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %}
+{% if var('sequence_as_of_day', '') %}DATE '{{ var('sequence_as_of_day') }}'{% else %}cast(current_timestamp AT TIME ZONE 'America/New_York' AS date){% endif %}
 {%- endmacro %}
 {% macro sequence_evidence_type() -%}
 array(row(observed_day date, previous_observed_day date, npis array(varchar), added_npis array(varchar), removed_npis array(varchar), returned_npis array(varchar), versions_observed bigint, npis_observed bigint, changes bigint, swaps bigint, flipbacks bigint, history_sufficient boolean))

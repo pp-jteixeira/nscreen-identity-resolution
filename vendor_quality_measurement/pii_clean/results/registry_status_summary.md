@@ -2,7 +2,7 @@
 
 **Historical checkpoint — October 29, 2026.** The population counts and validation results below describe that earlier build. Current publication statistics and executed examples are in [metric 17](../docs/metrics/17_npi_registry_status.md), refreshed October 31 against snapshot `8811920360682490090`. Original result dumps are not retained. See [current build validation](../docs/build_recovery.md).
 
-Input: all 75,564,265 saved source-record/email-position rows and 26,730,605 distinct source/email/NPI links in `iceberg.jteixeira_ipa.pii_clean`. Executed queries and results (historical output, not retained: `registry_status_measure.json`) identify the Iceberg input snapshot and confirm it stayed unchanged during measurement. Current NPPES is not pinned and does not reconstruct historical vendor-day activity. Evaluation uses Europe/Paris current date.
+Input: all 75,564,265 saved source-record/email-position rows and 26,730,605 distinct source/email/NPI links in `iceberg.jteixeira_ipa.pii_clean`. Executed queries and results (historical output, not retained: `registry_status_measure.json`) identify the Iceberg input snapshot and confirm it stayed unchanged during measurement. Current NPPES is not pinned and does not reconstruct historical vendor-day activity. Evaluation uses America/New_York current date.
 
 ## Findings and reference evidence
 
@@ -45,7 +45,7 @@ These eleven columns are appended to every vendor model and the final UNION ALL 
 | `npi_registry_reference_row_count` | All readable NPPES rows matched by NPI, including duplicates; zero when unmatched. |
 | `npi_registry_variant_count` | Distinct tuples after trimming and blank-to-null normalization. More than one makes status unknown. |
 | `npi_registry_lifecycle_evidence` | Distinct original deactivation/reactivation strings, replacement strings and reason codes. Nullable row fields retain unknowns; no-match arrays are empty. |
-| `npi_registry_status_as_of_day` | Evaluation date used to reject future events; defaults to Europe/Paris today. The `registry_status_as_of_day` variable fixes comparisons for reproducibility, without restoring historical registry versions. |
+| `npi_registry_status_as_of_day` | Evaluation date used to reject future events; defaults to America/New_York today. The `registry_status_as_of_day` variable fixes comparisons for reproducibility, without restoring historical registry versions. |
 | `npi_registry_reference_table` | `iceberg.npi.nppes_npidata_latest`. |
 | `npi_registry_definition_version` | `nppes_lifecycle_consensus_v1`. |
 

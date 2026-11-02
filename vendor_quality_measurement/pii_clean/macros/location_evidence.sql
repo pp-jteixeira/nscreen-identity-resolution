@@ -1,7 +1,7 @@
 {# Evaluation-window evidence is retrospective to historical vendor records. #}
 {% macro location_evaluation_day() -%}
 {% if var('location_evidence_day', '') %}DATE '{{ var('location_evidence_day') }}'
-{% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %}
+{% else %}cast(current_timestamp AT TIME ZONE 'America/New_York' AS date){% endif %}
 {%- endmacro %}
 {% macro facility_state_lookup() -%}
 WITH normalized AS (

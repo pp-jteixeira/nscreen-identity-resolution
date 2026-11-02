@@ -4,7 +4,7 @@ Sequential history describes changes in one vendor’s reported NPI set for an e
 
 ## How it is computed
 
-The [macro](../../macros/sequential_history.sql) reads eligible `metric_records`, one row per source/email/NPI link, inside each `int_<vendor>__metrics` model. Medscape cumulative NPI opt-outs apply first. Distinct `source/email/npi/observed_day` observations use each link's `observed_days`, which already union the days of all its versions, so repeated versions and email positions add nothing. Only dates through `sequence_as_of_day` participate. The default cutoff is Europe/Paris today.
+The [macro](../../macros/sequential_history.sql) reads eligible `metric_records`, one row per source/email/NPI link, inside each `int_<vendor>__metrics` model. Medscape cumulative NPI opt-outs apply first. Distinct `source/email/npi/observed_day` observations use each link's `observed_days`, which already union the days of all its versions, so repeated versions and email positions add nothing. Only dates through `sequence_as_of_day` participate. Unless set explicitly, the cutoff is the build day in the America/New_York time zone, and the table stores it in every row.
 
 Each email's NPI set is compared with its previous observed set. Missing calendar days add no transitions. Both additions and removals are required for a swap. A flip-back is a swap adding an NPI seen on any earlier observed day. Count transitions, not individual NPIs. Initial observations add no change.
 

@@ -132,7 +132,7 @@ Eleven facility-comparison fields and thirty cookie-evidence fields are appended
 | `facility_rank1_missing_location_rows` | Rank-1 reference rows with blank or missing coordinates. |
 | `vendor_state_evidence` | Record-state versus own-NPI facility reference: corroborated, not_corroborated, mixed_vendor_states, unknown_vendor_state or unknown_facility. |
 | `vendor_state_corroborated` | True only for a single matching vendor state, false for known disjoint states, null for mixed or unknown evidence. |
-| `location_evaluation_day` | Europe/Paris evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction. |
+| `location_evaluation_day` | America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction. |
 | `location_reference_table` | bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used. |
 | `location_evidence_version` | record_vendor_facility_state_v1; record-grain descriptive comparison without scoring. |
 

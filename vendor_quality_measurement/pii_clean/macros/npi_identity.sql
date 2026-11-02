@@ -56,7 +56,7 @@ SELECT m.*, c.format_valid AS npi_format_valid, c.checksum_valid AS npi_checksum
        c.evidence AS npi_entity_type_evidence,
        c.reference_rows AS npi_entity_type_reference_row_count,
        cast(c.variant_count AS bigint) AS npi_entity_type_variant_count,
-       {% if var('npi_identity_as_of_day', '') %}DATE '{{ var('npi_identity_as_of_day') }}'{% else %}cast(current_timestamp AT TIME ZONE 'Europe/Paris' AS date){% endif %} AS npi_identity_as_of_day,
+       {% if var('npi_identity_as_of_day', '') %}DATE '{{ var('npi_identity_as_of_day') }}'{% else %}cast(current_timestamp AT TIME ZONE 'America/New_York' AS date){% endif %} AS npi_identity_as_of_day,
        'iceberg.npi.nppes_npidata_latest' AS npi_identity_reference_table,
        'npi_structure_entity_v1' AS npi_identity_definition_version
 -- Equality keys enable a hash join while distinguishing null from empty identifiers.
