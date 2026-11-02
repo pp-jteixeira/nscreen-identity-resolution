@@ -1,6 +1,6 @@
 # Medscape NPI opt-out exclusion
 
-**Status:** Medscape’s intermediate model excludes every cleaned NPI present in `iceberg.thirdparty.medscape_npi_optout`. No full build of the link-grain definition has been published or measured yet.
+**Status:** Medscape’s intermediate model excludes every cleaned NPI present in `iceberg.thirdparty.medscape_npi_optout`.
 
 ## Eligibility rule
 

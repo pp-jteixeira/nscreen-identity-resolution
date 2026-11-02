@@ -2,7 +2,7 @@
 
 PII Clean evaluates vendor-reported email–NPI links across all retained source history. The output `iceberg.jteixeira_ipa.pii_clean` has one row per link: a source, a cleaned email and a reported NPI, keyed by `link_id`. Metrics and indicators precede any cross-vendor deduplication. Scoring remains unimplemented.
 
-[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [26 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. No full build of this definition has been published or measured yet.
+[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [26 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. The table was published on November 2, 2026 at snapshot `2837737034249693554`: 26,732,836 links (HealthLink 7,688,451, Endato 5,427,459, Haymarket 4,223,245, Medscape 3,661,537, RocketReach 3,199,535, QuantumMedica 1,705,723, DRDB 826,886), each source verified against stored core.
 
 | Output | Columns | Contents |
 |---|---:|---|
@@ -55,7 +55,7 @@ Only nonempty cleaned email/NPI keys enter metric outputs. Medscape additionally
 
 ## Vendor specialty and profession metrics
 
-[Vendor specialty overlap](docs/metrics/23_conflicting_npis_share_vendor_specialty.md) and [vendor profession overlap](docs/metrics/24_conflicting_npis_share_vendor_profession.md) compare exact normalized vendor labels between conflicting NPIs. Metadata joins use the same delivery day and NPI; Medscape also joins by registration `guid`, using each GUID's own days. HealthLink and DRDB contribute specialty fields; DRDB uses the raw `specialty` labels of all versions. Only QuantumMedica and Medscape expose supported profession fields.
+[Vendor specialty overlap](docs/metrics/23_conflicting_npis_share_vendor_specialty.md) and [vendor profession overlap](docs/metrics/24_conflicting_npis_share_vendor_profession.md) compare exact normalized vendor labels between conflicting NPIs. Metadata joins use the same delivery day and NPI; Medscape also joins by registration `guid`, using each GUID's own days. HealthLink and DRDB contribute specialty fields; DRDB uses the raw `specialty` labels of all versions. Medscape and QuantumMedica read profession fields; only Medscape fills them.
 
 ## Metric implementations
 

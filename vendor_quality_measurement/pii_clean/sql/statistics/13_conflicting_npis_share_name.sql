@@ -1,6 +1,5 @@
 -- Read-only statistics for 13_conflicting_npis_share_name.
--- Denominators remain within each source. no email-NPI deduplication.
--- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Shared-name outcomes and conflict-row denominators
 -- Outcomes apply to source/email/NPI links.
 WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean)

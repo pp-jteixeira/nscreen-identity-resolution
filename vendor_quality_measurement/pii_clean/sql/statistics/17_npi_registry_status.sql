@@ -1,5 +1,5 @@
 -- Read-only statistics for 17_npi_registry_status.
--- Denominators remain within each source. no email-NPI deduplication.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Exact executed SQL exported from local registry_status_measure.json. result rows are excluded. Original source relations are retained.
 -- Raw NPPES lifecycle field availability
 SELECT count(*) AS reference_rows, count(DISTINCT npi) AS distinct_npis,

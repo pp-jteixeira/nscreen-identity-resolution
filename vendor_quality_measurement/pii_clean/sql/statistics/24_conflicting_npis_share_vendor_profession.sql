@@ -1,4 +1,4 @@
--- Stored vendor-label evidence from the verified canonical publication.
+-- Stored vendor-label evidence from the published table.
 WITH measured AS (SELECT * FROM iceberg.jteixeira_ipa.pii_clean), dimensions AS (
     SELECT m.source, m.email, m.npi, m.has_conflict_linkage, d.metric,
            CASE d.metric WHEN 'specialty' THEN cardinality(m.source_vendor_specialty_values) > 0

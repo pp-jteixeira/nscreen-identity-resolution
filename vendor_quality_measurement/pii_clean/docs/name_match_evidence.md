@@ -1,6 +1,6 @@
 # Stored name-match evidence
 
-Seven vendor models store name-comparison explanations alongside the nullable name indicators. No full build of the link-grain definition has been published or measured yet.
+Seven vendor models store name-comparison explanations alongside the nullable name indicators.
 
 ## Grain and contents
 
@@ -33,7 +33,7 @@ The all-version booleans aggregate with `bool_or` across the link's distinct nam
 
 ## Examples and statistics
 
-No measurements exist yet for this definition. After publication, the [complete email lookup](email_lookup.md) shows stored comparisons for one email, and the [class statistics SQL](../sql/statistics/07_name_match_classes.sql) reports per-source class counts. Class counts overlap within a link: a link whose versions carry several names can hold several classes. Do not sum class counts as disjoint populations or treat repeated comparisons as independent confirmations. A source without vendor names gives 100% unknown, meaning comparison is unavailable, not that every name disagrees.
+The [complete email lookup](email_lookup.md) shows stored comparisons for one email, and the [class statistics SQL](../sql/statistics/07_name_match_classes.sql) reports per-source class counts. Class counts overlap within a link: a link whose versions carry several names can hold several classes. Do not sum class counts as disjoint populations or treat repeated comparisons as independent confirmations. A source without vendor names gives 100% unknown, meaning comparison is unavailable, not that every name disagrees.
 
 ## Validation
 

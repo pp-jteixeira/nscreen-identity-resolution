@@ -37,7 +37,7 @@ NPI-reference names are joined in intermediate for name comparisons. Facility-NP
 
 Raw rows form one version when every identity field agrees except `day` and the volatile fields declared in [record_schemas.json](../models/record_schemas.json). `first_seen_day` and `last_seen_day` bound the source dates of all versions of a link. `observed_day_count` counts those distinct dates. None measures how long someone owned an email. Unknown dates stay null; RocketReach update timestamps are not email observation dates.
 
-Date bounds do not imply uninterrupted coverage. No measurements of retained dates exist yet for this definition; the [history query](../sql/statistics/08_email_npi_multiplicity.sql) reports them per source after publication.
+Date bounds do not imply uninterrupted coverage. The [history query](../sql/statistics/08_email_npi_multiplicity.sql) reports retained dates per source: Haymarket 2021-07-06 only, HealthLink 2026-01-07 to 2026-10-03, Medscape 2024-01-10 to 2026-11-01, QuantumMedica 2025-09-14 to 2026-10-15. Endato, RocketReach and DRDB carry no dates.
 
 Endato, RocketReach and both DRDB inputs have no delivery `day`; their observation dates stay unknown. Other timestamps remain part of version identity, including RocketReach `created_at` and `updated_at`. For `has_conflict_linkage`, all currently available undated links are compared within each vendor; both DRDB feeds are combined into the same links. This assumes comparability, not a common collection date. Multi-NPI reassignment remains unknown without dated history.
 

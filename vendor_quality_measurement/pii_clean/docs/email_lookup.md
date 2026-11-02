@@ -124,7 +124,7 @@ For population coverage, percentages use all links within each vendor. A link wh
 
 ## Validation and publication status
 
-No full build of this definition has been published, so the lookup has no executed population cases yet. Local lookup tests check all 165 published fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 171 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL. Running the lookup is read-only and returns stored evidence for the requested email.
+Local lookup tests check all 165 published fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 171 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL. Running the lookup is read-only and returns stored evidence for the requested email.
 
 ## Regenerate and maintain
 

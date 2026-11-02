@@ -1,8 +1,7 @@
 -- Read-only statistics for 08_email_npi_multiplicity.
--- Denominators remain within each source. no email-NPI deduplication.
--- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Email multiplicity and exact vendor denominators
--- One summary per vendor. Email and metric-row denominators are separate.
+-- One summary per vendor. Email and link denominators are separate.
 WITH emails AS (
     SELECT source, email, count(*) AS metric_rows, count(DISTINCT npi) AS npi_count,
            min(first_seen_day) AS earliest_observed_day, max(last_seen_day) AS latest_observed_day,

@@ -1,5 +1,5 @@
 -- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean.
--- Reference evidence and evaluation dates come from the stored publication.
+-- Reference evidence and evaluation dates come from the stored table.
 SELECT source, count(*) AS conflict_rows, count(DISTINCT link_id) AS distinct_link_keys,
        count_if(conflicting_npis_share_facility) AS shared_facility_rows,
        count_if(conflicting_npis_share_facility = false) AS different_facility_rows,

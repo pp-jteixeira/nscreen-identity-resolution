@@ -1,5 +1,5 @@
 -- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean.
--- Reference evidence and evaluation dates come from the stored publication.
+-- Reference evidence and evaluation dates come from the stored table.
 SELECT source,
        CASE WHEN grouping(cookie_location_status) = 0 THEN 'location_status'
             WHEN grouping(cookie_vendor_state_evidence) = 0 THEN 'vendor_state'

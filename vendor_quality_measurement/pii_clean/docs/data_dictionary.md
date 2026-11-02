@@ -23,7 +23,7 @@ Indicators that depend on one record's own attributes are published twice:
 
 ## Publication status
 
-No full build of this definition has been published or measured yet. This dictionary describes the local final contract, [models/final/schema.yml](../models/final/schema.yml); it does not provide per-field distributions or null counts.
+This dictionary describes the local final contract, [models/final/schema.yml](../models/final/schema.yml); it does not provide per-field distributions or null counts.
 
 ## Reading the fields
 

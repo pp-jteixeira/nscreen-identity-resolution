@@ -31,10 +31,12 @@ Every row of `pii_clean` is one source/email/NPI link.
 
 Additional statements use `_statement_002.sql`, `_statement_003.sql` and so on. Run each file as one complete statement. SQL files contain no semicolons or blank lines.
 
+- **01:** statement 002 reports versions merged per link and links without a single latest version.
+- **05 and 07 (vendor name):** statement 002 compares the any-version and latest-version indicator.
 - **07:** `07_name_match_classes.sql` measures stored name explanations in the core table. Class counts use links as their denominator and can overlap.
 - **15–16:** the first query gives all-source coverage. Statement 002 gives conflict outcomes; sources without conflicts have no outcome row and require a zero count with an undefined percentage.
 - **17:** statements 002 and 003 query the published population. `17_npi_registry_status.sql` and statement 004 inspect the current raw NPPES reference.
-- **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures.
-- **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values.
+- **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures; statement 003 lists links whose any-version and latest-version evidence differ.
+- **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Statement 004 lists links whose any-version and latest-version cookie vendor-state evidence differ.
 
 Calculation macros define indicators; these queries measure stored outcomes. See the [metric pages](../../docs/metrics/README.md) for definitions and interpretation.

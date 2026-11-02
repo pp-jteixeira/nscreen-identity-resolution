@@ -1,6 +1,5 @@
 -- Read-only statistics for 09_has_been_reassigned.
--- Denominators remain within each source. no email-NPI deduplication.
--- Current published-table statistics. Metric-page counts were refreshed on October 29, 2026.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Reassignment and conflict outcomes
 -- Conflict varies by the link's observed days. Reassignment describes vendor/email history.
 WITH emails AS (

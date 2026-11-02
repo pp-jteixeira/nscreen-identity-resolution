@@ -1,5 +1,5 @@
 -- Read-only statistics for 18_vendor_facility_state.
--- Denominators remain within each source. no email-NPI deduplication.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Exact executed SQL exported from local location_evidence_facility.json. result rows are excluded. Original source relations are retained.
 -- Exact vendor denominators
 SELECT source, count(*) AS metric_rows,

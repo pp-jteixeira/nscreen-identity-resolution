@@ -1,5 +1,5 @@
 -- Read-only statistics for 14_conflicting_npis_share_state.
--- Denominators remain within each source. no email-NPI deduplication.
+-- Denominators remain within each source. Links are not pooled across sources.
 -- Exact executed SQL exported from local conflicting_states_measurements.json. result rows are excluded. Original source relations are retained.
 -- State availability and shared-state outcomes
 -- Outcomes apply to source/email/NPI links.

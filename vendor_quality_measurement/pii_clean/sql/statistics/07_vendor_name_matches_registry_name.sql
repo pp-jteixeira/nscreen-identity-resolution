@@ -1,6 +1,5 @@
 -- Read-only statistics for 07_vendor_name_matches_registry_name.
--- Denominators remain within each source. no email-NPI deduplication.
--- Equivalent direct aggregation of the saved October 29 row-population statistics, not a new warehouse execution.
+-- Denominators remain within each source. Links are not pooled across sources.
 SELECT source,
        count(*) AS metric_rows,
        count_if(vendor_name_matches_registry_name) AS match_rows,

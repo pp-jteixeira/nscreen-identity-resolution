@@ -1,6 +1,6 @@
 -- Read-only statistics for 01_observation_counts.
 -- Denominators remain within each source. No email-NPI deduplication.
--- Equivalent direct aggregation of the published table. Exact weighted nearest-rank median/P95. Historical docs use saved October 29 grouped populations.
+-- Exact weighted nearest-rank median and P95 over the published table.
 WITH counts AS (
     SELECT source, observation_count, count(*) AS row_count
     FROM iceberg.jteixeira_ipa.pii_clean

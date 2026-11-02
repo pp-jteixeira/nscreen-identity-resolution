@@ -1,5 +1,5 @@
 -- Statistics over published evidence in iceberg.jteixeira_ipa.pii_clean.
--- Reference evidence and evaluation dates come from the stored publication.
+-- Reference evidence and evaluation dates come from the stored table.
 SELECT source, vendor_state_evidence, facility_reference_status,
        count(*) AS metric_rows, count(DISTINCT link_id) AS unique_metric_rows,
        count(DISTINCT ROW(email, npi)) AS distinct_links,

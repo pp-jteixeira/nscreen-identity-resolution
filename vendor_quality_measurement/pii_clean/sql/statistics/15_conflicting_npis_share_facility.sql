@@ -1,5 +1,5 @@
 -- Published coverage and conflict denominators, including zero-conflict vendors.
--- Arrays are stored evidence from the publication snapshot.
+-- Arrays are stored evidence from the published table.
 SELECT m.source, count(*) AS metric_rows, count(DISTINCT m.email) AS distinct_emails,
        count(DISTINCT ROW(m.email, m.npi)) AS distinct_links,
        count_if(cardinality(m.facility_npi_values) > 0) AS usable_facility_rows,

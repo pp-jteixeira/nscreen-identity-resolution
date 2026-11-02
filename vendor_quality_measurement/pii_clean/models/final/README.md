@@ -21,6 +21,6 @@ Medscape can be built in sixteen email hash batches with link key/history checks
 
 ## Publication status
 
-No full build of this definition has been published or measured yet.
+Published November 2, 2026 at snapshot `2837737034249693554`: 26,732,836 links across seven sources, 165 fields. Every source was verified against stored core, and the table comment records completed cookie source batches.
 
 The [complete email lookup](../../docs/email_lookup.md) reads all 165 stored fields and six display/comparison helpers. Source and reference tables remain read-only; build relations stay in `iceberg.jteixeira_ipa`.

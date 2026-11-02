@@ -2,7 +2,7 @@
 
 Each of the **26 metric pages** explains one metric of `iceberg.jteixeira_ipa.pii_clean` (`definition_version = 'links_v1'`). The table has one row per link: a vendor (`source`), an email and an NPI, keyed by `link_id`. It publishes 165 fields: 134 core fields and 31 `cookie_` fields. Four [stored name-explanation fields](../name_match_evidence.md) extend metric 07.
 
-No measurements exist yet for this definition. Pages describe the calculation, list cases worth contrasting and link the example and statistics SQL to run once a complete publication exists.
+Each page gives the calculation, real examples and per-source statistics measured on November 2, 2026 from `iceberg.jteixeira_ipa.pii_clean` snapshot `2837737034249693554`, with links to the statistics SQL that reproduces them.
 
 | Order | Metric | Question |
 |---|---|---|

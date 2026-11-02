@@ -1,6 +1,6 @@
 # Build recovery
 
-This page describes how to build and recover stored core and the final table when a complete build is too large for one write. No full build of the link-grain definition has been published or measured yet; this page has no execution evidence.
+This page describes how to build and recover stored core and the final table when a complete build is too large for one write. A storage write error such as `HIVE_WRITER_CLOSE_ERROR` while copying a validated candidate into core can be retried from that candidate. A cookie checkpoint comment on the final table that belongs to a different core snapshot must be replaced before `final` runs.
 
 ## Bounded Medscape builds
 

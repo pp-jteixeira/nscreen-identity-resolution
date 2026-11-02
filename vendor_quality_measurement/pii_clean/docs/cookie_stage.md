@@ -47,7 +47,7 @@ Separate source batches bound each write and allow source-level recovery. They r
 
 Final publication rejects an incomplete email-batch marker and requires all seven sources and unique `link_id` keys in stored core. Non-cookie checksums include all 134 fields, including `computed_at`. Core, LiveIntent, geography and ZIP3 snapshots are pinned for every source batch. Evaluation day, window length and global date coverage are frozen in an atomic table-comment checkpoint. Coverage is captured once with input-snapshot guards. Concurrent core/final changes stop the run. Each committed source must match its complete core population and pass cookie integrity checks; full-population checks precede completion marking.
 
-Local fixtures cover three-day boundaries, current-day exclusion, duplicate mapping/ZIP rows, tied states, unknown locations and link-specific state comparisons, including the `_latest` comparison. No full build of this definition has been published or measured yet.
+Local fixtures cover three-day boundaries, current-day exclusion, duplicate mapping/ZIP rows, tied states, unknown locations and link-specific state comparisons, including the `_latest` comparison. The published table at snapshot `2837737034249693554` carries cookie evidence for 3,000,799 of its 26,732,836 links, from the three completed days October 30 to November 1, 2026 (all three present in both inputs).
 
 ## Interrupted source publication
 
