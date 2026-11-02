@@ -3,3 +3,6 @@ target/
 
 # Required model dependency; override the repository-wide CSV extract ignore.
 !seeds/nicknames.csv
+
+
+tmp_explore/
