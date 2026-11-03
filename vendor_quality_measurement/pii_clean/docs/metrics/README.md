@@ -4,35 +4,69 @@ Each of the **29 metric pages** explains one metric of `iceberg.jteixeira_ipa.pi
 
 Each page gives the calculation, real examples and per-source statistics measured from `iceberg.jteixeira_ipa.pii_clean`: pages 1 to 26 on November 2, 2026 at snapshot `2837737034249693554`, and pages 27 to 29 on November 3, 2026 at snapshot `985110448175465479`, with links to the statistics SQL that reproduces them.
 
+## Metrics by category
+
+### Email quality
+
 | Order | Metric | Question |
 |---|---|---|
-| 01 | [Observation counts](01_observation_counts.md) | How often was each link delivered, and which source record versions does it merge? |
 | 02 | [Email format](02_email_format_valid.md) | Does the email match the documented format pattern? |
 | 03 | [Role accounts](03_email_role_account.md) | Does the mailbox name match a potentially shared inbox name? |
 | 04 | [Domain classification](04_email_domain_class.md) | Does the domain text suggest institutional, free-provider or other usage? |
+
+### Name evidence
+
+| Order | Metric | Question |
+|---|---|---|
 | 05 | [Email matches source name](05_email_matches_source_name.md) | Does the mailbox text resemble a vendor name of the link, in any version or in the latest version? |
 | 06 | [Email matches registry name](06_email_matches_registry_name.md) | Does the mailbox text resemble a registry name for the NPI? |
 | 07 | [Vendor name matches registry name](07_vendor_name_matches_registry_name.md) | Do vendor and registry name pairs agree under fuzzy comparison, in any version or in the latest version? |
-| 08 | [Email–NPI multiplicity](08_email_npi_multiplicity.md) | How many distinct NPIs does this vendor report for an email? |
-| 09 | [Has been reassigned](09_has_been_reassigned.md) | Does the email's reported NPI set change between observed days? |
-| 10 | [Has conflict linkage](10_has_conflict_linkage.md) | Does this link overlap other NPIs on an observed day, or in the undated vendor data? |
 | 11 | [Email name count](11_email_name_count.md) | How many usable normalized names does this vendor report for an email? |
 | 12 | [Email–NPI name conflict](12_email_npi_has_name_conflict.md) | Does one vendor/email/NPI carry names that disagree under fuzzy matching? |
+
+### Multiplicity and conflict
+
+| Order | Metric | Question |
+|---|---|---|
+| 08 | [Email–NPI multiplicity](08_email_npi_multiplicity.md) | How many distinct NPIs does this vendor report for an email? |
+| 10 | [Has conflict linkage](10_has_conflict_linkage.md) | Does this link overlap other NPIs on an observed day, or in the undated vendor data? |
 | 13 | [Conflicting NPIs share a name](13_conflicting_npis_share_name.md) | Does this link share a fuzzy-matching name with another NPI in its conflict context? |
 | 14 | [Conflicting NPIs share a state](14_conflicting_npis_share_state.md) | Does this link share a recognized state with another NPI in its conflict context? |
 | 15 | [Conflicting NPIs share a facility](15_conflicting_npis_share_facility.md) | Do retained facility NPIs overlap in this conflict context? |
 | 16 | [Conflicting NPIs share an NPPES specialty](16_conflicting_npis_share_specialty.md) | Do conflicting NPIs share an exact recognized NPPES taxonomy code? |
-| 17 | [NPI registry status](17_npi_registry_status.md) | What lifecycle status does stored NPPES evidence report? |
-| 18 | [Vendor versus facility state](18_vendor_facility_state.md) | Do this link's vendor states agree with its own NPI’s preferred facility state? |
-| 19 | [Cookie-location evidence](19_cookie_location_evidence.md) | What untied primary states accompany historical email–UID mappings in the evaluation window? |
-| 20 | [Link freshness](20_link_freshness.md) | How old is the vendor evidence, and how far does each link trail its vendor? |
-| 21 | [Link stability](21_link_stability.md) | On what share of observed email days did this NPI appear, and how often did another NPI overlap? |
-| 22 | [NPI validity and entity type](22_npi_identity.md) | Is the identifier structurally valid, and does NPPES identify an individual or organization? |
 | 23 | [Conflicting NPIs share vendor specialty](23_conflicting_npis_share_vendor_specialty.md) | Do conflicting NPIs share exact normalized vendor specialty labels on eligible dates? |
 | 24 | [Conflicting NPIs share vendor profession](24_conflicting_npis_share_vendor_profession.md) | Do conflicting NPIs share exact normalized vendor profession labels on eligible dates? |
+
+### History and freshness
+
+| Order | Metric | Question |
+|---|---|---|
+| 01 | [Observation counts](01_observation_counts.md) | How often was each link delivered, and which source record versions does it merge? |
+| 09 | [Has been reassigned](09_has_been_reassigned.md) | Does the email's reported NPI set change between observed days? |
+| 20 | [Link freshness](20_link_freshness.md) | How old is the vendor evidence, and how far does each link trail its vendor? |
+| 21 | [Link stability](21_link_stability.md) | On what share of observed email days did this NPI appear, and how often did another NPI overlap? |
 | 25 | [Sequential history](25_sequential_history.md) | How often does a vendor change an email’s NPI set, swap NPIs or return to earlier NPIs? |
 | 26 | [Registration supersession](26_registration_supersession.md) | Which Medscape registration claims have been superseded by a unique latest NPI? |
+
+### NPI registry
+
+| Order | Metric | Question |
+|---|---|---|
+| 17 | [NPI registry status](17_npi_registry_status.md) | What lifecycle status does stored NPPES evidence report? |
+| 22 | [NPI validity and entity type](22_npi_identity.md) | Is the identifier structurally valid, and does NPPES identify an individual or organization? |
+
+### Location and facility
+
+| Order | Metric | Question |
+|---|---|---|
+| 18 | [Vendor versus facility state](18_vendor_facility_state.md) | Do this link's vendor states agree with its own NPI’s preferred facility state? |
+| 19 | [Cookie-location evidence](19_cookie_location_evidence.md) | What untied primary states accompany historical email–UID mappings in the evaluation window? |
 | 27 | [Facility claims support](27_facility_claims_support.md) | How many claims and which data sources stand behind the NPI's rank-1 facility association? |
+
+### Domain and cross-source
+
+| Order | Metric | Question |
+|---|---|---|
 | 28 | [Domain evidence](28_domain_evidence.md) | Do the NPIs on this email domain share a state or facility, and how many are there? |
 | 29 | [Cross-source evidence](29_cross_source_evidence.md) | Which other sources report this email with the same NPI, a different NPI, a matching state or a matching name? |
 
