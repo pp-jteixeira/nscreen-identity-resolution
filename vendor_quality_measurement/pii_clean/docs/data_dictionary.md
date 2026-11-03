@@ -2,7 +2,7 @@
 
 Table: `iceberg.jteixeira_ipa.pii_clean`
 
-Scope: **194 contract columns: 139 core fields, 10 domain fields, 14 cross-source fields and 31 cookie fields.** The November 2 snapshot stores 165; the 29 fields of the claims-support, domain and cross-source sections are stored from the next build.
+Scope: **194 contract columns: 139 core fields, 10 domain fields, 14 cross-source fields and 31 cookie fields.**
 
 This table preserves vendor-reported email–NPI attribution and descriptive quality evidence. One row represents one **link**: a source, a cleaned email and a reported NPI. The key is **`link_id`**, the SHA256 of source, email and NPI; it is unique in the table. A link merges every *version* of the source records that report it. A version is one distinct identity of a source record: raw rows identical except for `day` and the schema's volatile fields. Rows are neither unique people nor cross-vendor links. No confidence score or scoring weights are assigned.
 

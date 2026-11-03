@@ -2,14 +2,14 @@
 
 PII Clean evaluates vendor-reported email–NPI links across all retained source history. The output `iceberg.jteixeira_ipa.pii_clean` has one row per link: a source, a cleaned email and a reported NPI, keyed by `link_id`. Metrics and indicators precede any cross-vendor deduplication. Scoring remains unimplemented.
 
-[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [29 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. The table was published on November 2, 2026 at snapshot `2837737034249693554`: 26,732,836 links (HealthLink 7,688,451, Endato 5,427,459, Haymarket 4,223,245, Medscape 3,661,537, RocketReach 3,199,535, QuantumMedica 1,705,723, DRDB 826,886), each source verified against stored core. That snapshot stores 165 fields; the 15 fields of metric pages 27 and 28 are stored from the next build.
+[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [29 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. The table was published on November 3, 2026 at snapshot `985110448175465479`: 26,733,354 links (HealthLink 7,688,451, Endato 5,427,459, Haymarket 4,223,245, Medscape 3,662,055, RocketReach 3,199,535, QuantumMedica 1,705,723, DRDB 826,886), each source verified against stored core. That snapshot stores all 194 fields.
 
 | Output | Columns | Contents |
 |---|---:|---|
 | Canonical `iceberg.jteixeira_ipa.pii_clean` | 194 | 139 core fields, 10 domain fields, 14 cross-source fields and 31 cookie fields, with stored name explanations. |
 | Vendor metric views | 139 | Core attributes, metrics and stored name explanations. Cookie processing runs separately downstream. |
 | Stored core `pii__int_pii__metrics` | 139 | Union of the seven vendor outputs. |
-| Complete email lookup | 171 | All 165 stored fields plus six display/comparison helpers. |
+| Complete email lookup | 200 | All 194 stored fields plus six display/comparison helpers. |
 
 | Layer | Responsibility |
 |---|---|
@@ -156,7 +156,7 @@ Report commands for the remaining metrics are:
 ../../.venv/bin/python tools/pipeline.py report --source all --metric registration_supersession
 ```
 
-The [complete single-email lookup](docs/email_lookup.md) selects all 165 model fields and six helpers from the canonical table. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
+The [complete single-email lookup](docs/email_lookup.md) selects all 194 model fields and six helpers from the canonical table. The shorter shortcut selects a subset of the same stored data. The lookup uses stored evaluation dates and does not repeat reference joins.
 
 ## Documentation
 
@@ -164,7 +164,7 @@ Execution outputs and validation logs are not retained locally or in Git. Select
 
 Email investigation: [Email lookup query and metric reference](docs/email_lookup.md). Enter one email to inspect names, states, NPIs, history, versions and quality indicators per link.
 
-Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 194 contract columns (the November 2 snapshot stores 165), types, nested evidence structures, null handling and link counting rules.
+Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 194 columns, types, nested evidence structures, null handling and link counting rules.
 
 1. [Source map](docs/00_source_map.md): input tables, name joins and date limitations.
 2. [Metrics](docs/metrics/README.md): definitions, examples and source statistics.

@@ -1,8 +1,8 @@
 # Metrics
 
-Each of the **29 metric pages** explains one metric of `iceberg.jteixeira_ipa.pii_clean` (`definition_version = 'links_v1'`). The table has one row per link: a vendor (`source`), an email and an NPI, keyed by `link_id`. Its contract has 194 fields: 139 core fields, 10 domain fields, 14 `xsrc_` cross-source fields and 31 `cookie_` fields. The November 2 snapshot stores 165; the fields of pages 27 to 29 are stored from the next build. Four [stored name-explanation fields](../name_match_evidence.md) extend metric 07.
+Each of the **29 metric pages** explains one metric of `iceberg.jteixeira_ipa.pii_clean` (`definition_version = 'links_v1'`). The table has one row per link: a vendor (`source`), an email and an NPI, keyed by `link_id`. Its contract has 194 fields: 139 core fields, 10 domain fields, 14 `xsrc_` cross-source fields and 31 `cookie_` fields. Four [stored name-explanation fields](../name_match_evidence.md) extend metric 07.
 
-Each page gives the calculation, real examples and per-source statistics measured on November 2, 2026 from `iceberg.jteixeira_ipa.pii_clean` snapshot `2837737034249693554` (pages 27 to 29: November 3, 2026, recomputed from published links), with links to the statistics SQL that reproduces them.
+Each page gives the calculation, real examples and per-source statistics measured from `iceberg.jteixeira_ipa.pii_clean`: pages 1 to 26 on November 2, 2026 at snapshot `2837737034249693554`, and pages 27 to 29 on November 3, 2026 at snapshot `985110448175465479`, with links to the statistics SQL that reproduces them.
 
 | Order | Metric | Question |
 |---|---|---|

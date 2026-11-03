@@ -64,7 +64,7 @@ class EmailLookupTests(unittest.TestCase):
         columns = [dict(c, meta={'published': c.get('meta', {}).get('published', True) and c['name'] != 'name_match_evidence'})
                    for c in model_columns()]
         with patch('render_email_lookup.model_columns', return_value=columns):
-            self.assertEqual(len(published_columns()), 164)
+            self.assertEqual(len(published_columns()), 193)
             self.assertNotIn('r.name_match_evidence', render_lookup())
             self.assertIn('r.vendor_registry_match_classes', render_lookup())
 

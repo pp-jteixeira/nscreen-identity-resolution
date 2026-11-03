@@ -8,7 +8,7 @@ Use the **complete lookup** to inspect every published metric for one email acro
 
 Open [email_lookup_full.sql](../sql/email_lookup_full.sql), copy the entire statement into Trino, and replace `person@example.com` **once** in the opening `params` CTE. No table or view is created. An email without links produces no rows.
 
-The query reads all **165 model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
+The query reads all **194 model columns** directly from `iceberg.jteixeira_ipa.pii_clean`, plus readable `name`/`state` and four name-comparison counts. Those six helpers use stored arrays. No vendor models, reference tables or enrichment joins are executed.
 
 | Metric group | Included outputs |
 |---|---|
@@ -18,6 +18,9 @@ The query reads all **165 model columns** directly from `iceberg.jteixeira_ipa.p
 | Shared NPPES specialty | `conflicting_npis_share_nppes_specialty`, recognized taxonomy codes and peer intersections. |
 | NPI lifecycle | `npi_registry_status`, uncertainty reason, dates, replacement and raw lifecycle evidence. |
 | Vendor versus facility state | `vendor_state_evidence`, nullable `vendor_state_corroborated`, their `_latest` forms, facility state and reference quality. |
+| Facility claims support | `facility_claim_count`, `facility_sources`, `facility_claims_backed` and the claims reference table and version. |
+| Domain evidence | `email_domain`, per-source domain email and NPI counts, state and facility concentration. |
+| Cross-source evidence | `xsrc_` arrays and counts of other sources that agree or disagree on the NPI, state and name, and `xsrc_email_source_count`. |
 | Cookie location | `cookie_location_status`, UID/day counts, states, ties, vendor/facility comparisons and source-date coverage. |
 | Link freshness | Stored evaluation day, vendor/link latest observation dates, source age and link lag. |
 | Link stability | Distinct email/link/conflict day counts, presence and overlap fractions, and incomplete-date flag. |
@@ -124,7 +127,7 @@ For population coverage, percentages use all links within each vendor. A link wh
 
 ## Validation and publication status
 
-Local lookup tests check all 165 published fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 171 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL. Running the lookup is read-only and returns stored evidence for the requested email.
+Local lookup tests check all 194 published fields, including `computed_at` and evaluation dates, for exact preservation. They cover multiple vendors and NPIs, repeated email positions, unmatched emails, null/empty comparison arrays, all 171 unique output names, escaped email literals, and identical SQLTools-safe generated/checked-in SQL. Running the lookup is read-only and returns stored evidence for the requested email.
 
 ## Regenerate and maintain
 

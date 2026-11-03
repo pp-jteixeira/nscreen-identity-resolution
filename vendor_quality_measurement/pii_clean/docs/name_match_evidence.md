@@ -43,4 +43,4 @@ Name fixtures cover all eight classes, duplicate references, multiple reference 
 
 The final publication uses [source-scoped cookie builds](cookie_stage.md) from verified core; cookie publication preserves the four explanation fields. Refreshing cookies alone cannot create missing name evidence. For a full refresh from source data, use `tools/pipeline.py build --direct`; refresh cookies with `tools/pipeline.py cookies`.
 
-The [complete email lookup](email_lookup.md) includes the four explanation fields and returns 171 outputs: 165 stored fields plus six helpers. Its SQL is regenerated from the [final schema](../models/final/schema.yml). The lookup preserves stored evidence and does not recompute name matches.
+The [complete email lookup](email_lookup.md) includes the four explanation fields and returns 200 outputs: 194 stored fields plus six helpers. Its SQL is regenerated from the [final schema](../models/final/schema.yml). The lookup preserves stored evidence and does not recompute name matches.
