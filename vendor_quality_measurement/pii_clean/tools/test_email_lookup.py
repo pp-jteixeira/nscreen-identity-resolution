@@ -59,7 +59,7 @@ def fixture():
 
 class EmailLookupTests(unittest.TestCase):
     def test_unpublished_fields_stay_out_of_saved_lookup(self):
-        self.assertEqual(len(model_columns()), 180)
+        self.assertEqual(len(model_columns()), 194)
         # Publication metadata must also filter fields in the fixed base list.
         columns = [dict(c, meta={'published': c.get('meta', {}).get('published', True) and c['name'] != 'name_match_evidence'})
                    for c in model_columns()]

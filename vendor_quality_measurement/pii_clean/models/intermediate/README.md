@@ -5,7 +5,7 @@ This folder contains eleven SQL models: seven cookie-independent vendor metric m
 | Model | Purpose |
 |---|---|
 | [int_pii__metrics.sql](int_pii__metrics.sql) | 139-field union of all seven vendor outputs. |
-| [int_cookie__metrics.sql](int_cookie__metrics.sql) | 180-field source-scoped domain and cookie outputs, combined after enrichment from stored core. |
+| [int_cookie__metrics.sql](int_cookie__metrics.sql) | 194-field source-scoped domain, cross-source and cookie outputs, combined after enrichment from stored core. |
 | `int_<vendor>__metrics.sql` | Record versions, email positions, link collapse, reference comparisons and reviewed indicators for one vendor. One row per source/email/NPI link. |
 | [int_npi__names.sql](int_npi__names.sql) | Distinct normalized registry name pairs and nickname expansions, shared by all vendors. |
 | [int_name__variants.sql](int_name__variants.sql) | Shared first-name variant lookup built from the nickname seed. |

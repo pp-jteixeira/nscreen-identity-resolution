@@ -521,6 +521,76 @@ models:
     data_type: varchar
     meta:
       published: false
+  - name: xsrc_npi_agree_sources
+    description: Sorted other sources that report this email with this same NPI.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_npi_disagree_sources
+    description: Sorted other sources that report this email but never this NPI.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_state_agree_sources
+    description: Sorted other sources that agree on the NPI and whose vendor states overlap this link vendor states. Unknown states appear in neither state array.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_state_disagree_sources
+    description: Sorted other sources that agree on the NPI and whose recognized vendor states are disjoint from this link vendor states.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_name_agree_sources
+    description: Sorted other sources that agree on the NPI and share at least one usable vendor name with this link under the registry name rules.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_name_disagree_sources
+    description: Sorted other sources that agree on the NPI, with usable names on both sides, where every name pair disagrees.
+    data_type: array(varchar)
+    meta:
+      published: false
+  - name: xsrc_npi_agree_count
+    description: Number of sources in xsrc_npi_agree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_npi_disagree_count
+    description: Number of sources in xsrc_npi_disagree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_state_agree_count
+    description: Number of sources in xsrc_state_agree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_state_disagree_count
+    description: Number of sources in xsrc_state_disagree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_name_agree_count
+    description: Number of sources in xsrc_name_agree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_name_disagree_count
+    description: Number of sources in xsrc_name_disagree_sources.
+    data_type: bigint
+    meta:
+      published: false
+  - name: xsrc_email_source_count
+    description: Other sources that report this email at all, as NPI agreeing plus NPI disagreeing sources. Zero when no other source has the email.
+    data_type: bigint
+    meta:
+      published: false
+  - name: cross_source_evidence_version
+    description: cross_source_evidence_v1, per-link agreement with every other source read from stored core, without scoring or lineage adjustment.
+    data_type: varchar
+    meta:
+      published: false
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests:

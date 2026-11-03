@@ -115,7 +115,7 @@ def build_by_source(db, p):
         return p.query(db, p.evidence_snapshot_sql(relation, columns, include_computed_at=True))
     def integrity(sources=None):
         relation = target if sources is None else '(SELECT * FROM ' + target + " WHERE source IN ('" + "','".join(sources) + "'))"
-        for name in ('cookie_location.sql', 'domain_evidence.sql'):
+        for name in ('cookie_location.sql', 'domain_evidence.sql', 'cross_source_evidence.sql'):
             failures = p.query(db, p.render_sql((p.ROOT/'tests'/name).read_text(),
                                 {'metric_model':p.FINAL_MODEL}, {p.FINAL_MODEL:relation}))
             if failures:

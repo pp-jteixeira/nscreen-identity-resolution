@@ -2,7 +2,7 @@
 
 Table: `iceberg.jteixeira_ipa.pii_clean`
 
-Scope: **180 contract columns: 139 core fields, 10 domain fields and 31 cookie fields.** The November 2 snapshot stores 165; the 15 fields of the claims-support and domain sections are stored from the next build.
+Scope: **194 contract columns: 139 core fields, 10 domain fields, 14 cross-source fields and 31 cookie fields.** The November 2 snapshot stores 165; the 29 fields of the claims-support, domain and cross-source sections are stored from the next build.
 
 This table preserves vendor-reported email–NPI attribution and descriptive quality evidence. One row represents one **link**: a source, a cleaned email and a reported NPI. The key is **`link_id`**, the SHA256 of source, email and NPI; it is unique in the table. A link merges every *version* of the source records that report it. A version is one distinct identity of a source record: raw rows identical except for `day` and the schema's volatile fields. Rows are neither unique people nor cross-vendor links. No confidence score or scoring weights are assigned.
 
@@ -211,6 +211,27 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 | `domain_top_facility_npi` | `varchar` | Facility NPI shared by the most domain NPIs, ties broken by greater NPI text. Null without facilities. | — |
 | `domain_top_facility_share` | `double` | Share of `domain_npis_with_facility` whose facility NPIs include `domain_top_facility_npi`. | — |
 | `domain_evidence_version` | `varchar` | domain_evidence_v1; per-source domain aggregates over links, without scoring. | — |
+
+### Cross-source evidence
+
+[Detailed definition](metrics/29_cross_source_evidence.md). Cross-source fields are computed downstream of stored core by reading every other source; they are never null.
+
+| Field | Trino type | Meaning / interpretation | Required |
+|---|---|---|---|
+| `xsrc_npi_agree_sources` | `array(varchar)` | Sorted other sources that report this email with this same NPI. Empty array when none. | — |
+| `xsrc_npi_disagree_sources` | `array(varchar)` | Sorted other sources that report this email but never this NPI. | — |
+| `xsrc_state_agree_sources` | `array(varchar)` | Sorted other sources that agree on the NPI and whose recognized vendor states overlap this link's. Unknown states appear in no state array. | — |
+| `xsrc_state_disagree_sources` | `array(varchar)` | Sorted other sources that agree on the NPI and whose recognized vendor states are disjoint from this link's. | — |
+| `xsrc_name_agree_sources` | `array(varchar)` | Sorted other sources that agree on the NPI and share at least one usable vendor name with this link. | — |
+| `xsrc_name_disagree_sources` | `array(varchar)` | Sorted other sources that agree on the NPI, with usable names on both sides, where every name pair disagrees. | — |
+| `xsrc_npi_agree_count` | `bigint` | Number of sources in `xsrc_npi_agree_sources`. | — |
+| `xsrc_npi_disagree_count` | `bigint` | Number of sources in `xsrc_npi_disagree_sources`. | — |
+| `xsrc_state_agree_count` | `bigint` | Number of sources in `xsrc_state_agree_sources`. | — |
+| `xsrc_state_disagree_count` | `bigint` | Number of sources in `xsrc_state_disagree_sources`. | — |
+| `xsrc_name_agree_count` | `bigint` | Number of sources in `xsrc_name_agree_sources`. | — |
+| `xsrc_name_disagree_count` | `bigint` | Number of sources in `xsrc_name_disagree_sources`. | — |
+| `xsrc_email_source_count` | `bigint` | Other sources that report this email at all: NPI-agreeing plus NPI-disagreeing sources. | — |
+| `cross_source_evidence_version` | `varchar` | cross_source_evidence_v1; per-link agreement with every other source, without scoring or lineage adjustment. | — |
 
 ### Cookie mappings and location evidence
 

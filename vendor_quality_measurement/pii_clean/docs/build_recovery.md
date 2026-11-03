@@ -39,7 +39,7 @@ Writer settings are eight writer tasks, one writer per task, local writer scalin
 
 ## Core and final separation
 
-Core holds only non-cookie fields. A failed cookie build leaves core available for retry. Final cookie enrichment uses the default three completed days and produces actual 180-field rows. Cookie values are never copied into core. See [cookie workflow](cookie_stage.md).
+Core holds only non-cookie fields. A failed cookie build leaves core available for retry. Final cookie enrichment uses the default three completed days and produces actual 194-field rows. Cookie values are never copied into core. See [cookie workflow](cookie_stage.md).
 
 ## Reusable version input
 

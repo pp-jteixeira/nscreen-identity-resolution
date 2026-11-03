@@ -6,7 +6,7 @@ Scope: `vendor_quality_measurement/pii_clean` only. Arrows run from input to con
 
 **20 external tables feed 26 project relations:** 13 staging views, 11 intermediate models, one seed view and one final table. Physically, these are **24 views and two stored tables**: `int_pii__metrics` and `pii_clean`. Every staging view has a path to the final model. Medscape opt-outs restrict intermediate eligibility before metrics.
 
-The seven-vendor contract defines **139 core fields** at link grain, one row per source/email/NPI, including four stored name-explanation fields. Each vendor model groups raw rows into versions, unfolds email positions and collapses them to links before the shared [link metric chain](../macros/link_metrics.sql). Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **10 domain fields** and **31 cookie fields**, using a default three-day window. The final contract has **180 fields**. Cookie sources have no edge into the vendor models.
+The seven-vendor contract defines **139 core fields** at link grain, one row per source/email/NPI, including four stored name-explanation fields. Each vendor model groups raw rows into versions, unfolds email positions and collapses them to links before the shared [link metric chain](../macros/link_metrics.sql). Sequential history is calculated within each vendor; registration supersession is calculated within Medscape. Their union is stored before `int_cookie__metrics` adds **10 domain fields**, **14 cross-source fields** and **31 cookie fields**, using a default three-day window. The cross-source fields read the stored core of every source, not only the source being enriched. The final contract has **194 fields**. Cookie sources have no edge into the vendor models.
 
 Model labels below omit `iceberg.jteixeira_ipa.pii__`. The final table is `iceberg.jteixeira_ipa.pii_clean`. External labels retain full names. `nicknames` is a generated view, sourced from `seeds/nicknames.csv`.
 
@@ -140,7 +140,7 @@ flowchart LR
   core[("pii__int_pii__metrics")]
   cookie["Rendered int_cookie__metrics source branches"]
   feeds["Mapping + geography + ZIP3"]
-  final[("pii_clean: 180 fields")]
+  final[("pii_clean: 194 fields")]
   vendors -->|default build| candidate
   candidate -->|validate then copy| core
   vendors -->|core --direct: vendor batches| core

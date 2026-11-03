@@ -1,8 +1,8 @@
 # Metrics
 
-Each of the **28 metric pages** explains one metric of `iceberg.jteixeira_ipa.pii_clean` (`definition_version = 'links_v1'`). The table has one row per link: a vendor (`source`), an email and an NPI, keyed by `link_id`. It publishes 165 fields: 134 core fields and 31 `cookie_` fields. Four [stored name-explanation fields](../name_match_evidence.md) extend metric 07.
+Each of the **29 metric pages** explains one metric of `iceberg.jteixeira_ipa.pii_clean` (`definition_version = 'links_v1'`). The table has one row per link: a vendor (`source`), an email and an NPI, keyed by `link_id`. Its contract has 194 fields: 139 core fields, 10 domain fields, 14 `xsrc_` cross-source fields and 31 `cookie_` fields. The November 2 snapshot stores 165; the fields of pages 27 to 29 are stored from the next build. Four [stored name-explanation fields](../name_match_evidence.md) extend metric 07.
 
-Each page gives the calculation, real examples and per-source statistics measured on November 2, 2026 from `iceberg.jteixeira_ipa.pii_clean` snapshot `2837737034249693554`, with links to the statistics SQL that reproduces them.
+Each page gives the calculation, real examples and per-source statistics measured on November 2, 2026 from `iceberg.jteixeira_ipa.pii_clean` snapshot `2837737034249693554` (pages 27 to 29: November 3, 2026, recomputed from published links), with links to the statistics SQL that reproduces them.
 
 | Order | Metric | Question |
 |---|---|---|
@@ -34,6 +34,7 @@ Each page gives the calculation, real examples and per-source statistics measure
 | 26 | [Registration supersession](26_registration_supersession.md) | Which Medscape registration claims have been superseded by a unique latest NPI? |
 | 27 | [Facility claims support](27_facility_claims_support.md) | How many claims and which data sources stand behind the NPI's rank-1 facility association? |
 | 28 | [Domain evidence](28_domain_evidence.md) | Do the NPIs on this email domain share a state or facility, and how many are there? |
+| 29 | [Cross-source evidence](29_cross_source_evidence.md) | Which other sources report this email with the same NPI, a different NPI, a matching state or a matching name? |
 
 ## Counting units and dates
 

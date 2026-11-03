@@ -41,6 +41,7 @@ Additional statements use `_statement_002.sql`, `_statement_003.sql` and so on. 
 - **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures; statement 003 lists links whose any-version and latest-version evidence differ.
 - **27:** the first query partitions links by claims support; statement 002 compares corroboration with and without Claims.
 - **28:** one statement recomputes the domain aggregates from published links and groups them by source and domain class.
+- **29:** one statement counts links by source with another source agreeing or disagreeing on the NPI, from the published email and NPI.
 - **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Statement 004 lists links whose any-version and latest-version cookie vendor-state evidence differ.
 
 Calculation macros define indicators; these queries measure stored outcomes. See the [metric pages](../../docs/metrics/README.md) for definitions and interpretation.

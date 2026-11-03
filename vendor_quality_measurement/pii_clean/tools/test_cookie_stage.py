@@ -41,7 +41,7 @@ class CookieStageTests(unittest.TestCase):
         # The two agree@ name versions share one link.
         self.assertEqual(len(rows),2)
         for row in rows:
-            self.assertEqual(len(row),180)
+            self.assertEqual(len(row),194)
             self.assertEqual(row['cookie_count'],1)
             self.assertEqual(row['cookie_location_status'],'observed')
             self.assertEqual(row['cookie_location_window_days'],3)
@@ -58,7 +58,7 @@ class CookieStageTests(unittest.TestCase):
         self.assertEqual(set(dependencies),{'int_cookie__metrics'})
         self.assertNotIn('int_cookie__metrics',p.source_plan('medscape'))
         fields=[(k,'varchar') for k in p.render_sql('{{ metric_columns() | join(",") }}').split(',')]
-        self.assertEqual(len(p.publication_schema(fields)),180)
+        self.assertEqual(len(p.publication_schema(fields)),194)
         for bad in [fields[:-1],fields+[('unexpected','varchar')]]:
             with self.assertRaises(ValueError):p.publication_schema(bad)
 
@@ -75,7 +75,7 @@ class CookieStageTests(unittest.TestCase):
         second=', '.join("'healthlink' AS source" if name=='source' else
                         "ARRAY['CA'] AS source_state_values" if name=='source_state_values' else name for name in columns)
         core='('+base+' UNION ALL SELECT '+second+' FROM ('+base+'))'
-        combined=p.render_sql("WITH domained AS ({{ domain_evidence_records(var('input')) }}) {{ cookie_location_records('domained') }}",
+        combined=p.render_sql("WITH domained AS ({{ domain_evidence_records(var('input')) }}), crossed AS ({{ cross_source_evidence_records('domained', var('input')) }}) {{ cookie_location_records('crossed') }}",
                               {**variables,'input':core},source_overrides=overrides)
         scoped=[]
         for source in ('medscape','healthlink'):
@@ -88,6 +88,10 @@ class CookieStageTests(unittest.TestCase):
         self.assertEqual({r['cookie_count'] for r in scoped},{1})
         self.assertEqual({r['source']:r['cookie_vendor_state_evidence'] for r in scoped},
                          {'medscape':'corroborated','healthlink':'not_observed'})
+        by_source={r['source']:r for r in scoped}
+        self.assertEqual(by_source['medscape']['xsrc_npi_agree_sources'],['healthlink'])
+        self.assertEqual(by_source['healthlink']['xsrc_npi_agree_sources'],['medscape'])
+        self.assertEqual(by_source['medscape']['xsrc_state_disagree_sources'],['healthlink'])
 
 
 if __name__=='__main__':unittest.main()

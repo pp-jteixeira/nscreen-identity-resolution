@@ -54,14 +54,15 @@ def relation(name):
     return f'{SCHEMA}.{name}' if name == FINAL_MODEL else f'{SCHEMA}.pii__{name}'
 
 
-# Fields computed after the stored core, over a complete source: cookie evidence and domain aggregates.
+# Fields computed after the stored core: cookie evidence, domain aggregates and cross-source agreement.
 DOMAIN_FIELDS = frozenset(['email_domain', 'domain_email_count', 'domain_npi_count', 'domain_npis_with_state',
                            'domain_state_count', 'domain_top_state_share', 'domain_npis_with_facility',
                            'domain_top_facility_npi', 'domain_top_facility_share', 'domain_evidence_version'])
+XSRC_PREFIX = 'xsrc_'
 
 
 def is_downstream(name):
-    return name.startswith('cookie_') or name in DOMAIN_FIELDS
+    return name.startswith(('cookie_', XSRC_PREFIX)) or name in DOMAIN_FIELDS or name == 'cross_source_evidence_version'
 
 
 def downstream_column_types():
