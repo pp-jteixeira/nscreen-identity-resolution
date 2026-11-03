@@ -2,7 +2,7 @@
 
 Table: `iceberg.jteixeira_ipa.pii_clean`
 
-Scope: **165 stored columns: 134 core fields and 31 cookie fields.**
+Scope: **180 contract columns: 139 core fields, 10 domain fields and 31 cookie fields.** The November 2 snapshot stores 165; the 15 fields of the claims-support and domain sections are stored from the next build.
 
 This table preserves vendor-reported email–NPI attribution and descriptive quality evidence. One row represents one **link**: a source, a cleaned email and a reported NPI. The key is **`link_id`**, the SHA256 of source, email and NPI; it is unique in the table. A link merges every *version* of the source records that report it. A version is one distinct identity of a source record: raw rows identical except for `day` and the schema's volatile fields. Rows are neither unique people nor cross-vendor links. No confidence score or scoring weights are assigned.
 
@@ -182,6 +182,35 @@ Email format, role/domain heuristics and email-to-name comparisons have separate
 | `location_evaluation_day` | `date` | America/New_York evaluation day, or explicit location_evidence_day. No historical vendor-day reconstruction. | Yes |
 | `location_reference_table` | `varchar` | bq_bi.analytics_prod.npi_facility_locations_with_ids; only rank-1 rows are used. | Yes |
 | `location_evidence_version` | `varchar` | link_vendor_facility_state_v1; link-grain descriptive comparison without scoring. | Yes |
+
+### Facility claims support
+
+[Detailed definition](metrics/27_facility_claims_support.md). Core fields.
+
+| Field | Trino type | Meaning / interpretation | Required |
+|---|---|---|---|
+| `facility_claim_count` | `bigint` | Claim count of the NPI's rank-1 claims-association row; null without a rank-1 row or without claim support. | — |
+| `facility_sources` | `array(varchar)` | Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the rank-1 association; empty without a rank-1 row. | — |
+| `facility_claims_backed` | `boolean` | True when Claims is among the sources, false when it is not, null without a rank-1 row. Descriptive, not a threshold. | — |
+| `facility_claims_reference_table` | `varchar` | bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used. | — |
+| `facility_claims_definition_version` | `varchar` | facility_claims_support_v1. | — |
+
+### Domain evidence
+
+[Detailed definition](metrics/28_domain_evidence.md). Domain fields are computed downstream of stored core, per source.
+
+| Field | Trino type | Meaning / interpretation | Required |
+|---|---|---|---|
+| `email_domain` | `varchar` | Lowercase text after the first @ of the cleaned email; null without a domain. | — |
+| `domain_email_count` | `bigint` | Distinct cleaned emails of this source on the domain. Counts include every domain class. | — |
+| `domain_npi_count` | `bigint` | Distinct NPIs of this source reported with any email on the domain. | — |
+| `domain_npis_with_state` | `bigint` | Domain NPIs with a usable `facility_primary_state`. Null for free-provider and unknown domains. | — |
+| `domain_state_count` | `bigint` | Distinct `facility_primary_state` values across the domain's NPIs. Null for free-provider and unknown domains. | — |
+| `domain_top_state_share` | `double` | Share of `domain_npis_with_state` in the most common facility state. Null without usable states. | — |
+| `domain_npis_with_facility` | `bigint` | Domain NPIs with at least one retained facility NPI. Null for free-provider and unknown domains. | — |
+| `domain_top_facility_npi` | `varchar` | Facility NPI shared by the most domain NPIs, ties broken by greater NPI text. Null without facilities. | — |
+| `domain_top_facility_share` | `double` | Share of `domain_npis_with_facility` whose facility NPIs include `domain_top_facility_npi`. | — |
+| `domain_evidence_version` | `varchar` | domain_evidence_v1; per-source domain aggregates over links, without scoring. | — |
 
 ### Cookie mappings and location evidence
 

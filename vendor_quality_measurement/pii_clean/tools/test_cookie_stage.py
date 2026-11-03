@@ -23,8 +23,8 @@ class CookieStageTests(unittest.TestCase):
             self.assertNotIn('liveintent_idsync',sql)
             self.assertNotIn('nscreen_geo_daily_ua',sql)
         rows=execute(inlined('int_medscape__metrics'))
-        self.assertEqual(len(rows[0]),134)
-        self.assertFalse(any(c.startswith('cookie_') for c in rows[0]))
+        self.assertEqual(len(rows[0]),139)
+        self.assertFalse(any(p.is_downstream(c) for c in rows[0]))
 
     def test_downstream_model_computes_real_values_and_preserves_core(self):
         data=[{'email_address':'agree@example.test','npi':'1','day':'2026-10-22','state':'NY','first_name':'JOHN','last_name':'SMITH'},
@@ -41,13 +41,13 @@ class CookieStageTests(unittest.TestCase):
         # The two agree@ name versions share one link.
         self.assertEqual(len(rows),2)
         for row in rows:
-            self.assertEqual(len(row),165)
+            self.assertEqual(len(row),180)
             self.assertEqual(row['cookie_count'],1)
             self.assertEqual(row['cookie_location_status'],'observed')
             self.assertEqual(row['cookie_location_window_days'],3)
             self.assertEqual(row['cookie_facility_state_evidence'],'corroborated')
             self.assertEqual(row['cookie_vendor_state_evidence'],'corroborated' if row['email']=='agree@example.test' else 'not_observed')
-            self.assertEqual({k:v for k,v in row.items() if not k.startswith('cookie_') and k!='computed_at'},
+            self.assertEqual({k:v for k,v in row.items() if not p.is_downstream(k) and k!='computed_at'},
                              {k:v for k,v in original[row['link_id']].items() if k!='computed_at'})
         self.assertNotIn('not_evaluated',sql)
 
@@ -58,7 +58,7 @@ class CookieStageTests(unittest.TestCase):
         self.assertEqual(set(dependencies),{'int_cookie__metrics'})
         self.assertNotIn('int_cookie__metrics',p.source_plan('medscape'))
         fields=[(k,'varchar') for k in p.render_sql('{{ metric_columns() | join(",") }}').split(',')]
-        self.assertEqual(len(p.publication_schema(fields)),165)
+        self.assertEqual(len(p.publication_schema(fields)),180)
         for bad in [fields[:-1],fields+[('unexpected','varchar')]]:
             with self.assertRaises(ValueError):p.publication_schema(bad)
 
@@ -75,7 +75,7 @@ class CookieStageTests(unittest.TestCase):
         second=', '.join("'healthlink' AS source" if name=='source' else
                         "ARRAY['CA'] AS source_state_values" if name=='source_state_values' else name for name in columns)
         core='('+base+' UNION ALL SELECT '+second+' FROM ('+base+'))'
-        combined=p.render_sql("{{ cookie_location_records(var('input')) }}",
+        combined=p.render_sql("WITH domained AS ({{ domain_evidence_records(var('input')) }}) {{ cookie_location_records('domained') }}",
                               {**variables,'input':core},source_overrides=overrides)
         scoped=[]
         for source in ('medscape','healthlink'):

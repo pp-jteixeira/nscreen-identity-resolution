@@ -54,16 +54,26 @@ def relation(name):
     return f'{SCHEMA}.{name}' if name == FINAL_MODEL else f'{SCHEMA}.pii__{name}'
 
 
-def cookie_column_types():
+# Fields computed after the stored core, over a complete source: cookie evidence and domain aggregates.
+DOMAIN_FIELDS = frozenset(['email_domain', 'domain_email_count', 'domain_npi_count', 'domain_npis_with_state',
+                           'domain_state_count', 'domain_top_state_share', 'domain_npis_with_facility',
+                           'domain_top_facility_npi', 'domain_top_facility_share', 'domain_evidence_version'])
+
+
+def is_downstream(name):
+    return name.startswith('cookie_') or name in DOMAIN_FIELDS
+
+
+def downstream_column_types():
     model = yaml.safe_load((PROJECT / 'models/final/schema.yml').read_text())['models'][0]
-    return {c['name']: c['data_type'] for c in model['columns'] if c['name'].startswith('cookie_')}
+    return {c['name']: c['data_type'] for c in model['columns'] if is_downstream(c['name'])}
 
 
 def publication_schema(vendor_schema):
     fields = dict(vendor_schema)
-    if any(c.startswith('cookie_') for c in fields):
-        raise ValueError('Vendor metric views still contain cookie fields. Rebuild their definitions first')
-    fields.update(cookie_column_types())
+    if any(is_downstream(c) for c in fields):
+        raise ValueError('Vendor metric views still contain downstream fields. Rebuild their definitions first')
+    fields.update(downstream_column_types())
     model = yaml.safe_load((PROJECT / 'models/final/schema.yml').read_text())['models'][0]
     declared = {c['name'] for c in model['columns']}
     if set(fields) != declared:
@@ -105,7 +115,7 @@ def render_sql(text, variables=None, ref_overrides=None, dependencies=None, sour
         # a window enrichment must discard helper columns without rereading input.
         schema = yaml.safe_load((PROJECT / 'models/final/schema.yml').read_text())
         model = next(m for m in schema['models'] if m['name'] == FINAL_MODEL)
-        return [c['name'] for c in model['columns'] if include_cookie or not c['name'].startswith('cookie_')]
+        return [c['name'] for c in model['columns'] if include_cookie or not is_downstream(c['name'])]
 
     def record_payload(name, alias, with_volatile=False):
         # Identity payload: raw fields minus day and minus volatile fields. record_id hashes this form.
@@ -130,7 +140,7 @@ def render_sql(text, variables=None, ref_overrides=None, dependencies=None, sour
     macros = '\n'.join(p.read_text() for p in sorted((PROJECT / 'macros').glob('*.sql')))
     env = jinja2.Environment(undefined=jinja2.StrictUndefined, keep_trailing_newline=True)
     env.globals.update(source=source, ref=ref, var=var, record_schema=record_schema, record_payload=record_payload,
-                       metric_columns=metric_columns, cookie_column_types=cookie_column_types)
+                       metric_columns=metric_columns, downstream_column_types=downstream_column_types)
     return env.from_string(macros + '\n' + text).render().strip()
 
 
@@ -483,7 +493,7 @@ def build_core(db, preservation=None, vendor_batches=False, history_inputs=None,
     if failures:
         raise ValueError(f'Evidence integrity checks failed: {failures}')
     manifest['linkage_checks'] = {}
-    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
+    for name in ('email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'facility_claims_support.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
         test_sql = render_sql((ROOT / 'tests' / name).read_text(), {'metric_model': CORE_MODEL}, overrides)
         failures = query(db, test_sql)
         manifest['linkage_checks'][name] = {'sql': test_sql, 'failures': failures}
@@ -554,7 +564,7 @@ def test_source(db, source):
             raise ValueError(f'{stage}: version preservation failed: {checked}')
         print(f'PASS {stage}: raw copies preserved; record IDs unique', flush=True)
     variables = {'metric_model': f'int_{source}__metrics'}
-    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
+    for name in ('source_integrity.sql', 'email_npi_multiplicity.sql', 'email_linkage_history.sql', 'name_consistency.sql', 'name_match_evidence.sql', 'conflicting_names.sql', 'conflicting_states.sql', 'conflicting_facilities.sql', 'conflicting_specialties.sql', 'registry_status.sql', 'vendor_facility_state.sql', 'facility_claims_support.sql', 'link_freshness.sql', 'link_stability.sql', 'npi_identity.sql', 'vendor_professional.sql', 'medscape_optout.sql', 'sequential_history.sql'):
         failures = query(db, render_sql((PROJECT / 'tests' / name).read_text(), variables))
         if failures:
             raise ValueError(f'{name} failed: {failures}')

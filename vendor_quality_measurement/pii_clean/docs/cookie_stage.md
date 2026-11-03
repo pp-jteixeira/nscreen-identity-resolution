@@ -1,15 +1,15 @@
 # Independent cookie enrichment
 
-Cookie processing follows stored vendor metrics. Seven `int_<vendor>__metrics` models produce 134 link-grain fields without reading LiveIntent mappings or cookie geography. Their union is materialized as `iceberg.jteixeira_ipa.pii__int_pii__metrics`. The downstream `int_cookie__metrics` model enriches each source independently with 31 computed cookie fields, then combines the 165-field outputs with `UNION ALL`. The stored core remains a cache of non-cookie metrics; source filtering precedes each cookie calculation. All 134 core fields, including stored name explanations, are preserved. Cookie fields are recomputed from the pinned inputs and evaluation window.
+Cookie processing follows stored vendor metrics. Seven `int_<vendor>__metrics` models produce 139 link-grain fields without reading LiveIntent mappings or cookie geography. Their union is materialized as `iceberg.jteixeira_ipa.pii__int_pii__metrics`. The downstream `int_cookie__metrics` model enriches each source independently with 10 domain fields and 31 computed cookie fields, then combines the 180-field outputs with `UNION ALL`. The stored core remains a cache of non-cookie metrics; source filtering precedes each cookie calculation. All 139 core fields, including stored name explanations, are preserved. Cookie fields are recomputed from the pinned inputs and evaluation window.
 
 ```mermaid
 flowchart LR
-  vendors["Seven vendor metric models: 134 fields"] --> core[("int_pii__metrics: stored core")]
-  core --> cookies["int_cookie__metrics: filter one source, compute cookies"]
+  vendors["Seven vendor metric models: 139 fields"] --> core[("int_pii__metrics: stored core")]
+  core --> cookies["int_cookie__metrics: filter one source, compute domain and cookie fields"]
   mappings["LiveIntent mappings"] --> cookies
   geography["UID geography and ZIP3 states"] --> cookies
   cookies --> combined["Combine enriched source outputs"]
-  combined --> final[("pii_clean: 165 fields")]
+  combined --> final[("pii_clean: 180 fields")]
 ```
 
 The intermediate core is an execution boundary. Cookie enrichment reads stored rows rather than expanding the seven vendor plans again. Core rows contain no cookie columns. The final table receives calculated cookie evidence directly, without placeholder columns or a later MERGE.
@@ -29,7 +29,7 @@ Resume an interrupted core build, then publish cookies:
 ../../.venv/bin/python tools/pipeline.py final
 ```
 
-`core` uses existing vendor views and writes only non-cookie metrics. Core must match the 134-field contract; `build --direct` rebuilds it from source. `final` and its alias `cookies` pin stored core and cookie inputs, then run seven source-scoped writes. The first source creates/replaces the final table; later sources append their enriched rows. This is the physical equivalent of the model’s `UNION ALL`, without one combined enrichment query. Repeating cookie enrichment does not rebuild vendor attribution or sequential histories.
+`core` uses existing vendor views and writes only non-cookie metrics. Core must match the 139-field contract; `build --direct` rebuilds it from source. `final` and its alias `cookies` pin stored core and cookie inputs, then run seven source-scoped writes. The first source creates/replaces the final table; later sources append their enriched rows. This is the physical equivalent of the model’s `UNION ALL`, without one combined enrichment query. Repeating cookie enrichment does not rebuild vendor attribution or sequential histories.
 
 For a core containing partial Medscape email batches, use `tools/build_medscape_batches.py` first. An incomplete-batch marker blocks ordinary source-level resume. Once that marker is cleared, source-level resume assumes that each existing source is complete. The batch runner validates the full expected link-key and observation-history checksum for each email hash bucket before skipping it. See [build recovery](build_recovery.md).
 
@@ -45,7 +45,7 @@ Separate source batches bound each write and allow source-level recovery. They r
 
 ## Validation and failure boundaries
 
-Final publication rejects an incomplete email-batch marker and requires all seven sources and unique `link_id` keys in stored core. Non-cookie checksums include all 134 fields, including `computed_at`. Core, LiveIntent, geography and ZIP3 snapshots are pinned for every source batch. Evaluation day, window length and global date coverage are frozen in an atomic table-comment checkpoint. Coverage is captured once with input-snapshot guards. Concurrent core/final changes stop the run. Each committed source must match its complete core population and pass cookie integrity checks; full-population checks precede completion marking.
+Final publication rejects an incomplete email-batch marker and requires all seven sources and unique `link_id` keys in stored core. Core checksums include all 139 fields, including `computed_at`. Core, LiveIntent, geography and ZIP3 snapshots are pinned for every source batch. Evaluation day, window length and global date coverage are frozen in an atomic table-comment checkpoint. Coverage is captured once with input-snapshot guards. Concurrent core/final changes stop the run. Each committed source must match its complete core population and pass cookie integrity checks; full-population checks precede completion marking.
 
 Local fixtures cover three-day boundaries, current-day exclusion, duplicate mapping/ZIP rows, tied states, unknown locations and link-specific state comparisons, including the `_latest` comparison. The published table at snapshot `2837737034249693554` carries cookie evidence for 3,000,799 of its 26,732,836 links, from the three completed days October 30 to November 1, 2026 (all three present in both inputs).
 

@@ -193,7 +193,7 @@ def inlined(name, cache=None, fixtures=None, variables=None):
     dependencies = []
     pipeline.read_model(name, dependencies=dependencies, variables=variables)
     overrides = {dep: '(' + inlined(dep, cache, fixtures) + ')' for dep in dependencies}
-    source_overrides = {('bq_bi__analytics_prod', 'npi_facility_association'): (fixtures or {}).get('facility_association', "(SELECT CAST(NULL AS varchar) AS provider_npi, CAST(ARRAY[] AS array(varchar)) AS facility_npis WHERE false)")}
+    source_overrides = {('bq_bi__analytics_prod', 'npi_facility_association'): (fixtures or {}).get('facility_association', "(SELECT CAST(NULL AS varchar) AS provider_npi, CAST(ARRAY[] AS array(varchar)) AS facility_npis, CAST(NULL AS bigint) AS _rank, CAST(NULL AS bigint) AS claim_count, CAST(NULL AS varchar) AS sources WHERE false)")}
     source_overrides.update({
         ('iceberg__npi', 'npi_taxonomy'): (fixtures or {}).get('taxonomy_dictionary', "(SELECT CAST(NULL AS varchar) AS code WHERE false)"),
         ('iceberg__npi', 'nppes_npidata_latest'): (fixtures or {}).get('nppes_taxonomy',

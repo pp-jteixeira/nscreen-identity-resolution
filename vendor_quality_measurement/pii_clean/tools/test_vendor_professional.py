@@ -145,8 +145,8 @@ class VendorProfessionalTests(unittest.TestCase):
     def test_every_vendor_schema_and_old_field_preservation(self):
         import yaml
         declared = yaml.safe_load((p.ROOT / 'models/final/schema.yml').read_text())['models'][0]['columns']
-        fields = [c['name'] for c in declared if not c['name'].startswith('cookie_')]
-        self.assertEqual(len(fields), 134)
+        fields = [c['name'] for c in declared if not p.is_downstream(c['name'])]
+        self.assertEqual(len(fields), 139)
         order = None
         for source in p.SOURCES:
             model = 'int_' + source + '__metrics'

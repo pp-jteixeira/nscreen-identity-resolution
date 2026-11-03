@@ -18,7 +18,7 @@ Shared external reference tables are read through the normal metric definitions.
 
 ## Commands
 
-The core table must match the current 134-field schema. From `vendor_quality_measurement/pii_clean`:
+The core table must match the current 139-field schema. From `vendor_quality_measurement/pii_clean`:
 
 ```bash
 ../../.venv/bin/python tools/build_medscape_batches.py --materialize-records
@@ -39,7 +39,7 @@ Writer settings are eight writer tasks, one writer per task, local writer scalin
 
 ## Core and final separation
 
-Core holds only non-cookie fields. A failed cookie build leaves core available for retry. Final cookie enrichment uses the default three completed days and produces actual 165-field rows. Cookie values are never copied into core. See [cookie workflow](cookie_stage.md).
+Core holds only non-cookie fields. A failed cookie build leaves core available for retry. Final cookie enrichment uses the default three completed days and produces actual 180-field rows. Cookie values are never copied into core. See [cookie workflow](cookie_stage.md).
 
 ## Reusable version input
 
@@ -51,7 +51,7 @@ Preservation checks must use ordinary read-session aggregation planning. Forcing
 
 ## Final publication checks
 
-`final` pins stored core and the cookie inputs, then writes each source separately. Each source must pass 134-field preservation, complete counts, unique `link_id` keys and cookie integrity before the next source starts. Full-population preservation and cookie integrity precede completion marking. Ordinary refresh or interrupted-source recovery uses `tools/pipeline.py cookies`; incomplete checkpoints retain original snapshot pins, window and coverage.
+`final` pins stored core and the cookie inputs, then writes each source separately. Each source must pass 139-field preservation, complete counts, unique `link_id` keys and cookie integrity before the next source starts. Full-population preservation and cookie integrity precede completion marking. Ordinary refresh or interrupted-source recovery uses `tools/pipeline.py cookies`; incomplete checkpoints retain original snapshot pins, window and coverage.
 
 Email counts overlap between sources and must not be summed as globally distinct emails. Registration-grain counts include GUID and are a different unit from links.
 

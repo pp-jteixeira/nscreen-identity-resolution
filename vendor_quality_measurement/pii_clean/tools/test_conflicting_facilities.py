@@ -10,15 +10,16 @@ from test_record_grain import source_values
 def association_fixture():
     # Duplicate/provider-whitespace rows and multiple ranks must never multiply metrics.
     return """(SELECT * FROM (VALUES
-        ('1', ARRAY['1111111111']),
-        (' 1 ', ARRAY[' 2222222222 ', '1111111111', NULL, '', 'bad', '0000000000']),
-        ('2', ARRAY['2222222222']),
-        ('2', ARRAY['2222222222']),
-        ('3', ARRAY['3333333333']),
-        ('4', CAST(NULL AS array(varchar))),
-        ('5', ARRAY['NULL', '0']),
-        ('', ARRAY['9999999999'])
-    ) AS t(provider_npi, facility_npis))"""
+        ('1', ARRAY['1111111111'], 1, 10, 'Claims,CMS'),
+        (' 1 ', ARRAY[' 2222222222 ', '1111111111', NULL, '', 'bad', '0000000000'], 1, 25, 'Healthlink'),
+        ('2', ARRAY['2222222222'], 1, 7, 'Claims'),
+        ('2', ARRAY['2222222222'], 1, 7, 'Claims'),
+        ('3', ARRAY['3333333333'], 1, CAST(NULL AS bigint), 'CMS, NPPES'),
+        ('3', ARRAY['3333333333'], 2, 500, 'Claims'),
+        ('4', CAST(NULL AS array(varchar)), 1, CAST(NULL AS bigint), CAST(NULL AS varchar)),
+        ('5', ARRAY['NULL', '0'], 1, 3, ''),
+        ('', ARRAY['9999999999'], 1, 1, 'Claims')
+    ) AS t(provider_npi, facility_npis, _rank, claim_count, sources))"""
 
 
 CASES = {
@@ -56,6 +57,10 @@ def check_dated(rows):
         assert row['conflicting_npis_share_facility'] is expected[key], (key, row['conflicting_npis_share_facility'])
         if row['npi'] == '1':
             assert row['facility_npi_values'] == ['1111111111', '2222222222']
+        claims = {'1': (25, ['CMS', 'Claims', 'Healthlink'], True), '2': (7, ['Claims'], True),
+                  '3': (None, ['CMS', 'NPPES'], False), '4': (None, [], False),
+                  '5': (3, [], False), '6': (None, [], None)}[row['npi']]
+        assert (row['facility_claim_count'], row['facility_sources'], row['facility_claims_backed']) == claims, row['npi']
         assert bool(row['conflicting_npi_facility_comparisons']) == (row['has_conflict_linkage'] is True)
 
 

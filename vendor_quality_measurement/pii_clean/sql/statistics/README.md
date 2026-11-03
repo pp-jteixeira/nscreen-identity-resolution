@@ -26,6 +26,8 @@ Every row of `pii_clean` is one source/email/NPI link.
 | 23–24 | All links for usable-label coverage; links with an established conflict for label-agreement outcomes. |
 | 25 | Distinct source/emails. Swap and flip-back percentages use emails with dated history. |
 | 26 | Distinct Medscape GUID/email/NPI/status combinations. |
+| 27 | Links partitioned by claims-association support. Corroboration compares links with a usable facility state and a known vendor state. |
+| 28 | Links within source and domain class. Domain aggregates are recomputed from published links with the stored macro. |
 
 ## Statement files
 
@@ -37,6 +39,8 @@ Additional statements use `_statement_002.sql`, `_statement_003.sql` and so on. 
 - **15–16:** the first query gives all-source coverage. Statement 002 gives conflict outcomes; sources without conflicts have no outcome row and require a zero count with an undefined percentage.
 - **17:** statements 002 and 003 query the published population. `17_npi_registry_status.sql` and statement 004 inspect the current raw NPPES reference.
 - **18:** the first query supplies denominators; statement 002 supplies evidence outcomes and invariant failures; statement 003 lists links whose any-version and latest-version evidence differ.
+- **27:** the first query partitions links by claims support; statement 002 compares corroboration with and without Claims.
+- **28:** one statement recomputes the domain aggregates from published links and groups them by source and domain class.
 - **19:** the first query supplies the stored window; statement 002 supplies denominators; statement 003 supplies location, vendor-state and facility-state groups. Never sum across overlapping `section` values. Statement 004 lists links whose any-version and latest-version cookie vendor-state evidence differ.
 
 Calculation macros define indicators; these queries measure stored outcomes. See the [metric pages](../../docs/metrics/README.md) for definitions and interpretation.

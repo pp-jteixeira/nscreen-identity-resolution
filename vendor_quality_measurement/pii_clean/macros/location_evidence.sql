@@ -28,6 +28,17 @@ SELECT npi, facility_rank1_rows, facility_rank1_state_count,
             ELSE 'usable' END AS facility_reference_status
 FROM grouped
 {%- endmacro %}
+{# One rank-1 claims-association row exists per NPI. Aggregation guards against duplicate reference rows. #}
+{% macro facility_claims_lookup() -%}
+SELECT trim(provider_npi) AS npi,
+       max(claim_count) AS facility_claim_count,
+       array_sort(array_distinct(filter(
+           flatten(array_agg(transform(split(coalesce(sources, ''), ','), s -> trim(s)))),
+           s -> s <> ''))) AS facility_sources
+FROM {{ source('bq_bi__analytics_prod', 'npi_facility_association') }}
+WHERE _rank = 1 AND nullif(trim(provider_npi), '') IS NOT NULL
+GROUP BY trim(provider_npi)
+{%- endmacro %}
 {% macro vendor_facility_comparison(states='source_state_values') -%}
 CASE WHEN facility_reference_status <> 'usable' THEN 'unknown_facility'
      WHEN cardinality({{ states }}) = 0 THEN 'unknown_vendor_state'
@@ -36,14 +47,19 @@ CASE WHEN facility_reference_status <> 'usable' THEN 'unknown_facility'
      ELSE 'not_corroborated' END
 {%- endmacro %}
 {% macro vendor_facility_records(input_relation) -%}
-WITH facility_reference AS ({{ facility_state_lookup() }}), enriched AS (
+WITH facility_reference AS ({{ facility_state_lookup() }}),
+claims_reference AS ({{ facility_claims_lookup() }}), enriched AS (
     SELECT m.*, r.facility_primary_state,
            coalesce(r.facility_reference_status, 'no_rank1_association') AS facility_reference_status,
            coalesce(r.facility_rank1_rows, cast(0 AS bigint)) AS facility_rank1_rows,
            coalesce(r.facility_rank1_state_count, cast(0 AS bigint)) AS facility_rank1_state_count,
            coalesce(r.facility_rank1_unknown_state_rows, cast(0 AS bigint)) AS facility_rank1_unknown_state_rows,
-           coalesce(r.facility_rank1_missing_location_rows, cast(0 AS bigint)) AS facility_rank1_missing_location_rows
+           coalesce(r.facility_rank1_missing_location_rows, cast(0 AS bigint)) AS facility_rank1_missing_location_rows,
+           c.facility_claim_count,
+           coalesce(c.facility_sources, CAST(ARRAY[] AS array(varchar))) AS facility_sources,
+           CASE WHEN c.npi IS NOT NULL THEN contains(c.facility_sources, 'Claims') END AS facility_claims_backed
     FROM {{ input_relation }} m LEFT JOIN facility_reference r ON m.npi = r.npi
+    LEFT JOIN claims_reference c ON m.npi = c.npi
 ), compared AS (
     SELECT *, {{ vendor_facility_comparison() }} AS vendor_state_evidence,
            -- Latest-version states are null when the link has no single latest version.
@@ -57,6 +73,8 @@ SELECT *, CASE vendor_state_evidence WHEN 'corroborated' THEN true WHEN 'not_cor
               AS vendor_state_corroborated_latest,
        {{ location_evaluation_day() }} AS location_evaluation_day,
        'bq_bi.analytics_prod.npi_facility_locations_with_ids' AS location_reference_table,
-       'link_vendor_facility_state_v1' AS location_evidence_version
+       'link_vendor_facility_state_v1' AS location_evidence_version,
+       'bq_bi.analytics_prod.npi_facility_association' AS facility_claims_reference_table,
+       'facility_claims_support_v1' AS facility_claims_definition_version
 FROM compared
 {%- endmacro %}

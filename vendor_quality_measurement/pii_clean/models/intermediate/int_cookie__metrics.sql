@@ -1,12 +1,14 @@
--- Enrich each source independently, then combine the complete record outputs.
+-- Enrich each stored source independently with domain and cookie evidence, then combine the complete record outputs.
 {% set cookie_sources = var('cookie_sources', ['healthlink', 'quantummedica', 'medscape', 'endato', 'rocketreach', 'drdb', 'haymarket']) %}
 WITH
 {% for cookie_source in cookie_sources %}
 source_{{ loop.index }} AS (
 WITH core_metrics AS (
     SELECT * FROM {{ ref('int_pii__metrics') }} WHERE source = '{{ cookie_source }}'
+), domained AS (
+{{ domain_evidence_records('core_metrics') }}
 ), enriched AS (
-{{ cookie_location_records('core_metrics') }}
+{{ cookie_location_records('domained') }}
 )
 SELECT
 {% for field in metric_columns(include_cookie=true) %}

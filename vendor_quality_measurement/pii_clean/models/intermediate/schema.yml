@@ -346,6 +346,20 @@ models:
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: &id059
     - not_null
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: &id060
@@ -790,6 +804,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -1214,6 +1242,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -1638,6 +1680,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -2062,6 +2118,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -2486,6 +2556,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -2910,6 +2994,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -3337,6 +3435,20 @@ models:
   - name: location_evidence_version
     description: link_vendor_facility_state_v1; link-grain descriptive comparison without scoring.
     data_tests: *id059
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.
     data_tests: *id060
@@ -3860,6 +3972,51 @@ models:
     data_type: varchar
   - name: cookie_location_evidence_version
     description: liveintent_primary_state_untied_v1; no scores or fractional votes.
+    data_type: varchar
+  - name: facility_claim_count
+    description: Claim count of the NPI's single rank-1 claims-association row; null when the NPI has no rank-1 row or
+      the row has no claim support.
+  - name: facility_sources
+    description: Sorted source labels (Claims, CMS, Healthlink, NPPES) supporting the NPI's rank-1 association; empty
+      without a rank-1 row.
+    data_type: array(varchar)
+  - name: facility_claims_backed
+    description: True when Claims is among the rank-1 association's sources, false when it is not, null without a rank-1
+      row. Descriptive support for facility_primary_state, not a threshold.
+  - name: facility_claims_reference_table
+    description: bq_bi.analytics_prod.npi_facility_association; only rank-1 rows are used.
+  - name: facility_claims_definition_version
+    description: facility_claims_support_v1.
+  - name: email_domain
+    description: Lowercase text after the first @ of the cleaned email; null without a domain.
+    data_type: varchar
+  - name: domain_email_count
+    description: Distinct cleaned emails of this source on the domain. Counts include every domain class.
+    data_type: bigint
+  - name: domain_npi_count
+    description: Distinct NPIs of this source reported with any email on the domain.
+    data_type: bigint
+  - name: domain_npis_with_state
+    description: Domain NPIs with a usable facility_primary_state. Null for free-provider and unknown domains.
+    data_type: bigint
+  - name: domain_state_count
+    description: Distinct facility_primary_state values across the domain's NPIs. Null for free-provider and unknown
+      domains.
+    data_type: bigint
+  - name: domain_top_state_share
+    description: Share of domain_npis_with_state in the most common facility state. Null without usable states.
+    data_type: double
+  - name: domain_npis_with_facility
+    description: Domain NPIs with at least one retained facility NPI. Null for free-provider and unknown domains.
+    data_type: bigint
+  - name: domain_top_facility_npi
+    description: Facility NPI shared by the most domain NPIs, ties broken by greater NPI text. Null without facilities.
+    data_type: varchar
+  - name: domain_top_facility_share
+    description: Share of domain_npis_with_facility whose facility NPIs include domain_top_facility_npi.
+    data_type: double
+  - name: domain_evidence_version
+    description: domain_evidence_v1; per-source domain aggregates over links, without scoring.
     data_type: varchar
   - name: link_freshness_as_of_day
     description: Evaluation day for stored link freshness, America/New_York today unless overridden.

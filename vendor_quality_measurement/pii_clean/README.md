@@ -2,13 +2,13 @@
 
 PII Clean evaluates vendor-reported email–NPI links across all retained source history. The output `iceberg.jteixeira_ipa.pii_clean` has one row per link: a source, a cleaned email and a reported NPI, keyed by `link_id`. Metrics and indicators precede any cross-vendor deduplication. Scoring remains unimplemented.
 
-[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [26 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. The table was published on November 2, 2026 at snapshot `2837737034249693554`: 26,732,836 links (HealthLink 7,688,451, Endato 5,427,459, Haymarket 4,223,245, Medscape 3,661,537, RocketReach 3,199,535, QuantumMedica 1,705,723, DRDB 826,886), each source verified against stored core.
+[Table dependency diagrams](docs/table_dependencies.md) cover vendor lineage, shared references and exact model inputs. The [28 metric pages](docs/metrics/README.md) define each metric and link its statistics SQL. The table was published on November 2, 2026 at snapshot `2837737034249693554`: 26,732,836 links (HealthLink 7,688,451, Endato 5,427,459, Haymarket 4,223,245, Medscape 3,661,537, RocketReach 3,199,535, QuantumMedica 1,705,723, DRDB 826,886), each source verified against stored core. That snapshot stores 165 fields; the 15 fields of metric pages 27 and 28 are stored from the next build.
 
 | Output | Columns | Contents |
 |---|---:|---|
-| Canonical `iceberg.jteixeira_ipa.pii_clean` | 165 | 134 core fields plus 31 cookie fields, with stored name explanations. |
-| Vendor metric views | 134 | Core attributes, metrics and stored name explanations. Cookie processing runs separately downstream. |
-| Stored core `pii__int_pii__metrics` | 134 | Union of the seven vendor outputs. |
+| Canonical `iceberg.jteixeira_ipa.pii_clean` | 180 | 139 core fields, 10 domain fields and 31 cookie fields, with stored name explanations. |
+| Vendor metric views | 139 | Core attributes, metrics and stored name explanations. Cookie processing runs separately downstream. |
+| Stored core `pii__int_pii__metrics` | 139 | Union of the seven vendor outputs. |
 | Complete email lookup | 171 | All 165 stored fields plus six display/comparison helpers. |
 
 | Layer | Responsibility |
@@ -21,7 +21,7 @@ The local NPPES specialty flag is `conflicting_npis_share_nppes_specialty`.
 
 ## Independent cookie enrichment
 
-Vendor models define 134 core fields, including four stored name-explanation fields. Their union is stored in `int_pii__metrics`. The downstream `int_cookie__metrics` filters and enriches each source independently over three completed days, then combines the 165-field outputs. The runner writes source batches separately and reuses pinned inputs on resume. Stored core is the preservation baseline for cookie refreshes. `tools/pipeline.py cookies` republishes cookie enrichment from stored core. [Architecture, commands and validation](docs/cookie_stage.md). Core publication never scans raw cookie mappings or geo observations.
+Vendor models define 139 core fields, including four stored name-explanation fields. Their union is stored in `int_pii__metrics`. The downstream `int_cookie__metrics` filters and enriches each source independently with domain aggregates and cookie evidence over three completed days, then combines the 180-field outputs. The runner writes source batches separately and reuses pinned inputs on resume. Stored core is the preservation baseline for cookie refreshes. `tools/pipeline.py cookies` republishes cookie enrichment from stored core. [Architecture, commands and validation](docs/cookie_stage.md). Core publication never scans raw cookie mappings or geo observations.
 
 ## Stored name explanations
 
@@ -72,6 +72,10 @@ Only nonempty cleaned email/NPI keys enter metric outputs. Medscape additionally
 [Link stability](docs/metrics/21_link_stability.md) publishes distinct email/link/conflict day counts, presence and overlap fractions, and an incomplete-date flag. It measures dated history without adding thresholds or scores. One-day histories and undated peers remain visible.
 
 [NPI validity and entity type](docs/metrics/22_npi_identity.md) adds structural checks and registry entity-type consensus.
+
+## Facility claims support and domain evidence
+
+[Facility claims support](docs/metrics/27_facility_claims_support.md) publishes the claim count and data-source labels behind each NPI's rank-1 facility association. [Domain evidence](docs/metrics/28_domain_evidence.md) publishes per-source domain counts and state and facility concentration. Domain fields are computed downstream of stored core, because they need every link of a source. Neither metric filters links or assigns scores.
 
 ## Sequential history and registration supersession
 
@@ -126,7 +130,7 @@ From this directory, using the repository `.venv` and PulsePoint Trino connectio
 
 Use `--source all` to apply source, test or report to every vendor separately. The `report` command reads `iceberg.jteixeira_ipa.pii_clean` filtered to the requested vendor. Reports use stored evidence and evaluation dates, so changes to raw data or model code appear only after publication. Report `metric_rows` are table rows, that is, links. Source and candidate validation continue to inspect their respective build inputs. Source commands recreate selected staging/intermediate views and shared name dependencies; they do not refresh the published final table. `build` recreates source dependencies, builds stored core, then publishes cookie-enriched `pii_clean`. `final` reads stored core.
 
-Core builds can use a validated candidate or write directly with `core --direct`. Stage-limit fallback materializes narrow execution inputs before attaching later metrics. The local core contract contains 134 fields and requires all seven sources, unique `link_id` keys and seventeen integrity checks, including stored name-evidence consistency. `final` then computes cookies source by source from stored core, combining enriched batches into final output. It pins cookie inputs and coverage, verifies all 134 core fields including `computed_at`, and checks cookie invariants before completion. Interrupted cookie batches resume automatically after validation. Source snapshots are not pinned by ordinary core builds. Checkpoints are printed without saving local result files.
+Core builds can use a validated candidate or write directly with `core --direct`. Stage-limit fallback materializes narrow execution inputs before attaching later metrics. The local core contract contains 139 fields and requires all seven sources, unique `link_id` keys and eighteen integrity checks, including stored name-evidence consistency. `final` then computes cookies source by source from stored core, combining enriched batches into final output. It pins cookie inputs and coverage, verifies all 139 core fields including `computed_at`, and checks cookie invariants before completion. Interrupted cookie batches resume automatically after validation. Source snapshots are not pinned by ordinary core builds. Checkpoints are printed without saving local result files.
 
 `test --source <vendor>` runs the local suites, then checks in the warehouse that staging preserves raw row counts, that versions represent every raw row with unique record IDs, and that the vendor model passes all integrity queries. Local tests cover synthetic execution and publication control flow. Local fixtures run translated SQL in DuckDB; they do not replace Trino checks. Install local test dependencies from [requirements-dev.txt](requirements-dev.txt). The runner renders Jinja; dbt itself is not the execution engine, and Spark has not been tested.
 
@@ -160,7 +164,7 @@ Execution outputs and validation logs are not retained locally or in Git. Select
 
 Email investigation: [Email lookup query and metric reference](docs/email_lookup.md). Enter one email to inspect names, states, NPIs, history, versions and quality indicators per link.
 
-Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 165 stored columns, types, nested evidence structures, null handling and link counting rules.
+Table reference: [PII Clean data dictionary](docs/data_dictionary.md). All 180 contract columns (the November 2 snapshot stores 165), types, nested evidence structures, null handling and link counting rules.
 
 1. [Source map](docs/00_source_map.md): input tables, name joins and date limitations.
 2. [Metrics](docs/metrics/README.md): definitions, examples and source statistics.

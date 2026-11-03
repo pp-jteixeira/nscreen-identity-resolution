@@ -59,6 +59,10 @@ def fixture_sql(context=False, window_days=7, evaluation_day='2026-10-29'):
                                        ('999', 'NY'), ('999', 'CA'), ('007', 'NY')])
     variables = {'location_evidence_day': evaluation_day, 'location_metadata_from_rows': True, 'cookie_window_days': window_days}
     overrides = {('bq_bi__analytics_prod', 'npi_facility_locations_with_ids'): facility,
+                 ('bq_bi__analytics_prod', 'npi_facility_association'):
+                     '(SELECT provider_npi, cast(_rank AS bigint) AS _rank, cast(claim_count AS bigint) AS claim_count, sources FROM '
+                     + values(['provider_npi', '_rank', 'claim_count', 'sources'],
+                              [('1', '1', '40', 'Claims,CMS'), ('1', '2', '900', 'NPPES'), ('3', '1', None, 'Healthlink')]) + ')',
                  ('iceberg__thirdparty', 'liveintent_idsync'): mapping_values,
                  ('iceberg__crossscreen', 'nscreen_geo_daily_ua'): geo,
                  ('iceberg__jteixeira_ipa', 'tmp_zip3_to_state'): zip_map}
@@ -115,6 +119,12 @@ def check_fixture(rows):
         assert keyed[name]['vendor_state_evidence'] == 'unknown_facility'
         assert keyed[name]['cookie_facility_state_evidence'] == 'unknown_reference_state'
     assert keyed['padding']['cookie_state_values'] == ['NY']
+    assert keyed['agree']['facility_claim_count'] == 40
+    assert keyed['agree']['facility_sources'] == ['CMS', 'Claims'] and keyed['agree']['facility_claims_backed'] is True
+    assert keyed['ambiguousfacility']['facility_claim_count'] is None
+    assert keyed['ambiguousfacility']['facility_sources'] == ['Healthlink']
+    assert keyed['ambiguousfacility']['facility_claims_backed'] is False
+    assert keyed['norank1']['facility_sources'] == [] and keyed['norank1']['facility_claims_backed'] is None
 
 
 class LocationEvidenceTests(unittest.TestCase):
@@ -123,7 +133,7 @@ class LocationEvidenceTests(unittest.TestCase):
 
     def test_invariant_checks_and_corruption(self):
         records = fixture_sql()
-        for name in ['vendor_facility_state', 'cookie_location']:
+        for name in ['vendor_facility_state', 'facility_claims_support', 'cookie_location']:
             template = (p.ROOT / f'tests/{name}.sql').read_text()
             failures = execute(p.render_sql(template, {'metric_model': p.FINAL_MODEL}, {p.FINAL_MODEL: '(' + records + ')'}))
             self.assertEqual(failures, [])
